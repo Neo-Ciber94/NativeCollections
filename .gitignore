@@ -214,6 +214,7 @@ _pkginfo.txt
 !?*.[Cc]ache/
 
 # Others
+ConsoleApp/
 ClientBin/
 ~$*
 *~
