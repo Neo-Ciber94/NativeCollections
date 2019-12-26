@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Runtime.CompilerServices;
 
 namespace NativeCollections
 {
@@ -6,28 +7,31 @@ namespace NativeCollections
     {
         private void* _pointer;
         private int _length;
-        private int pos;
+        private int _index;
 
         public RefEnumerator(void* pointer, int length)
         {
             _pointer = pointer;
             _length = length;
-            pos = -1;
+            _index = -1;
         }
 
         public RefEnumerator(T[] array)
         {
             _pointer = array.Length == 0? null: Unsafe.AsPointer(ref array[0]);
             _length = 0;
-            pos = 0;
+            _index = -1;
         }
 
         public ref T Current
         {
             get
             {
+                if (_index < 0 || _index > _length)
+                    throw new ArgumentOutOfRangeException("index", _index.ToString());
+
                 ref T pointer = ref Unsafe.AsRef<T>(_pointer);
-                return ref Unsafe.Add(ref pointer, pos);
+                return ref Unsafe.Add(ref pointer, _index);
             }
         }
 
@@ -38,15 +42,15 @@ namespace NativeCollections
 
             _pointer = null;
             _length = 0;
-            pos = 0;
+            _index = 0;
         }
 
         public bool MoveNext()
         {
-            int i = pos + 1;
+            int i = _index + 1;
             if(i < _length)
             {
-                pos = i;
+                _index = i;
                 return true;
             }
             return false;
@@ -54,7 +58,7 @@ namespace NativeCollections
 
         public void Reset()
         {
-            pos = 0;
+            _index = -1;
         }
     }
 }

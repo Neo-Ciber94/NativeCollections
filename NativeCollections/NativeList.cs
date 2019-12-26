@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
+using NativeCollections.Memory;
 using NativeCollections.Utility;
 
 namespace NativeCollections
@@ -18,7 +17,7 @@ namespace NativeCollections
             if (initialCapacity <= 0)
                 throw new ArgumentException($"initialCapacity should be greater than 0: {initialCapacity}");
 
-            _buffer = Allocator.Alloc(sizeof(T) * initialCapacity);
+            _buffer = Allocator.Default.Allocate(sizeof(T) * initialCapacity);
             _capacity = initialCapacity;
             _count = 0;
         }
@@ -31,7 +30,7 @@ namespace NativeCollections
             }
             else
             {
-                _buffer = Allocator.Alloc(sizeof(T) * elements.Length);
+                _buffer = Allocator.Default.Allocate(sizeof(T) * elements.Length);
                 _capacity = elements.Length;
                 _count = _capacity;
 
@@ -127,7 +126,7 @@ namespace NativeCollections
             if (start < 0 || end < 0 || start > _count || end > _count || start > end)
                 throw new ArgumentOutOfRangeException($"Invalid range: {start} - {end}");
 
-            if(start == 0 && end == _count)
+            if (start == 0 && end == _count)
             {
                 int count = _count;
                 Clear();
@@ -154,7 +153,7 @@ namespace NativeCollections
             ref T startAddress = ref Unsafe.AsRef<T>(_buffer);
             int length = _count - index - 1;
 
-            for(int i = 0; i < length; i++)
+            for (int i = 0; i < length; i++)
             {
                 Unsafe.Add(ref startAddress, i) = Unsafe.Add(ref startAddress, i + 1);
             }
@@ -247,7 +246,7 @@ namespace NativeCollections
 
         public void TrimExcess()
         {
-            if(_count != _capacity && _capacity > 4)
+            if (_count != _capacity && _capacity > 4)
             {
                 SetCapacity(_count);
             }
@@ -255,9 +254,9 @@ namespace NativeCollections
 
         private void EnsureCapacity(int min)
         {
-            if(min > _capacity)
+            if (min > _capacity)
             {
-                if(min < _capacity * 2)
+                if (min < _capacity * 2)
                 {
                     SetCapacity(_capacity * 2);
                 }
@@ -271,7 +270,7 @@ namespace NativeCollections
         private void SetCapacity(int newCapacity)
         {
             newCapacity = newCapacity < 4 ? 4 : newCapacity;
-            Allocator.ReAlloc(_buffer, sizeof(T) * newCapacity);
+            Allocator.Default.ReAllocate(_buffer, sizeof(T) * newCapacity);
             _capacity = newCapacity;
         }
 
@@ -280,7 +279,7 @@ namespace NativeCollections
             if (_buffer == null)
                 return;
 
-            Allocator.Free(_buffer);
+            Allocator.Default.Free(_buffer);
             _buffer = null;
             _capacity = 0;
             _count = 0;

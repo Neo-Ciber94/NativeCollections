@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using NativeCollections.Utility;
+using NativeCollections.Memory;
 
 namespace NativeCollections
 {
@@ -29,13 +29,13 @@ namespace NativeCollections
             if (initialCapacity <= 0)
                 throw new ArgumentException($"initialCapacity should be greater than 0: {initialCapacity}");
 
-            _buffer = Allocator.Alloc<Entry>(initialCapacity);
+            _buffer = Allocator.Default.Allocate<Entry>(initialCapacity);
             _capacity = initialCapacity;
             _count = 0;
             _freeList = -1;
             _freeCount = 0;
 
-            for(int i = 0; i < _capacity; i++)
+            for (int i = 0; i < _capacity; i++)
             {
                 _buffer[i].bucket = -1;
             }
@@ -76,13 +76,13 @@ namespace NativeCollections
             var index = _buffer[bucket].bucket;
             int last = -1;
 
-            while(index >= 0)
+            while (index >= 0)
             {
                 ref Entry entry = ref _buffer[index];
 
-                if(comparer.Equals(entry.key, key) && entry.hashCode == hashCode)
+                if (comparer.Equals(entry.key, key) && entry.hashCode == hashCode)
                 {
-                    if(last >= 0)
+                    if (last >= 0)
                     {
                         _buffer[last].next = _buffer[index].next;
                     }
@@ -110,7 +110,7 @@ namespace NativeCollections
         public bool TryGetValue(TKey key, out TValue value)
         {
             int index = FindEntry(key);
-            if(index >= 0)
+            if (index >= 0)
             {
                 value = _buffer[index].value;
                 return true;
@@ -142,12 +142,12 @@ namespace NativeCollections
         {
             var comparer = EqualityComparer<TValue>.Default;
 
-            for(int i = 0; i < _count; i++)
+            for (int i = 0; i < _count; i++)
             {
                 ref Entry entry = ref _buffer[i];
                 if (entry.hashCode >= 0 && comparer.Equals(entry.value, value))
                     return true;
-                
+
             }
 
             return false;
@@ -163,13 +163,13 @@ namespace NativeCollections
             while (index >= 0)
             {
                 ref Entry entry = ref _buffer[index];
-                if((mode == InsertMode.Replace) && comparer.Equals(entry.key, key) && hashCode == entry.hashCode)
+                if ((mode == InsertMode.Replace) && comparer.Equals(entry.key, key) && hashCode == entry.hashCode)
                 {
                     entry.value = value;
                     return true;
                 }
 
-                if(mode == InsertMode.Add && comparer.Equals(entry.key, key) && hashCode == entry.hashCode)
+                if (mode == InsertMode.Add && comparer.Equals(entry.key, key) && hashCode == entry.hashCode)
                 {
                     return false;
                 }
@@ -177,7 +177,7 @@ namespace NativeCollections
                 index = entry.next;
             }
 
-            if(_freeCount > 0)
+            if (_freeCount > 0)
             {
                 index = _freeList;
                 _freeList = _buffer[_freeList].next;
@@ -195,7 +195,7 @@ namespace NativeCollections
             _buffer[bucket].bucket = index;
             _count++;
 
-            if(_count == _capacity)
+            if (_count == _capacity)
             {
                 Resize();
             }
@@ -228,10 +228,10 @@ namespace NativeCollections
         {
             SetCapacity(_capacity * 2);
         }
-        
+
         private void SetCapacity(int newCapacity)
         {
-            var newBuffer = Allocator.Alloc<Entry>(newCapacity);
+            var newBuffer = Allocator.Default.Allocate<Entry>(newCapacity);
             Unsafe.CopyBlock(newBuffer, _buffer, (uint)(sizeof(Entry) * _count));
 
             for (int i = _capacity; i < newCapacity; i++)
@@ -239,9 +239,9 @@ namespace NativeCollections
                 newBuffer[i].bucket = -1;
             }
 
-            for(int i = 0; i < _count; i++)
+            for (int i = 0; i < _count; i++)
             {
-                if(newBuffer[i].hashCode >= 0)
+                if (newBuffer[i].hashCode >= 0)
                 {
                     int hashCode = GetHash(ref newBuffer[i].key);
                     int bucket = GetBucket(hashCode, newCapacity);
@@ -250,7 +250,7 @@ namespace NativeCollections
                 }
             }
 
-            Allocator.Free(_buffer);
+            Allocator.Default.Free(_buffer);
 
             _capacity = newCapacity;
             _buffer = newBuffer;
@@ -273,7 +273,7 @@ namespace NativeCollections
             if (_buffer == null)
                 return;
 
-            Allocator.Free(_buffer);
+            Allocator.Default.Free(_buffer);
             _buffer = null;
             _capacity = 0;
             _count = 0;

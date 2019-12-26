@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using NativeCollections.Memory;
 using NativeCollections.Utility;
 
 namespace NativeCollections
@@ -15,7 +16,7 @@ namespace NativeCollections
             if (capacity <= 0)
                 throw new ArgumentException($"capacity must be greater than 0: {capacity}");
 
-            _buffer = Allocator.Alloc(sizeof(T) * capacity);
+            _buffer = Allocator.Default.Allocate(sizeof(T) * capacity);
             _capacity = capacity;
         }
 
@@ -27,7 +28,7 @@ namespace NativeCollections
             }
             else
             {
-                _buffer = Allocator.Alloc(sizeof(T) * elements.Length);
+                _buffer = Allocator.Default.Allocate(sizeof(T) * elements.Length);
                 _capacity = elements.Length;
 
                 void* source = Unsafe.AsPointer(ref MemoryMarshal.GetReference(elements));
@@ -180,7 +181,7 @@ namespace NativeCollections
             if (_buffer == null)
                 return;
 
-            Allocator.Free(_buffer);
+            Allocator.Default.Free(_buffer);
             _buffer = null;
             _capacity = 0;
         }

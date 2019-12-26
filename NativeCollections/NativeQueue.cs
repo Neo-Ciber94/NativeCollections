@@ -1,13 +1,14 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
+using NativeCollections.Memory;
 using NativeCollections.Utility;
 
 namespace NativeCollections
 {
-    unsafe public struct NativeQueue<T> : IDisposable where T: unmanaged
+    unsafe public struct NativeQueue<T> : IDisposable where T : unmanaged
     {
         private void* _buffer;
         private int _capacity;
@@ -21,7 +22,7 @@ namespace NativeCollections
             if (initialCapacity <= 0)
                 throw new ArgumentException($"capacity must be greater than 0: {initialCapacity}");
 
-            _buffer = Allocator.Alloc(sizeof(T) * initialCapacity);
+            _buffer = Allocator.Default.Allocate(sizeof(T) * initialCapacity);
             _capacity = initialCapacity;
             _count = _head = _tail = 0;
         }
@@ -34,7 +35,7 @@ namespace NativeCollections
             }
             else
             {
-                _buffer = Allocator.Alloc(sizeof(T) * elements.Length);
+                _buffer = Allocator.Default.Allocate(sizeof(T) * elements.Length);
                 _capacity = elements.Length;
                 _count = _capacity;
                 _head = _tail = 0;
@@ -54,7 +55,7 @@ namespace NativeCollections
 
         public void Enqueue(T value)
         {
-            if(_count == _capacity || _head == _tail)
+            if (_count == _capacity || _head == _tail)
             {
                 EnsureCapacity(_count + 1);
             }
@@ -91,7 +92,7 @@ namespace NativeCollections
 
         public bool TryDequeue(out T value)
         {
-            if(_count == 0)
+            if (_count == 0)
             {
                 value = default;
                 return false;
@@ -155,7 +156,7 @@ namespace NativeCollections
         {
             newCapacity = newCapacity < 4 ? 4 : newCapacity;
 
-            void* newBuffer = Allocator.Alloc(sizeof(T) * newCapacity);
+            void* newBuffer = Allocator.Default.Allocate(sizeof(T) * newCapacity);
             ref T destination = ref Unsafe.AsRef<T>(newBuffer);
             ref T source = ref Unsafe.AsRef<T>(_buffer);
             int head = (_head + 1) % _capacity;
@@ -167,7 +168,7 @@ namespace NativeCollections
                 head = (_head + 1) % _capacity;
             }
 
-            Allocator.Free(_buffer);
+            Allocator.Default.Free(_buffer);
             _buffer = newBuffer;
             _capacity = newCapacity;
             _tail = _count;
@@ -179,10 +180,71 @@ namespace NativeCollections
             if (_buffer == null)
                 return;
 
-            Allocator.Free(_buffer);
+            Allocator.Default.Free(_buffer);
             _buffer = null;
             _capacity = 0;
             _count = 0;
+        }
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(ref this);
+        }
+
+        public ref struct Enumerator
+        {
+            private NativeQueue<T> _queue;
+            private int _index;
+
+            internal Enumerator(ref NativeQueue<T> queue)
+            {
+                _queue = queue;
+                _index = -1;
+            }
+
+            public ref T Current
+            {
+                get
+                {
+                    if (_index < 0 || _index > _queue.Length)
+                        throw new ArgumentOutOfRangeException("index", _index.ToString());
+
+                    ref T startAddress = ref Unsafe.AsRef<T>(_queue._buffer);
+                    return ref Unsafe.Add(ref startAddress, _index);
+                }
+            }
+
+            public void Dispose()
+            {
+                _queue = default;
+                _index = -1;
+            }
+
+            public bool MoveNext()
+            {
+                if (_queue.Length == 0)
+                    return false;
+
+                if(_index == -1)
+                {
+                    _index = _queue._head;
+                    return true;
+                }
+
+                int i = (_index + 1) % _queue.Length;
+                if (i != _queue._tail)
+                {
+                    _index = i;
+                    return true;
+                }
+
+                return false;
+            }
+
+            public void Reset()
+            {
+                _index = -1;
+            }
         }
     }
 }

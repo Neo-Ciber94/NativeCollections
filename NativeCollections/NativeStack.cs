@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using NativeCollections.Memory;
 using NativeCollections.Utility;
 
 namespace NativeCollections
@@ -16,7 +17,7 @@ namespace NativeCollections
             if (initialCapacity <= 0)
                 throw new ArgumentException($"capacity must be greater than 0: {initialCapacity}");
 
-            _buffer = Allocator.Alloc(sizeof(T) * initialCapacity);
+            _buffer = Allocator.Default.Allocate(sizeof(T) * initialCapacity);
             _capacity = initialCapacity;
             _count = 0;
         }
@@ -29,7 +30,7 @@ namespace NativeCollections
             }
             else
             {
-                _buffer = Allocator.Alloc(sizeof(T) * elements.Length);
+                _buffer = Allocator.Default.Allocate(sizeof(T) * elements.Length);
                 _capacity = elements.Length;
                 _count = _capacity;
 
@@ -48,7 +49,7 @@ namespace NativeCollections
 
         public void Push(T value)
         {
-            if(_count == _capacity)
+            if (_count == _capacity)
             {
                 EnsureCapacity(_count + 1);
             }
@@ -80,7 +81,7 @@ namespace NativeCollections
 
         public bool TryPop(out T value)
         {
-            if(_count == 0)
+            if (_count == 0)
             {
                 value = default;
                 return false;
@@ -151,7 +152,7 @@ namespace NativeCollections
         private void SetCapacity(int newCapacity)
         {
             newCapacity = newCapacity < 4 ? 4 : newCapacity;
-            Allocator.ReAlloc(_buffer, sizeof(T) * newCapacity);
+            Allocator.Default.ReAllocate(_buffer, sizeof(T) * newCapacity);
             _capacity = newCapacity;
         }
 
@@ -160,7 +161,7 @@ namespace NativeCollections
             if (_buffer == null)
                 return;
 
-            Allocator.Free(_buffer);
+            Allocator.Default.Free(_buffer);
             _buffer = null;
             _capacity = 0;
         }
