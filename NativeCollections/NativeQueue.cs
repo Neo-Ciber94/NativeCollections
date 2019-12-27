@@ -10,7 +10,7 @@ namespace NativeCollections
 {
     unsafe public struct NativeQueue<T> : IDisposable where T : unmanaged
     {
-        private void* _buffer;
+        internal void* _buffer;
         private int _capacity;
         private int _count;
 

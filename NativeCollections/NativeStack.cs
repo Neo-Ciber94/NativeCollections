@@ -8,7 +8,7 @@ namespace NativeCollections
 {
     unsafe public struct NativeStack<T> : IDisposable where T : unmanaged
     {
-        private void* _buffer;
+        internal void* _buffer;
         private int _capacity;
         private int _count;
 
