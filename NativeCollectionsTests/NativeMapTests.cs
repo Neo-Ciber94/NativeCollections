@@ -16,7 +16,7 @@ namespace NativeCollections.Tests
     {
         static void DisposeNativeStrings(NativeMap<int, NativeString> map)
         {
-            foreach(ref var e in map)
+            foreach (ref var e in map)
             {
                 e.Value.Dispose();
             }
@@ -41,15 +41,29 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
+        public void NativeMapTest2()
+        {
+            using var map = new NativeMap<int, NativeString>(stackalloc (int, NativeString)[] { (0, "cero"), (1, "uno"), (2, "dos") });
+
+            Assert.AreEqual(3, map.Capacity);
+            Assert.AreEqual(3, map.Length);
+            Assert.IsTrue(map.IsValid);
+            Assert.IsFalse(map.IsEmpty);
+
+            DisposeNativeStrings(map);
+        }
+
+        [Test()]
         public void AddTest()
         {
             using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
             map.Add(0, "zero");
             map.Add(1, "one");
             map.Add(2, "two");
+            map.Add(4, "four");
 
             Assert.AreEqual(4, map.Capacity);
-            Assert.AreEqual(3, map.Length);
+            Assert.AreEqual(4, map.Length);
 
             Assert.Catch(() => map.Add(0, "cero"));
             Assert.Catch(() => map.Add(1, "uno"));
@@ -69,7 +83,7 @@ namespace NativeCollections.Tests
 
             map.Add(3, "three"); //Resize
             Assert.AreEqual(8, map.Capacity);
-            Assert.AreEqual(4, map.Length);
+            Assert.AreEqual(5, map.Length);
 
             // ContainsKey
             Assert.IsTrue(map.ContainsKey(0));
@@ -191,8 +205,8 @@ namespace NativeCollections.Tests
 
             map.Add(0, "zero");
             map.Add(2, "two");
-            map.Add(3, "three"); // Resize
-            map.Add(4, "four");
+            map.Add(3, "three");
+            map.Add(4, "four");  // Resize
 
             Assert.AreEqual(8, map.Capacity);
             Assert.AreEqual(5, map.Length);
@@ -227,7 +241,7 @@ namespace NativeCollections.Tests
             map.Add(1, "one");
             map.Add(2, "two");
 
-            if(map.TryGetValue(1, out NativeString value))
+            if (map.TryGetValue(1, out NativeString value))
             {
                 Assert.AreEqual("one", value.ToString());
             }
@@ -324,6 +338,66 @@ namespace NativeCollections.Tests
 
             DisposeNativeStrings(map);
             map.Dispose();
+        }
+
+        [Test()]
+        unsafe public void CopyToTest()
+        {
+            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+
+            map.Add(0, "zero");
+            map.Add(1, "one");
+            map.Add(2, "two");
+            map.Add(3, "three");
+            map.Add(4, "four");
+
+            Span<KeyValuePair<int, NativeString>> span = stackalloc KeyValuePair<int, NativeString>[3];
+            map.CopyTo(span, 3);
+
+            Assert.AreEqual(span[0].Key, 0);
+            Assert.AreEqual(span[1].Key, 1);
+            Assert.AreEqual(span[2].Key, 2);
+
+            Assert.AreEqual(span[0].Value, "zero");
+            Assert.AreEqual(span[1].Value, "one");
+            Assert.AreEqual(span[2].Value, "two");
+
+            var array = map.ToArray();
+            Assert.AreEqual(5, array.Length);
+
+            Assert.AreEqual(array[0].Key, 0);
+            Assert.AreEqual(array[1].Key, 1);
+            Assert.AreEqual(array[2].Key, 2);
+            Assert.AreEqual(array[3].Key, 3);
+            Assert.AreEqual(array[4].Key, 4);
+
+            Assert.AreEqual(array[0].Value, "zero");
+            Assert.AreEqual(array[1].Value, "one");
+            Assert.AreEqual(array[2].Value, "two");
+            Assert.AreEqual(array[3].Value, "three");
+            Assert.AreEqual(array[4].Value, "four");
+
+            DisposeNativeStrings(map);
+        }
+
+        [Test()]
+        public void GetEnumeratorTest()
+        {
+            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            map.Add(0, "zero");
+            map.Add(1, "one");
+            map.Add(2, "two");
+
+            var enumerator = map.GetEnumerator();
+            int i = 0;
+            while (enumerator.MoveNext())
+            {
+                i++;
+            }
+
+            Assert.AreEqual(3, i);
+
+            DisposeNativeStrings(map);
         }
 
         [Test()]

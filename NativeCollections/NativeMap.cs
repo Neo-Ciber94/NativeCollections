@@ -1,18 +1,22 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using NativeCollections.Memory;
 using NativeCollections.Utility;
 
 namespace NativeCollections
 {
+    [DebuggerDisplay("Length = {Length}")]
+    [DebuggerTypeProxy(typeof(NativeMapDebugView<,>))]
     unsafe public struct NativeMap<TKey, TValue> : IDisposable where TKey : unmanaged where TValue : unmanaged
     {
         public enum InsertMode { Any, Add, Replace }
 
-        public struct Entry
+        internal struct Entry
         {
             public TKey key;
             public TValue value;
@@ -49,17 +53,43 @@ namespace NativeCollections
             }
         }
 
-        public int Length => _count - _freeCount;
+        public NativeMap(Span<(TKey, TValue)> elements)
+        {
+            if (elements.IsEmpty)
+            {
+                this = default;
+            }
+            else
+            {
+                _buffer = Allocator.Default.Allocate<Entry>(elements.Length);
+                _capacity = elements.Length;
+                _count = 0;
+                _freeList = -1;
+                _freeCount = 0;
 
-        public int Capacity => _capacity;
+                for (int i = 0; i < _capacity; i++)
+                {
+                    _buffer[i].bucket = -1;
+                }
 
-        public bool IsValid => _buffer != null;
+                foreach (var e in elements)
+                {
+                    Add(e.Item1, e.Item2);
+                }
+            }
+        }
 
-        public bool IsEmpty => _count == 0;
+        public readonly int Length => _count - _freeCount;
+
+        public readonly int Capacity => _capacity;
+
+        public readonly bool IsValid => _buffer != null;
+
+        public readonly bool IsEmpty => _count == 0;
 
         public TValue this[TKey key]
         {
-            get
+            readonly get
             {
                 var index = FindEntry(key);
                 if (index >= 0)
@@ -96,7 +126,7 @@ namespace NativeCollections
         public bool Remove(TKey key)
         {
             var comparer = EqualityComparer<TKey>.Default;
-            var hashCode = GetHash(ref key);
+            var hashCode = GetHash(key);
             var bucket = GetBucket(hashCode, _capacity);
             var index = _buffer[bucket].bucket;
             int last = -1;
@@ -157,12 +187,12 @@ namespace NativeCollections
             return false;
         }
 
-        public bool ContainsKey(TKey key)
+        public readonly bool ContainsKey(in TKey key)
         {
             return FindEntry(key) >= 0;
         }
 
-        public bool ContainsValue(TValue value)
+        public readonly bool ContainsValue(in TValue value)
         {
             var comparer = EqualityComparer<TValue>.Default;
 
@@ -177,10 +207,69 @@ namespace NativeCollections
             return false;
         }
 
+        public readonly void CopyTo(in Span<KeyValuePair<TKey, TValue>> span)
+        {
+            CopyTo(span, 0, Length);
+        }
+
+        public readonly void CopyTo(in Span<KeyValuePair<TKey, TValue>> span, int count)
+        {
+            CopyTo(span, 0, count);
+        }
+
+        public readonly void CopyTo(in Span<KeyValuePair<TKey, TValue>> span, int startIndex, int count)
+        {
+            if (span.IsEmpty)
+                throw new ArgumentException("Span is empty", nameof(span));
+
+            if (startIndex < 0 || startIndex > span.Length)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), startIndex.ToString());
+
+            if (count < 0 || count > Length)
+                throw new ArgumentException(nameof(count), count.ToString());
+
+            int i = 0;
+            int j = 0;
+
+            do
+            {
+                ref Entry entry = ref _buffer[j++];
+                if (entry.hashCode >= 0)
+                {
+                    span[startIndex++] = new KeyValuePair<TKey, TValue>(entry.key, entry.value);
+                }
+
+                i++;
+            }
+            while (i < count);
+        }
+
+        public readonly KeyValuePair<TKey, TValue>[] ToArray()
+        {
+            if(_count == 0)
+            {
+                return Array.Empty<KeyValuePair<TKey, TValue>>();
+            }
+
+            KeyValuePair<TKey, TValue>[] array = new KeyValuePair<TKey, TValue>[Length];
+            //CopyTo(array, array.Length);
+
+            int j = 0;
+            for(int i = 0; i < _count; i++)
+            {
+                ref Entry entry = ref _buffer[i];
+                if(entry.hashCode >= 0)
+                {
+                    array[j++] = new KeyValuePair<TKey, TValue>(entry.key, entry.value);
+                }
+            }
+            return array;
+        }
+
         private bool TryInsert(TKey key, TValue value, InsertMode mode)
         {
             var comparer = EqualityComparer<TKey>.Default;
-            var hashCode = GetHash(ref key);
+            var hashCode = GetHash(key);
             var bucket = GetBucket(hashCode, _capacity);
             var index = _buffer[bucket].bucket;
 
@@ -216,6 +305,12 @@ namespace NativeCollections
                 }
                 else
                 {
+                    if (_count == _capacity)
+                    {
+                        Resize();
+                        bucket = GetBucket(hashCode, _capacity);
+                    }
+
                     index = _count;
                     _count++;
                 }
@@ -226,19 +321,14 @@ namespace NativeCollections
                 _buffer[index].next = _buffer[bucket].bucket;
                 _buffer[bucket].bucket = index;
 
-                if (_count == _capacity)
-                {
-                    Resize();
-                }
-
                 return true;
             }
         }
 
-        private int FindEntry(TKey key)
+        private readonly int FindEntry(in TKey key)
         {
             var comparer = EqualityComparer<TKey>.Default;
-            var hashCode = GetHash(ref key);
+            var hashCode = GetHash(key);
             var bucket = GetBucket(hashCode, _capacity);
             int index = _buffer[bucket].bucket;
 
@@ -275,7 +365,7 @@ namespace NativeCollections
             {
                 if (newBuffer[i].hashCode >= 0)
                 {
-                    int hashCode = GetHash(ref newBuffer[i].key);
+                    int hashCode = GetHash(newBuffer[i].key);
                     int bucket = GetBucket(hashCode, newCapacity);
                     newBuffer[i].next = newBuffer[bucket].bucket;
                     newBuffer[bucket].bucket = i;
@@ -288,7 +378,7 @@ namespace NativeCollections
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int GetHash(ref TKey key)
+        private readonly int GetHash(in TKey key)
         {
             return key.GetHashCode() & int.MaxValue;
         }

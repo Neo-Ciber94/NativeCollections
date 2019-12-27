@@ -17,7 +17,7 @@ namespace NativeCollections
             if (initialCapacity <= 0)
                 throw new ArgumentException($"initialCapacity should be greater than 0: {initialCapacity}");
 
-            _buffer = Allocator.Default.Allocate(sizeof(T) * initialCapacity);
+            _buffer = Allocator.Default.Allocate(Unsafe.SizeOf<T>() * initialCapacity);
             _capacity = initialCapacity;
             _count = 0;
         }
@@ -30,12 +30,12 @@ namespace NativeCollections
             }
             else
             {
-                _buffer = Allocator.Default.Allocate(sizeof(T) * elements.Length);
+                _buffer = Allocator.Default.Allocate(Unsafe.SizeOf<T>() * elements.Length);
                 _capacity = elements.Length;
                 _count = _capacity;
 
                 void* source = Unsafe.AsPointer(ref MemoryMarshal.GetReference(elements));
-                Unsafe.CopyBlock(_buffer, source, (uint)(sizeof(T) * _capacity));
+                Unsafe.CopyBlock(_buffer, source, (uint)(Unsafe.SizeOf<T>() * _capacity));
             }
         }
 
@@ -83,7 +83,7 @@ namespace NativeCollections
         public void AddRange(Span<T> span)
         {
             if (span.IsEmpty)
-                return;
+                throw new ArgumentException("Empty span");
 
             void* startAddress = Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
             AddRange(startAddress, span.Length);
@@ -91,21 +91,70 @@ namespace NativeCollections
 
         public void AddRange(NativeArray<T> array)
         {
-            if (array.Length == 0)
-                return;
+            if (array.IsValid)
+                throw new ArgumentException("Invalid array");
 
             AddRange(array._buffer, array.Length);
         }
 
-        private void AddRange(void* startAddress, int length)
+        private void AddRange(void* source, int length)
         {
-            if (startAddress == null)
+            if (source == null)
                 throw new ArgumentException("Invalid startAddress");
+
+            if (length <= 0)
+                throw new ArgumentException(nameof(length), length.ToString());
 
             EnsureCapacity(_count + length);
 
-            void* destination = ((byte*)_buffer) + sizeof(T) * _count;
-            Unsafe.CopyBlock(destination, startAddress, (uint)(length * sizeof(T)));
+            void* destination = ((byte*)_buffer) + Unsafe.SizeOf<T>() * _count;
+            Unsafe.CopyBlock(destination, source, (uint)(length * Unsafe.SizeOf<T>()));
+            _count += length;
+        }
+
+        public void Insert(int index, T value)
+        {
+            InsertRange(index, Unsafe.AsPointer(ref value), 1);
+        }
+
+        public void InsertRange(int index, Span<T> span)
+        {
+            if (span.IsEmpty)
+                throw new ArgumentException("Empty span");
+
+            void* pointer = Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+            InsertRange(index, pointer, span.Length);
+        }
+
+        public void InsertRange(int index, NativeArray<T> array)
+        {
+            if (array.IsValid)
+                throw new ArgumentException("Invalid array");
+           
+            InsertRange(index, array._buffer, array.Length);
+        }
+
+        private void InsertRange(int index, void* source, int length)
+        {
+            if (index < 0 || index >= _count)
+                throw new ArgumentOutOfRangeException("index", index.ToString());
+
+            if (source == null)
+                throw new ArgumentException("Invalid pointer");
+
+            if (length <= 0)
+                throw new ArgumentException(nameof(length), length.ToString());
+
+            EnsureCapacity(_count + length);
+
+            int size = _count - index;
+            ref T startAddress = ref Unsafe.AsRef<T>(_buffer);
+            ref T insertionIndex = ref Unsafe.Add(ref startAddress, index);
+
+            void* src = Unsafe.AsPointer(ref insertionIndex);
+            void* dest = Unsafe.AsPointer(ref Unsafe.Add(ref insertionIndex, index + length));
+            Unsafe.CopyBlock(dest, src, (uint)(Unsafe.SizeOf<T>() * size));
+            Unsafe.CopyBlock(dest, source, (uint)length);
             _count += length;
         }
 
@@ -183,7 +232,7 @@ namespace NativeCollections
                 return;
 
             ref byte startAddress = ref Unsafe.As<T, byte>(ref Unsafe.AsRef<T>(_buffer));
-            uint length = (uint)(sizeof(T) * _count);
+            uint length = (uint)(Unsafe.SizeOf<T>() * _count);
             Unsafe.InitBlockUnaligned(ref startAddress, 0, length);
             _count = 0;
         }
@@ -270,7 +319,7 @@ namespace NativeCollections
         private void SetCapacity(int newCapacity)
         {
             newCapacity = newCapacity < 4 ? 4 : newCapacity;
-            Allocator.Default.ReAllocate(_buffer, sizeof(T) * newCapacity);
+            Allocator.Default.ReAllocate(_buffer, Unsafe.SizeOf<T>() * newCapacity);
             _capacity = newCapacity;
         }
 
