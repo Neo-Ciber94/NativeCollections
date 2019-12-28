@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using NativeCollections.Memory;
+using NativeCollections.Allocators;
 using NativeCollections.Utility;
 
 namespace NativeCollections
@@ -34,6 +34,18 @@ namespace NativeCollections
                 void* source = Unsafe.AsPointer(ref MemoryMarshal.GetReference(elements));
                 Unsafe.CopyBlock(_buffer, source, (uint)(sizeof(T) * _capacity));
             }
+        }
+
+        public NativeArray(void* pointer, int length)
+        {
+            if (pointer == null)
+                throw new ArgumentException("Invalid pointer");
+
+            if (length <= 0)
+                throw new ArgumentException($"Invalid length: {length}", nameof(length));
+
+            _buffer = pointer;
+            _capacity = length;
         }
 
         public int Length => _capacity;
@@ -143,7 +155,7 @@ namespace NativeCollections
 
         public void Reverse(int start, int end)
         {
-            NativeCollectionUtils.Reverse<T>(_buffer, start, end);
+            NativeCollectionUtility.Reverse<T>(_buffer, start, end);
         }
 
         public int IndexOf(T value)
@@ -158,7 +170,7 @@ namespace NativeCollections
 
         public int IndexOf(T value, int start, int end)
         {
-            return NativeCollectionUtils.IndexOf(_buffer, start, end, value);
+            return NativeCollectionUtility.IndexOf(_buffer, start, end, value);
         }
 
         public int LastIndexOf(T value)
@@ -173,7 +185,7 @@ namespace NativeCollections
 
         public int LastIndexOf(T value, int start, int end)
         {
-            return NativeCollectionUtils.LastIndexOf(_buffer, start, end, value);
+            return NativeCollectionUtility.LastIndexOf(_buffer, start, end, value);
         }
 
         public void Dispose()
@@ -184,6 +196,11 @@ namespace NativeCollections
             Allocator.Default.Free(_buffer);
             _buffer = null;
             _capacity = 0;
+        }
+
+        public void* GetUnsafePointer()
+        {
+            return _buffer;
         }
 
         public RefEnumerator<T> GetEnumerator()

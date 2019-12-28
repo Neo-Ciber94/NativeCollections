@@ -12,7 +12,7 @@ namespace NativeCollections
                 return;
 
             void* pointer = array._buffer;
-            NativeCollectionUtils.QuickSort<T>(pointer, 0, array.Length - 1);
+            NativeCollectionUtility.QuickSort<T>(pointer, 0, array.Length - 1);
         }
 
         public static void Sort<T>(this NativeArray<T> array, int start, int end) where T: unmanaged, IComparable<T>
@@ -21,7 +21,7 @@ namespace NativeCollections
                 return;
 
             void* pointer = array._buffer;
-            NativeCollectionUtils.QuickSort<T>(pointer, start, end);
+            NativeCollectionUtility.QuickSort<T>(pointer, start, end);
         }
 
         public static int BinarySearch<T>(this NativeArray<T> array, T value) where T : unmanaged, IComparable<T>
@@ -29,7 +29,7 @@ namespace NativeCollections
             if (!array.IsValid)
                 return -1;
 
-            return NativeCollectionUtils.BinarySearch(array._buffer, 0, array.Length - 1, value);
+            return NativeCollectionUtility.BinarySearch(array._buffer, 0, array.Length - 1, value);
         }
 
         public static int BinarySearch<T>(this NativeArray<T> array, int start, T value) where T : unmanaged, IComparable<T>
@@ -37,7 +37,7 @@ namespace NativeCollections
             if (!array.IsValid)
                 return -1;
 
-            return NativeCollectionUtils.BinarySearch(array._buffer, start, array.Length - 1, value);
+            return NativeCollectionUtility.BinarySearch(array._buffer, start, array.Length - 1, value);
         }
 
         public static int BinarySearch<T>(this NativeArray<T> array, int start, int end, T value) where T: unmanaged, IComparable<T>
@@ -45,7 +45,7 @@ namespace NativeCollections
             if (!array.IsValid)
                 return -1;
 
-            return NativeCollectionUtils.BinarySearch(array._buffer, start, end, value);
+            return NativeCollectionUtility.BinarySearch(array._buffer, start, end, value);
         }
     }
 }

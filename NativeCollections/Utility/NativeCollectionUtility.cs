@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace NativeCollections.Utility
 {
-    unsafe public static class NativeCollectionUtils
+    unsafe public static class NativeCollectionUtility
     {
         public static int ReplaceAll<T>(void* pointer, int length, T value, T newValue)
         {

@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
-using NativeCollections.Memory;
+using NativeCollections.Allocators;
 using NativeCollections.Utility;
 
 namespace NativeCollections
@@ -14,7 +12,7 @@ namespace NativeCollections
     [DebuggerTypeProxy(typeof(NativeMapDebugView<,>))]
     unsafe public struct NativeMap<TKey, TValue> : IDisposable where TKey : unmanaged where TValue : unmanaged
     {
-        public enum InsertMode { Any, Add, Replace }
+        public enum InsertMode : byte { Any, Add, Replace }
 
         internal struct Entry
         {
@@ -27,6 +25,299 @@ namespace NativeCollections
             public override string ToString()
             {
                 return $"[{key}, {value}]";
+            }
+        }
+
+        public ref struct KeyCollection
+        {
+            private NativeMap<TKey, TValue> _map;
+
+            internal KeyCollection(ref NativeMap<TKey, TValue> map)
+            {
+                _map = map;
+            }
+
+            public int Length => _map.Length;
+
+            public readonly bool Contains(TKey key) => _map.ContainsKey(key);
+
+            public readonly void CopyTo(in Span<TKey> span)
+            {
+                CopyTo(span, 0, Length);
+            }
+
+            public readonly void CopyTo(in Span<TKey> span, int count)
+            {
+                CopyTo(span, 0, count);
+            }
+
+            public readonly void CopyTo(in Span<TKey> span, int startIndex, int count)
+            {
+                if (span.IsEmpty)
+                    throw new ArgumentException("Span is empty", nameof(span));
+
+                if (startIndex < 0 || startIndex > span.Length)
+                    throw new ArgumentOutOfRangeException(nameof(startIndex), startIndex.ToString());
+
+                if (count < 0 || count > Length)
+                    throw new ArgumentException(nameof(count), count.ToString());
+
+                int i = 0;
+                int j = 0;
+
+                do
+                {
+                    ref Entry entry = ref _map._buffer[j++];
+                    if (entry.hashCode >= 0)
+                    {
+                        span[startIndex++] = entry.key;
+                    }
+
+                    i++;
+                }
+                while (i < count);
+            }
+        
+            public Enumerator GetEnumerator()
+            {
+                return new Enumerator(ref _map);
+            }
+
+            public ref struct Enumerator
+            {
+                private Entry* _entries;
+                private int _count;
+                private int _index;
+
+                public Enumerator(ref NativeMap<TKey, TValue> map)
+                {
+                    _entries = map._buffer;
+                    _count = map._count;
+                    _index = -1;
+                }
+
+                public readonly ref TValue Current
+                {
+                    get
+                    {
+                        if (_index < 0 || _index > _count)
+                            throw new ArgumentOutOfRangeException("index", _index.ToString());
+
+                        return ref _entries[_index].value;
+                    }
+                }
+
+                public void Dispose()
+                {
+                    if (_entries == null)
+                        return;
+
+                    _entries = null;
+                    _count = 0;
+                    _index = -1;
+                }
+
+                public bool MoveNext()
+                {
+                    if (_count == 0)
+                        return false;
+
+                    int i = _index + 1;
+                    while (i < _count)
+                    {
+                        if (_entries[i].hashCode >= 0)
+                        {
+                            _index = i;
+                            return true;
+                        }
+
+                        i++;
+                    }
+
+                    return false;
+                }
+
+                public void Reset()
+                {
+                    _index = -1;
+                }
+            }
+        }
+
+        public ref struct ValueCollection
+        {
+            private NativeMap<TKey, TValue> _map;
+
+            internal ValueCollection(ref NativeMap<TKey, TValue> map)
+            {
+                _map = map;
+            }
+
+            public int Length => _map.Length;
+
+            public readonly bool Contains(TValue value) => _map.ContainsValue(value);
+
+            public readonly void CopyTo(in Span<TValue> span)
+            {
+                CopyTo(span, 0, Length);
+            }
+
+            public readonly void CopyTo(in Span<TValue> span, int count)
+            {
+                CopyTo(span, 0, count);
+            }
+
+            public readonly void CopyTo(in Span<TValue> span, int startIndex, int count)
+            {
+                if (span.IsEmpty)
+                    throw new ArgumentException("Span is empty", nameof(span));
+
+                if (startIndex < 0 || startIndex > span.Length)
+                    throw new ArgumentOutOfRangeException(nameof(startIndex), startIndex.ToString());
+
+                if (count < 0 || count > Length)
+                    throw new ArgumentException(nameof(count), count.ToString());
+
+                int i = 0;
+                int j = 0;
+
+                do
+                {
+                    ref Entry entry = ref _map._buffer[j++];
+                    if (entry.hashCode >= 0)
+                    {
+                        span[startIndex++] = entry.value;
+                    }
+
+                    i++;
+                }
+                while (i < count);
+            }
+
+            public Enumerator GetEnumerator()
+            {
+                return new Enumerator(ref _map);
+            }
+
+            public ref struct Enumerator
+            {
+                private Entry* _entries;
+                private int _count;
+                private int _index;
+
+                public Enumerator(ref NativeMap<TKey, TValue> map)
+                {
+                    _entries = map._buffer;
+                    _count = map._count;
+                    _index = -1;
+                }
+
+                public readonly ref TKey Current
+                {
+                    get
+                    {
+                        if (_index < 0 || _index > _count)
+                            throw new ArgumentOutOfRangeException("index", _index.ToString());
+
+                        return ref _entries[_index].key;
+                    }
+                }
+
+                public void Dispose()
+                {
+                    if (_entries == null)
+                        return;
+
+                    _entries = null;
+                    _count = 0;
+                    _index = -1;
+                }
+
+                public bool MoveNext()
+                {
+                    if (_count == 0)
+                        return false;
+
+                    int i = _index + 1;
+                    while (i < _count)
+                    {
+                        if (_entries[i].hashCode >= 0)
+                        {
+                            _index = i;
+                            return true;
+                        }
+
+                        i++;
+                    }
+
+                    return false;
+                }
+
+                public void Reset()
+                {
+                    _index = -1;
+                }
+            }
+        }
+
+        public ref struct DictionaryEnumerator
+        {
+            private Entry* _entries;
+            private int _count;
+            private int _index;
+
+            public DictionaryEnumerator(ref NativeMap<TKey, TValue> map)
+            {
+                _entries = map._buffer;
+                _count = map._count;
+                _index = -1;
+            }
+
+            public ref KeyValuePair<TKey, TValue> Current
+            {
+                get
+                {
+                    if (_index < 0 || _index > _count)
+                        throw new ArgumentOutOfRangeException("index", _index.ToString());
+
+                    // KeyValuePair 'key' and 'value' are aligned with NativeMap.Entry 'key' and 'value'
+                    return ref Unsafe.As<Entry, KeyValuePair<TKey, TValue>>(ref _entries[_index]);
+                }
+            }
+
+            public void Dispose()
+            {
+                if (_entries == null)
+                    return;
+
+                _entries = null;
+                _count = 0;
+                _index = -1;
+            }
+
+            public bool MoveNext()
+            {
+                if (_count == 0)
+                    return false;
+
+                int i = _index + 1;
+                while (i < _count)
+                {
+                    if (_entries[i].hashCode >= 0)
+                    {
+                        _index = i;
+                        return true;
+                    }
+
+                    i++;
+                }
+
+                return false;
+            }
+
+            public void Reset()
+            {
+                _index = -1;
             }
         }
 
@@ -47,10 +338,7 @@ namespace NativeCollections
             _freeList = -1;
             _freeCount = 0;
 
-            for (int i = 0; i < _capacity; i++)
-            {
-                _buffer[i].bucket = -1;
-            }
+            Initializate();
         }
 
         public NativeMap(Span<(TKey, TValue)> elements)
@@ -67,10 +355,7 @@ namespace NativeCollections
                 _freeList = -1;
                 _freeCount = 0;
 
-                for (int i = 0; i < _capacity; i++)
-                {
-                    _buffer[i].bucket = -1;
-                }
+                Initializate();
 
                 foreach (var e in elements)
                 {
@@ -86,6 +371,10 @@ namespace NativeCollections
         public readonly bool IsValid => _buffer != null;
 
         public readonly bool IsEmpty => _count == 0;
+
+        public KeyCollection Keys => new KeyCollection(ref this);
+
+        public ValueCollection Values => new ValueCollection(ref this);
 
         public TValue this[TKey key]
         {
@@ -108,6 +397,11 @@ namespace NativeCollections
         {
             if (!TryInsert(key, value, InsertMode.Add))
                 throw new InvalidOperationException($"Duplicated key: {key}");
+        }
+
+        public bool TryAdd(TKey key, TValue value)
+        {
+            return TryInsert(key, value, InsertMode.Add);
         }
 
         public void AddOrUpdate(TKey key, TValue value)
@@ -252,7 +546,6 @@ namespace NativeCollections
             }
 
             KeyValuePair<TKey, TValue>[] array = new KeyValuePair<TKey, TValue>[Length];
-            //CopyTo(array, array.Length);
 
             int j = 0;
             for(int i = 0; i < _count; i++)
@@ -266,6 +559,67 @@ namespace NativeCollections
             return array;
         }
 
+        public void TrimExcess()
+        {
+            TrimExcess(Length);
+        }
+
+        public void TrimExcess(int capacity)
+        {
+            if (capacity <= 0)
+                throw new ArgumentException(nameof(capacity));
+
+            if (capacity <= Length)
+            {
+                return;
+            }
+
+            Entry* newBuffer = Allocator.Default.Allocate<Entry>(capacity);
+            Unsafe.CopyBlock(newBuffer, _buffer, (uint)(Unsafe.SizeOf<Entry>() * _count));
+
+            // Free old buffer
+            Allocator.Default.Free(_buffer);
+
+            for(int i = 0; i < capacity; i++)
+            {
+                newBuffer[i].bucket = -1;
+            }
+
+            int index = 0;
+            int count = Length;
+
+            for(int i = 0; i < count; i++)
+            {
+                ref Entry entry = ref newBuffer[i];
+                int hashCode = GetHash(entry.key);
+
+                if (hashCode >= 0)
+                {
+                    int bucket = GetBucket(hashCode, capacity);
+                    newBuffer[index] = entry;
+                    newBuffer[index].next = bucket;
+                    newBuffer[bucket].bucket = index;
+                    index++;
+                }
+            }
+
+            _freeCount = 0;
+            _freeList = -1;
+            _count = count;
+            _capacity = capacity;
+        }
+
+        public void EnsureCapacity(int capacity)
+        {
+            if (capacity <= 0)
+                throw new ArgumentException(nameof(capacity));
+
+            if(capacity > _capacity)
+            {
+                Resize(capacity);
+            }
+        }
+
         private bool TryInsert(TKey key, TValue value, InsertMode mode)
         {
             var comparer = EqualityComparer<TKey>.Default;
@@ -276,53 +630,54 @@ namespace NativeCollections
             while (index >= 0)
             {
                 ref Entry entry = ref _buffer[index];
-                if ((mode == InsertMode.Replace || mode == InsertMode.Any) && comparer.Equals(entry.key, key) && hashCode == entry.hashCode)
+                switch (mode)
                 {
-                    entry.value = value;
-                    return true;
-                }
-
-                if (mode == InsertMode.Add && comparer.Equals(entry.key, key) && hashCode == entry.hashCode)
-                {
-                    return false;
+                    case InsertMode.Any:
+                    case InsertMode.Replace:
+                        if (comparer.Equals(entry.key, key) && hashCode == entry.hashCode)
+                        {
+                            entry.value = value;
+                            return true;
+                        }
+                        break;
+                    case InsertMode.Add:
+                        if (comparer.Equals(entry.key, key) && hashCode == entry.hashCode)
+                            return false;
+                        break;
                 }
 
                 index = entry.next;
             }
 
-            // Key not fount
-            if(mode == InsertMode.Replace)
+            if (mode == InsertMode.Replace)
             {
                 return false;
             }
+
+            if (_freeCount > 0)
+            {
+                index = _freeList;
+                _freeList = _buffer[_freeList].next;
+                _freeCount--;
+            }
             else
             {
-                if (_freeCount > 0)
+                if (_count == _capacity)
                 {
-                    index = _freeList;
-                    _freeList = _buffer[_freeList].next;
-                    _freeCount--;
-                }
-                else
-                {
-                    if (_count == _capacity)
-                    {
-                        Resize();
-                        bucket = GetBucket(hashCode, _capacity);
-                    }
-
-                    index = _count;
-                    _count++;
+                    Resize();
+                    bucket = GetBucket(hashCode, _capacity);
                 }
 
-                _buffer[index].key = key;
-                _buffer[index].value = value;
-                _buffer[index].hashCode = hashCode;
-                _buffer[index].next = _buffer[bucket].bucket;
-                _buffer[bucket].bucket = index;
-
-                return true;
+                index = _count;
+                _count++;
             }
+
+            _buffer[index].key = key;
+            _buffer[index].value = value;
+            _buffer[index].hashCode = hashCode;
+            _buffer[index].next = _buffer[bucket].bucket;
+            _buffer[bucket].bucket = index;
+            return true;
         }
 
         private readonly int FindEntry(in TKey key)
@@ -346,15 +701,24 @@ namespace NativeCollections
             return -1;
         }
 
-        private void Resize()
+        private void Initializate()
         {
-            SetCapacity(_capacity * 2);
+            for(int i = 0; i < _capacity; i++)
+            {
+                _buffer[i].bucket = -1;
+            }
         }
 
-        private void SetCapacity(int newCapacity)
+        private void Resize()
+        {
+            Resize(_capacity * 2);
+        }
+
+        private void Resize(int newCapacity)
         {
             var newBuffer = Allocator.Default.Allocate<Entry>(newCapacity);
             Unsafe.CopyBlock(newBuffer, _buffer, (uint)(sizeof(Entry) * _count));
+            Allocator.Default.Free(_buffer);
 
             for (int i = 0; i < newCapacity; i++)
             {
@@ -372,18 +736,15 @@ namespace NativeCollections
                 }
             }
 
-            Allocator.Default.Free(_buffer);
             _capacity = newCapacity;
             _buffer = newBuffer;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private readonly int GetHash(in TKey key)
         {
             return key.GetHashCode() & int.MaxValue;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int GetBucket(int hashCode, int capacity)
         {
             return hashCode % capacity;
@@ -412,7 +773,7 @@ namespace NativeCollections
             StringBuilder sb = StringBuilderCache.Acquire();
             sb.Append('[');
 
-            Enumerator enumerator = GetEnumerator();
+            DictionaryEnumerator enumerator = GetEnumerator();
 
             if (enumerator.MoveNext())
             {
@@ -438,70 +799,9 @@ namespace NativeCollections
             return StringBuilderCache.ToStringAndRelease(ref sb!);
         }
 
-        public Enumerator GetEnumerator()
+        public DictionaryEnumerator GetEnumerator()
         {
-            return new Enumerator(ref this);
-        }
-
-        public ref struct Enumerator
-        {
-            private Entry* _entries;
-            private int _count;
-            private int _index;
-
-            public Enumerator(ref NativeMap<TKey, TValue> map)
-            {
-                _entries = map._buffer;
-                _count = map._count;
-                _index = -1;
-            }
-
-            public ref KeyValuePair<TKey, TValue> Current
-            {
-                get
-                {
-                    if (_index < 0 || _index > _count)
-                        throw new ArgumentOutOfRangeException("index", _index.ToString());
-                    
-                    // KeyValuePair 'key' and 'value' are aligned with NativeMap.Entry 'key' and 'value'
-                    return ref Unsafe.As<Entry, KeyValuePair<TKey, TValue>>(ref _entries[_index]);
-                }
-            }
-
-            public void Dispose()
-            {
-                if (_entries == null)
-                    return;
-
-                _entries = null;
-                _count = 0;
-                _index = -1;
-            }
-
-            public bool MoveNext()
-            {
-                if (_count == 0)
-                    return false;
-
-                int i = _index + 1;
-                while(i < _count)
-                {
-                    if (_entries[i].hashCode >= 0)
-                    {
-                        _index = i;
-                        return true;
-                    }
-
-                    i++;
-                }
-
-                return false;
-            }
-
-            public void Reset()
-            {
-                _index = -1;
-            }
+            return new DictionaryEnumerator(ref this);
         }
     }
 }

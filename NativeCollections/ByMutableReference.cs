@@ -3,27 +3,23 @@ using System.Runtime.CompilerServices;
 
 namespace NativeCollections
 {
-    unsafe public readonly ref struct ByReference<T>
+    unsafe public ref struct ByMutableReference<T>
     {
-        public static ByReference<T> Null => default;
-
         private readonly void* _pointer;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ByReference(ref T value)
+        public ByMutableReference(ref T value)
         {
             _pointer = Unsafe.AsPointer(ref value);
         }
 
-        public ref readonly T Value
+        public ref T Value
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => ref Unsafe.AsRef<T>(_pointer);
         }
 
         public bool HasValue
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _pointer != null;
         }
 
@@ -42,17 +38,12 @@ namespace NativeCollections
             throw new NotSupportedException();
         }
 
-        public static implicit operator ByReference<T>(ByMutableReference<T> reference)
-        {
-            return new ByReference<T>(ref reference.Value);
-        }
-
-        public static bool operator ==(ByReference<T> left, ByReference<T> right)
+        public static bool operator ==(ByMutableReference<T> left, ByMutableReference<T> right)
         {
             return left._pointer == right._pointer;
         }
 
-        public static bool operator !=(ByReference<T> left, ByReference<T> right)
+        public static bool operator !=(ByMutableReference<T> left, ByMutableReference<T> right)
         {
             return !(left == right);
         }

@@ -1,7 +1,7 @@
 ﻿using System;
 using NativeCollections.Internal;
 
-namespace NativeCollections.Memory
+namespace NativeCollections.Allocators
 {
     unsafe internal sealed class DefaultLocalAllocator : Allocator
     {

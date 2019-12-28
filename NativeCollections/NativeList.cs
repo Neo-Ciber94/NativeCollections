@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using NativeCollections.Memory;
+using NativeCollections.Allocators;
 using NativeCollections.Utility;
 
 namespace NativeCollections
@@ -39,18 +39,24 @@ namespace NativeCollections
             }
         }
 
+        public NativeList(void* pointer, int length)
+        {
+            if (pointer == null)
+                throw new ArgumentException("Invalid pointer");
+
+            if (length <= 0)
+                throw new ArgumentException($"Invalid length: {length}", nameof(length));
+
+            _buffer = pointer;
+            _capacity = length;
+            _count = length;
+        }
+
         public int Length => _count;
 
         public int Capacity
         {
             get => _capacity;
-            set
-            {
-                if (value < _count || value <= 0)
-                    throw new ArgumentException("Capacity", $"{value}");
-
-                SetCapacity(value);
-            }
         }
 
         public bool IsValid => _buffer != null;
@@ -73,7 +79,7 @@ namespace NativeCollections
         {
             if (_count == _capacity)
             {
-                EnsureCapacity(_count + 1);
+                ResizeIfNeeded(_count + 1);
             }
 
             ref T startAddress = ref Unsafe.AsRef<T>(_buffer);
@@ -105,7 +111,7 @@ namespace NativeCollections
             if (length <= 0)
                 throw new ArgumentException(nameof(length), length.ToString());
 
-            EnsureCapacity(_count + length);
+            ResizeIfNeeded(_count + length);
 
             void* destination = ((byte*)_buffer) + Unsafe.SizeOf<T>() * _count;
             Unsafe.CopyBlock(destination, source, (uint)(length * Unsafe.SizeOf<T>()));
@@ -145,7 +151,7 @@ namespace NativeCollections
             if (length <= 0)
                 throw new ArgumentException(nameof(length), length.ToString());
 
-            EnsureCapacity(_count + length);
+            ResizeIfNeeded(_count + length);
 
             int size = _count - index;
             ref T startAddress = ref Unsafe.AsRef<T>(_buffer);
@@ -223,7 +229,7 @@ namespace NativeCollections
 
         public int ReplaceAll(T value, T newValue, int start, int end)
         {
-            return NativeCollectionUtils.ReplaceAll(_buffer, start, end, value, newValue);
+            return NativeCollectionUtility.ReplaceAll(_buffer, start, end, value, newValue);
         }
 
         public void Clear()
@@ -249,7 +255,7 @@ namespace NativeCollections
 
         public void Reverse(int start, int end)
         {
-            NativeCollectionUtils.Reverse<T>(_buffer, start, end);
+            NativeCollectionUtility.Reverse<T>(_buffer, start, end);
         }
 
         public int IndexOf(T value)
@@ -267,7 +273,7 @@ namespace NativeCollections
             if (_count == 0)
                 return -1;
 
-            return NativeCollectionUtils.IndexOf(_buffer, start, end, value);
+            return NativeCollectionUtility.IndexOf(_buffer, start, end, value);
         }
 
         public int LastIndexOf(T value)
@@ -285,7 +291,7 @@ namespace NativeCollections
             if (_count == 0)
                 return -1;
 
-            return NativeCollectionUtils.LastIndexOf(_buffer, start, end, value);
+            return NativeCollectionUtility.LastIndexOf(_buffer, start, end, value);
         }
 
         public bool Contains(T value)
@@ -295,13 +301,38 @@ namespace NativeCollections
 
         public void TrimExcess()
         {
-            if (_count != _capacity && _capacity > 4)
+            TrimExcess(_count);
+        }
+
+        public void TrimExcess(int capacity)
+        {
+            if (capacity <= _count)
             {
-                SetCapacity(_count);
+                return;
+            }
+
+            SetCapacity(capacity);
+        }
+
+        public void EnsureCapacity(int capacity)
+        {
+            if (capacity <= 0)
+            {
+                throw new ArgumentException(capacity.ToString(), nameof(capacity));
+            }
+
+            if(capacity > _capacity)
+            {
+                SetCapacity(capacity);
             }
         }
 
-        private void EnsureCapacity(int min)
+        public void* GetUnsafePointer()
+        {
+            return _buffer;
+        }
+
+        private void ResizeIfNeeded(int min)
         {
             if (min > _capacity)
             {

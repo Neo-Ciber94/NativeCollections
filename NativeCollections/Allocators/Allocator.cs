@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace NativeCollections.Memory
+namespace NativeCollections.Allocators
 {
     public delegate void SpanAction<T>(Span<T> span);
 

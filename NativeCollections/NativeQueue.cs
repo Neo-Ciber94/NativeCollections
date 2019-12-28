@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using NativeCollections.Memory;
+using NativeCollections.Allocators;
 using NativeCollections.Utility;
 
 namespace NativeCollections
@@ -126,7 +126,7 @@ namespace NativeCollections
 
         public bool Contains(T value)
         {
-            return NativeCollectionUtils.IndexOf<T>(_buffer, _capacity, value) >= 0;
+            return NativeCollectionUtility.IndexOf<T>(_buffer, _capacity, value) >= 0;
         }
 
         public void TrimExcess()
