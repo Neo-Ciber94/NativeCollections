@@ -126,7 +126,7 @@ namespace NativeCollections
 
         public bool Contains(T value)
         {
-            return NativeCollectionUtility.IndexOf<T>(_buffer, _capacity, value) >= 0;
+            return NativeCollectionUtilities.IndexOf<T>(_buffer, _capacity, value) >= 0;
         }
 
         public void TrimExcess()

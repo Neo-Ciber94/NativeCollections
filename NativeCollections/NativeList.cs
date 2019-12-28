@@ -1,11 +1,15 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using NativeCollections.Allocators;
 using NativeCollections.Utility;
 
 namespace NativeCollections
 {
+    [DebuggerDisplay("Length = {Length}")]
+    [DebuggerTypeProxy(typeof(NativeListDebugView<>))]
     unsafe public struct NativeList<T> : IDisposable where T : unmanaged
     {
         internal void* _buffer;
@@ -229,7 +233,7 @@ namespace NativeCollections
 
         public int ReplaceAll(T value, T newValue, int start, int end)
         {
-            return NativeCollectionUtility.ReplaceAll(_buffer, start, end, value, newValue);
+            return NativeCollectionUtilities.ReplaceAll(_buffer, start, end, value, newValue);
         }
 
         public void Clear()
@@ -255,7 +259,7 @@ namespace NativeCollections
 
         public void Reverse(int start, int end)
         {
-            NativeCollectionUtility.Reverse<T>(_buffer, start, end);
+            NativeCollectionUtilities.Reverse<T>(_buffer, start, end);
         }
 
         public int IndexOf(T value)
@@ -273,7 +277,7 @@ namespace NativeCollections
             if (_count == 0)
                 return -1;
 
-            return NativeCollectionUtility.IndexOf(_buffer, start, end, value);
+            return NativeCollectionUtilities.IndexOf(_buffer, start, end, value);
         }
 
         public int LastIndexOf(T value)
@@ -291,7 +295,7 @@ namespace NativeCollections
             if (_count == 0)
                 return -1;
 
-            return NativeCollectionUtility.LastIndexOf(_buffer, start, end, value);
+            return NativeCollectionUtilities.LastIndexOf(_buffer, start, end, value);
         }
 
         public bool Contains(T value)
@@ -332,6 +336,11 @@ namespace NativeCollections
             return _buffer;
         }
 
+        public RefEnumerator<T> GetEnumerator()
+        {
+            return new RefEnumerator<T>(_buffer, _count);
+        }
+
         private void ResizeIfNeeded(int min)
         {
             if (min > _capacity)
@@ -363,6 +372,39 @@ namespace NativeCollections
             _buffer = null;
             _capacity = 0;
             _count = 0;
+        }
+
+        public override string ToString()
+        {
+            if(_count == 0)
+            {
+                return "[]";
+            }
+
+            StringBuilder sb = StringBuilderCache.Acquire();
+            sb.Append('[');
+            var enumerator = GetEnumerator();
+
+            if(enumerator.MoveNext())
+            {
+                while (true)
+                {
+                    ref T value = ref enumerator.Current;
+                    sb.Append(value.ToString());
+
+                    if (enumerator.MoveNext())
+                    {
+                        sb.Append(", ");
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+
+            sb.Append(']');
+            return StringBuilderCache.ToStringAndRelease(ref sb!);
         }
     }
 }

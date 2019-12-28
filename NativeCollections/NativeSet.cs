@@ -96,6 +96,29 @@ namespace NativeCollections
             Initializate();
         }
 
+        public NativeSet(Span<T> elements)
+        {
+            if (elements.IsEmpty)
+            {
+                this = default;
+            }
+            else
+            {
+                _buffer = Allocator.Default.Allocate<Entry>(elements.Length);
+                _capacity = elements.Length;
+                _count = 0;
+                _freeList = -1;
+                _freeCount = 0;
+
+                Initializate();
+
+                foreach (var e in elements)
+                {
+                    Add(e);
+                }
+            }
+        }
+
         public int Length => _count - _freeCount;
 
         public int Capacity => _capacity;
@@ -192,6 +215,71 @@ namespace NativeCollections
         public Enumerator GetEnumerator()
         {
             return new Enumerator(ref this);
+        }
+
+        public void TrimExcess()
+        {
+            TrimExcess(Length);
+        }
+
+        public void TrimExcess(int capacity)
+        {
+            if (capacity <= 0)
+            {
+                throw new ArgumentException($"capacity must be greater than 0: {capacity}", nameof(capacity));
+            }
+
+            if(capacity <= Length)
+            {
+                return;
+            }
+
+            Entry* newBuffer = Allocator.Default.Allocate<Entry>(capacity);
+            Unsafe.CopyBlock(newBuffer, _buffer, (uint)(Unsafe.SizeOf<Entry>() * _count));
+
+            // Free old buffer
+            Allocator.Default.Free(_buffer);
+
+            for (int i = 0; i < capacity; i++)
+            {
+                newBuffer[i].bucket = -1;
+            }
+
+            int index = 0;
+            int count = Length;
+
+            for (int i = 0; i < count; i++)
+            {
+                ref Entry entry = ref newBuffer[i];
+                int hashCode = GetHash(entry.value);
+
+                if (hashCode >= 0)
+                {
+                    int bucket = GetBucket(hashCode, capacity);
+                    newBuffer[index] = entry;
+                    newBuffer[index].next = bucket;
+                    newBuffer[bucket].bucket = index;
+                    index++;
+                }
+            }
+
+            _freeCount = 0;
+            _freeList = -1;
+            _count = count;
+            _capacity = capacity;
+        }
+
+        public void EnsureCapacity(int capacity)
+        {
+            if (capacity <= 0)
+            {
+                throw new ArgumentException($"capacity must be greater than 0: {capacity}", nameof(capacity));
+            }
+
+            if(capacity > _capacity)
+            {
+                Resize(capacity);
+            }
         }
 
         private void Initializate()

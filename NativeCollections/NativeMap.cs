@@ -8,11 +8,17 @@ using NativeCollections.Utility;
 
 namespace NativeCollections
 {
+    internal enum InsertMode : byte
+    {
+        Any,
+        Add,
+        Replace
+    }
+
     [DebuggerDisplay("Length = {Length}")]
     [DebuggerTypeProxy(typeof(NativeMapDebugView<,>))]
-    unsafe public struct NativeMap<TKey, TValue> : IDisposable where TKey : unmanaged where TValue : unmanaged
+    public unsafe struct NativeMap<TKey, TValue> : IDisposable where TKey : unmanaged where TValue : unmanaged
     {
-        public enum InsertMode : byte { Any, Add, Replace }
 
         internal struct Entry
         {
@@ -77,7 +83,7 @@ namespace NativeCollections
                 }
                 while (i < count);
             }
-        
+
             public Enumerator GetEnumerator()
             {
                 return new Enumerator(ref _map);
@@ -260,13 +266,13 @@ namespace NativeCollections
             }
         }
 
-        public ref struct DictionaryEnumerator
+        public ref struct Enumerator
         {
             private Entry* _entries;
             private int _count;
             private int _index;
 
-            public DictionaryEnumerator(ref NativeMap<TKey, TValue> map)
+            public Enumerator(ref NativeMap<TKey, TValue> map)
             {
                 _entries = map._buffer;
                 _count = map._count;
@@ -481,6 +487,26 @@ namespace NativeCollections
             return false;
         }
 
+        public TValue GetValue(TKey key)
+        {
+            if (!TryGetValue(key, out TValue value))
+            {
+                throw new KeyNotFoundException(key.ToString());
+            }
+
+            return value;
+        }
+
+        public TValue GetValueOrDefault(TKey key, TValue defaultValue)
+        {
+            if (TryGetValue(key, out TValue value))
+            {
+                return value;
+            }
+
+            return defaultValue;
+        }
+
         public readonly bool ContainsKey(in TKey key)
         {
             return FindEntry(key) >= 0;
@@ -540,7 +566,7 @@ namespace NativeCollections
 
         public readonly KeyValuePair<TKey, TValue>[] ToArray()
         {
-            if(_count == 0)
+            if (_count == 0)
             {
                 return Array.Empty<KeyValuePair<TKey, TValue>>();
             }
@@ -548,10 +574,10 @@ namespace NativeCollections
             KeyValuePair<TKey, TValue>[] array = new KeyValuePair<TKey, TValue>[Length];
 
             int j = 0;
-            for(int i = 0; i < _count; i++)
+            for (int i = 0; i < _count; i++)
             {
                 ref Entry entry = ref _buffer[i];
-                if(entry.hashCode >= 0)
+                if (entry.hashCode >= 0)
                 {
                     array[j++] = new KeyValuePair<TKey, TValue>(entry.key, entry.value);
                 }
@@ -580,7 +606,7 @@ namespace NativeCollections
             // Free old buffer
             Allocator.Default.Free(_buffer);
 
-            for(int i = 0; i < capacity; i++)
+            for (int i = 0; i < capacity; i++)
             {
                 newBuffer[i].bucket = -1;
             }
@@ -588,7 +614,7 @@ namespace NativeCollections
             int index = 0;
             int count = Length;
 
-            for(int i = 0; i < count; i++)
+            for (int i = 0; i < count; i++)
             {
                 ref Entry entry = ref newBuffer[i];
                 int hashCode = GetHash(entry.key);
@@ -614,7 +640,7 @@ namespace NativeCollections
             if (capacity <= 0)
                 throw new ArgumentException(nameof(capacity));
 
-            if(capacity > _capacity)
+            if (capacity > _capacity)
             {
                 Resize(capacity);
             }
@@ -703,7 +729,7 @@ namespace NativeCollections
 
         private void Initializate()
         {
-            for(int i = 0; i < _capacity; i++)
+            for (int i = 0; i < _capacity; i++)
             {
                 _buffer[i].bucket = -1;
             }
@@ -773,7 +799,7 @@ namespace NativeCollections
             StringBuilder sb = StringBuilderCache.Acquire();
             sb.Append('[');
 
-            DictionaryEnumerator enumerator = GetEnumerator();
+            Enumerator enumerator = GetEnumerator();
 
             if (enumerator.MoveNext())
             {
@@ -799,9 +825,9 @@ namespace NativeCollections
             return StringBuilderCache.ToStringAndRelease(ref sb!);
         }
 
-        public DictionaryEnumerator GetEnumerator()
+        public Enumerator GetEnumerator()
         {
-            return new DictionaryEnumerator(ref this);
+            return new Enumerator(ref this);
         }
     }
 }

@@ -277,6 +277,26 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
+        public void GetValueOrDefaultTest()
+        {
+            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            map.Add(0, "zero");
+            map.Add(1, "one");
+            map.Add(2, "two");
+
+            var value0 = new NativeString("zero");
+            var value3 = new NativeString("three");
+
+            Assert.AreEqual(value0, map.GetValueOrDefault(0, value3));
+            Assert.AreEqual(value3, map.GetValueOrDefault(3, value3));
+
+            value0.Dispose();
+            value3.Dispose();
+
+            DisposeNativeStrings(map);
+        }
+
+        [Test()]
         public void ContainsKeyTest()
         {
             using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
