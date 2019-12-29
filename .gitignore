@@ -216,6 +216,7 @@ _pkginfo.txt
 # Others
 ConsoleApp/
 ClientBin/
+CodeGen/
 ~$*
 *~
 *.dbmdl

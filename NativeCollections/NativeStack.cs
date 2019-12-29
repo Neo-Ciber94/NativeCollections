@@ -152,7 +152,7 @@ namespace NativeCollections
         private void SetCapacity(int newCapacity)
         {
             newCapacity = newCapacity < 4 ? 4 : newCapacity;
-            Allocator.Default.ReAllocate(_buffer, sizeof(T) * newCapacity);
+            Allocator.Default.Reallocate(_buffer, sizeof(T) * newCapacity);
             _capacity = newCapacity;
         }
 

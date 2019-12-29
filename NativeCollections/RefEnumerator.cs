@@ -30,6 +30,9 @@ namespace NativeCollections
                 if (_index < 0 || _index > _length)
                     throw new ArgumentOutOfRangeException("index", _index.ToString());
 
+                if (_pointer == null)
+                    throw new InvalidOperationException("Enumerator is invalid");
+
                 ref T pointer = ref Unsafe.AsRef<T>(_pointer);
                 return ref Unsafe.Add(ref pointer, _index);
             }

@@ -44,7 +44,7 @@ namespace NativeCollections.Internal
         HEAP_REALLOC_IN_PLACE_ONLY = 0x00000010
     }
 
-    unsafe public static class HeapMemory
+    unsafe public static class Kernel32HeapMemory
     {
         /// <summary>
         /// Retrieves a handle to the default heap of the calling process. This handle can then be used in subsequent calls to the heap functions.

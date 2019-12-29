@@ -35,24 +35,24 @@ namespace NativeCollections.Internal
         /// </summary>
         LPTR = 0x0040,
         /// <summary>
-        /// Bytes when calling <see cref="LocalMemory.LocalReAlloc(void*, uint, LocalMemoryFlags)"/> will be ignored.
+        /// Bytes when calling <see cref="Kernel32LocalMemory.LocalReAlloc(void*, uint, LocalMemoryFlags)"/> will be ignored.
         /// </summary>
         LMEM_MODIFY = 0x0080,
         /// <summary>
-        /// May be returned by <see cref="LocalMemory.LocalFlags(void*)"/>
+        /// May be returned by <see cref="Kernel32LocalMemory.LocalFlags(void*)"/>
         /// </summary>
         LMEM_DISCARDED = 0x4000,
         /// <summary>
-        /// May be returned by <see cref="LocalMemory.LocalFlags(void*)"/>
+        /// May be returned by <see cref="Kernel32LocalMemory.LocalFlags(void*)"/>
         /// </summary>
         LMEM_LOCKCOUNT = 0x00FF,
         /// <summary>
         /// An invalid pointer.
         /// </summary>
-        LMEM_INVALID_HANDLE = 0x8000
+        LMEM_INVALID_HANDLE = 0x8000,
     }
 
-    unsafe public static class LocalMemory
+    unsafe public static class Kernel32LocalMemory
     {
 
         /// <summary>
@@ -130,7 +130,7 @@ namespace NativeCollections.Internal
         /// <summary>
         /// Retrieves the handle associated with the specified pointer to a local memory object.
         /// </summary>
-        /// <param name="pointer">A pointer to the first byte of the local memory object. This pointer is returned by the <see cref="LocalMemory.LocalLock(void*)"/> function.</param>
+        /// <param name="pointer">A pointer to the first byte of the local memory object. This pointer is returned by the <see cref="Kernel32LocalMemory.LocalLock(void*)"/> function.</param>
         /// <returns>If the function succeeds, the return value is a handle to the specified local memory object.
         /// If the function fails, the return value is NULL.        
         /// To get extended error information, call <see cref="Marshal.GetLastWin32Error"/>.</returns>

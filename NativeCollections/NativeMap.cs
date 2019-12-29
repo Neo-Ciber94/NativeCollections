@@ -43,7 +43,7 @@ namespace NativeCollections
                 _map = map;
             }
 
-            public int Length => _map.Length;
+            public readonly int Length => _map.Length;
 
             public readonly bool Contains(TKey key) => _map.ContainsKey(key);
 
@@ -159,7 +159,7 @@ namespace NativeCollections
                 _map = map;
             }
 
-            public int Length => _map.Length;
+            public readonly int Length => _map.Length;
 
             public readonly bool Contains(TValue value) => _map.ContainsValue(value);
 

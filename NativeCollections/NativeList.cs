@@ -331,9 +331,9 @@ namespace NativeCollections
             }
         }
 
-        public void* GetUnsafePointer()
+        public T* GetUnsafePointer()
         {
-            return _buffer;
+            return (T*)_buffer;
         }
 
         public RefEnumerator<T> GetEnumerator()
@@ -359,7 +359,7 @@ namespace NativeCollections
         private void SetCapacity(int newCapacity)
         {
             newCapacity = newCapacity < 4 ? 4 : newCapacity;
-            Allocator.Default.ReAllocate(_buffer, Unsafe.SizeOf<T>() * newCapacity);
+            Allocator.Default.Reallocate(_buffer, Unsafe.SizeOf<T>() * newCapacity);
             _capacity = newCapacity;
         }
 

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -165,6 +167,14 @@ namespace NativeCollections
         public bool IsValid => _buffer != null;
 
         /// <summary>
+        /// Gets a value indicating whether this array has no elements.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this array is empty; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsEmpty => _capacity == 0;
+
+        /// <summary>
         /// Gets a reference to the element at the specified index.
         /// </summary>
         /// <value>
@@ -295,13 +305,25 @@ namespace NativeCollections
         }
 
         /// <summary>
+        /// Determines whether this array contains the specified value.
+        /// </summary>
+        /// <param name="value">The value to find.</param>
+        /// <returns>
+        ///   <c>true</c> if the array contains the value; otherwise, <c>false</c>.
+        /// </returns>
+        public bool Contains(T value)
+        {
+            return IndexOf(value) >= 0;
+        }
+
+        /// <summary>
         /// Get the index of the specified value.
         /// </summary>
         /// <param name="value">The value to find.</param>
         /// <returns>The index of the element or -1 if not found.</returns>
         public int IndexOf(T value)
         {
-            return IndexOf(value, 0, _capacity - 1);
+            return IndexOf(value, 0, _capacity);
         }
 
         /// <summary>
@@ -312,7 +334,7 @@ namespace NativeCollections
         /// <returns>The index of the element or -1 if not found.</returns>
         public int IndexOf(T value, int start)
         {
-            return IndexOf(value, start, _capacity - 1);
+            return IndexOf(value, start, _capacity);
         }
 
         /// <summary>
@@ -338,25 +360,13 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Determines whether this array contains the specified value.
-        /// </summary>
-        /// <param name="value">The value to find.</param>
-        /// <returns>
-        ///   <c>true</c> if the array contains the value; otherwise, <c>false</c>.
-        /// </returns>
-        public bool Contains(T value)
-        {
-            return IndexOf(value) >= 0;
-        }
-
-        /// <summary>
         /// Get the index of the last specified value.
         /// </summary>
         /// <param name="value">The value to find.</param>
         /// <returns>The index of the element or -1 if not found.</returns>
         public int LastIndexOf(T value)
         {
-            return LastIndexOf(value, 0, _capacity - 1);
+            return LastIndexOf(value, 0, _capacity);
         }
 
         /// <summary>
@@ -367,7 +377,7 @@ namespace NativeCollections
         /// <returns>The index of the element or -1 if not found.</returns>
         public int LastIndexOf(T value, int start)
         {
-            return LastIndexOf(value, start, _capacity - 1);
+            return LastIndexOf(value, start, _capacity);
         }
 
         /// <summary>
@@ -443,10 +453,8 @@ namespace NativeCollections
             if (destinationIndex < 0 || destinationIndex > span.Length)
                 throw new ArgumentOutOfRangeException(nameof(sourceIndex), sourceIndex.ToString());
 
-            int size = _capacity - sourceIndex;
-
-            if (count < 0 || count > size || (span.Length - destinationIndex) < size)
-                throw new ArgumentException(nameof(count), count.ToString());
+            if (count < 0 || count > (_capacity - sourceIndex) || count > (span.Length - destinationIndex))
+                throw new ArgumentException(count.ToString(), nameof(count));
 
             T* destination = (T*)Unsafe.AsPointer(ref span.GetPinnableReference()) + destinationIndex;
             T* source = (T*)_buffer + sourceIndex;
@@ -467,6 +475,47 @@ namespace NativeCollections
             T[] array = new T[_capacity];
             CopyTo(array);
             return array;
+        }
+
+        /// <summary>
+        /// Releases the allocated memory of this array.
+        /// </summary>
+        public void Dispose()
+        {
+            if (_buffer == null)
+                return;
+
+            Allocator.Default.Free(_buffer);
+            _buffer = null;
+            _capacity = 0;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="NativeList{T}"/> that will owns this array memory, and then invalidates this array.
+        /// </summary>
+        /// <returns>A newly created NativeList that owns this array memory.</returns>
+        public NativeList<T> ToNativeListAndDispose()
+        {
+            if (_buffer == null)
+                throw new InvalidOperationException("NativeArray is invalid");
+
+            // The new NativeList will owns this NativeArray memory
+            NativeList<T> list = new NativeList<T>(_buffer, _capacity);
+
+            // Invalidate this NativeArray, not actual dispose
+            _buffer = null;
+            _capacity = 0;
+
+            return list;
+        }
+
+        /// <summary>
+        /// Gets a pointer to the elements of this array.
+        /// </summary>
+        /// <returns>A pointer to the allocated memory</returns>
+        public T* GetUnsafePointer()
+        {
+            return (T*)_buffer;
         }
 
         /// <summary>
@@ -509,28 +558,6 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Releases the allocated memory of this array.
-        /// </summary>
-        public void Dispose()
-        {
-            if (_buffer == null)
-                return;
-
-            Allocator.Default.Free(_buffer);
-            _buffer = null;
-            _capacity = 0;
-        }
-
-        /// <summary>
-        /// Gets a pointer to the elements of this array.
-        /// </summary>
-        /// <returns>A pointer to the allocated memory</returns>
-        public void* GetUnsafePointer()
-        {
-            return _buffer;
-        }
-
-        /// <summary>
         /// Gets an enumerator for iterate over the elements of this array.
         /// </summary>
         /// <returns>An enumerator over this array elements.</returns>
@@ -543,8 +570,22 @@ namespace NativeCollections
     /// <summary>
     /// Utilities for <see cref="NativeArray{T}"/>.
     /// </summary>
-    public static class NativeArray
+    public static partial class NativeArray
     {
+        unsafe public static NativeArray<T> Create<T>(params T[] args) where T: unmanaged
+        {
+            if(args.Length == 0)
+            {
+                return default;
+            }
+
+            int length = args.Length;
+            NativeArray<T> array = new NativeArray<T>(length);
+            ref T first = ref Unsafe.AsRef(args[0]);
+            Unsafe.CopyBlock(array.GetUnsafePointer(), Unsafe.AsPointer(ref first), (uint)(sizeof(T) * length));
+            return array;
+        }
+
         /// <summary>
         /// Creates a <see cref="NativeArray{T}"/> containing elements from start (inclusive) to end (exclusive)
         /// </summary>

@@ -321,7 +321,7 @@ namespace NativeCollections
 
         private void Resize(int newCapacity)
         {
-            Allocator.Default.ReAllocate(_buffer, newCapacity);
+            Allocator.Default.Reallocate(_buffer, newCapacity);
             _capacity = newCapacity;
         }
 

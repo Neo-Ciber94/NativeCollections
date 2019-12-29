@@ -30,7 +30,7 @@ namespace NativeCollections
         /// <value>
         ///   <c>true</c> if this container is empty; otherwise, <c>false</c>.
         /// </value>
-        public bool IsEmpty => Length == 0;
+        public bool IsEmpty { get; }
 
         /// <summary>
         /// Copies the content of this container to a <see cref="Span{T}"/>
