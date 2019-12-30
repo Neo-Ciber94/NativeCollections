@@ -8,21 +8,27 @@ namespace NativeCollections
 {
     unsafe public struct NativeStack<T> : IDisposable where T : unmanaged
     {
-        internal void* _buffer;
+        internal T* _buffer;
         private int _capacity;
         private int _count;
+        private int _allocatorID;
 
-        public NativeStack(int initialCapacity)
+        public NativeStack(int initialCapacity) : this(initialCapacity, Allocator.Default) { }
+
+        public NativeStack(int initialCapacity, Allocator allocator)
         {
             if (initialCapacity <= 0)
                 throw new ArgumentException($"capacity must be greater than 0: {initialCapacity}");
 
-            _buffer = Allocator.Default.Allocate(sizeof(T) * initialCapacity);
+            _buffer = allocator.Allocate<T>(initialCapacity);
             _capacity = initialCapacity;
             _count = 0;
+            _allocatorID = allocator.ID;
         }
 
-        public NativeStack(Span<int> elements)
+        public NativeStack(Span<int> elements) : this(elements, Allocator.Default) { }
+
+        public NativeStack(Span<int> elements, Allocator allocator)
         {
             if (elements.IsEmpty)
             {
@@ -30,9 +36,10 @@ namespace NativeCollections
             }
             else
             {
-                _buffer = Allocator.Default.Allocate(sizeof(T) * elements.Length);
+                _buffer = allocator.Allocate<T>(elements.Length);
                 _capacity = elements.Length;
                 _count = _capacity;
+                _allocatorID = allocator.ID;
 
                 void* source = Unsafe.AsPointer(ref MemoryMarshal.GetReference(elements));
                 Unsafe.CopyBlock(_buffer, source, (uint)(sizeof(T) * _capacity));
@@ -46,6 +53,11 @@ namespace NativeCollections
         public bool IsValid => _buffer != null;
 
         public bool IsEmpty => _count == 0;
+
+        public Allocator? GetAllocator()
+        {
+            return Allocator.GetAllocatorByID(_allocatorID);
+        }
 
         public void Push(T value)
         {
@@ -151,8 +163,11 @@ namespace NativeCollections
 
         private void SetCapacity(int newCapacity)
         {
+            if (_buffer == null)
+                return;
+
             newCapacity = newCapacity < 4 ? 4 : newCapacity;
-            Allocator.Default.Reallocate(_buffer, sizeof(T) * newCapacity);
+            _buffer = GetAllocator()!.Reallocate(_buffer, newCapacity);
             _capacity = newCapacity;
         }
 
@@ -161,9 +176,12 @@ namespace NativeCollections
             if (_buffer == null)
                 return;
 
-            Allocator.Default.Free(_buffer);
-            _buffer = null;
-            _capacity = 0;
+            if (Allocator.IsCached(_allocatorID))
+            {
+                GetAllocator()!.Free(_buffer);
+                _buffer = null;
+                _capacity = 0;
+            }
         }
 
         public Enumerator GetEnumerator()

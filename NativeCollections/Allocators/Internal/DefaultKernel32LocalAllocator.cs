@@ -2,28 +2,28 @@
 using System.Runtime.InteropServices;
 using NativeCollections.Internal;
 
-namespace NativeCollections.Allocators
+namespace NativeCollections.Allocators.Internal
 {
-    unsafe internal sealed class DefaultKernel32LocalAllocator : Allocator
+    unsafe public sealed class DefaultKernel32LocalAllocator : Allocator
     {
         public static readonly DefaultKernel32LocalAllocator Instance = new DefaultKernel32LocalAllocator();
 
         private DefaultKernel32LocalAllocator() : base(true) { }
 
-        public override unsafe void* Allocate(int size, int alignment, bool initMemory = true)
+        public override unsafe void* Allocate(int elementCount, int elementSize = 1, bool initMemory = true)
         {
-            if (size <= 0)
+            if (elementCount <= 0)
             {
-                throw new ArgumentException(nameof(size));
+                throw new ArgumentException(nameof(elementCount));
             }
 
-            if(alignment <= 0)
+            if(elementSize <= 0)
             {
-                throw new ArgumentException(nameof(alignment));
+                throw new ArgumentException(nameof(elementSize));
             }
 
             LocalMemoryFlags flags = initMemory? LocalMemoryFlags.LPTR: LocalMemoryFlags.LMEM_FIXED;
-            void* pointer = Kernel32LocalMemory.LocalAlloc(flags, (uint)(size * alignment));
+            void* pointer = Kernel32LocalMemory.LocalAlloc(flags, (uint)(elementCount * elementSize));
 
             if(pointer == null)
             {
@@ -33,26 +33,26 @@ namespace NativeCollections.Allocators
             return pointer;
         }
 
-        public override unsafe void* Reallocate(void* pointer, int size, int alignment = 1, bool initMemory = true)
+        public override unsafe void* Reallocate(void* pointer, int elementCount, int elementSize = 1, bool initMemory = true)
         {
             if (pointer == null)
             {
                 throw new ArgumentException("Invalid pointer");
             }
 
-            if (size <= 0)
+            if (elementCount <= 0)
             {
-                throw new ArgumentException(nameof(size));
+                throw new ArgumentException(nameof(elementCount));
             }
 
-            if (alignment <= 0)
+            if (elementSize <= 0)
             {
-                throw new ArgumentException(nameof(alignment));
+                throw new ArgumentException(nameof(elementSize));
             }
 
             LocalMemoryFlags flags = initMemory ? LocalMemoryFlags.LMEM_ZEROINIT : LocalMemoryFlags.LMEM_MOVEABLE;
             Marshal.ReAllocHGlobal(default, default);
-            void* newPointer = Kernel32LocalMemory.LocalAlloc(flags, (uint)size);
+            void* newPointer = Kernel32LocalMemory.LocalAlloc(flags, (uint)elementCount);
 
             if (newPointer == null)
             {

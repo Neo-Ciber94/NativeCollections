@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -140,10 +138,13 @@ namespace NativeCollections
         /// <summary>
         /// Gets the allocator used for this array.
         /// </summary>
-        /// <value>
+        /// <returns>
         /// The allocator.
-        /// </value>
-        public Allocator? Allocator => _buffer == null? null : Allocator.GetAllocator(_allocatorID);
+        /// </returns>
+        public Allocator? GetAllocator()
+        {
+            return Allocator.GetAllocatorByID(_allocatorID);
+        }
 
         /// <summary>
         /// Gets a reference to the element at the specified index.
@@ -458,7 +459,7 @@ namespace NativeCollections
 
             if (Allocator.IsCached(_allocatorID))
             {
-                Allocator!.Free(_buffer);
+                GetAllocator()!.Free(_buffer);
                 _buffer = null;
                 _capacity = 0;
                 _allocatorID = -1;
@@ -475,7 +476,7 @@ namespace NativeCollections
                 throw new InvalidOperationException("NativeArray is invalid");
 
             // The new NativeList will owns this NativeArray memory
-            NativeList<T> list = new NativeList<T>(_buffer, _capacity);
+            NativeList<T> list = new NativeList<T>(_buffer, _capacity, GetAllocator()!);
 
             // Invalidate this NativeArray, not actual dispose
             _buffer = null;

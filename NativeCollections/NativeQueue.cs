@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NativeCollections.Allocators;
@@ -13,21 +11,27 @@ namespace NativeCollections
         internal void* _buffer;
         private int _capacity;
         private int _count;
+        private int _allocatorID;
 
         private int _head;
         private int _tail;
 
-        public NativeQueue(int initialCapacity)
+        public NativeQueue(int initialCapacity) : this(initialCapacity, Allocator.Default) { }
+
+        public NativeQueue(int initialCapacity, Allocator allocator)
         {
             if (initialCapacity <= 0)
                 throw new ArgumentException($"capacity must be greater than 0: {initialCapacity}");
 
-            _buffer = Allocator.Default.Allocate(sizeof(T) * initialCapacity);
+            _buffer = allocator.Allocate(initialCapacity, sizeof(T));
             _capacity = initialCapacity;
             _count = _head = _tail = 0;
+            _allocatorID = allocator.ID;
         }
 
-        public NativeQueue(Span<int> elements)
+        public NativeQueue(Span<int> elements) : this(elements, Allocator.Default) { }
+
+        public NativeQueue(Span<int> elements, Allocator allocator)
         {
             if (elements.IsEmpty)
             {
@@ -35,10 +39,11 @@ namespace NativeCollections
             }
             else
             {
-                _buffer = Allocator.Default.Allocate(sizeof(T) * elements.Length);
+                _buffer = allocator.Allocate(elements.Length, sizeof(T));
                 _capacity = elements.Length;
                 _count = _capacity;
                 _head = _tail = 0;
+                _allocatorID = allocator.ID;
 
                 void* source = Unsafe.AsPointer(ref MemoryMarshal.GetReference(elements));
                 Unsafe.CopyBlock(_buffer, source, (uint)(sizeof(T) * _capacity));
@@ -52,6 +57,11 @@ namespace NativeCollections
         public bool IsValid => _buffer != null;
 
         public bool IsEmpty => _count == 0;
+
+        public Allocator? GetAllocator()
+        {
+            return Allocator.GetAllocatorByID(_allocatorID);
+        }
 
         public void Enqueue(T value)
         {
@@ -154,9 +164,12 @@ namespace NativeCollections
 
         private void SetCapacity(int newCapacity)
         {
+            if (_buffer == null)
+                return;
+
             newCapacity = newCapacity < 4 ? 4 : newCapacity;
 
-            void* newBuffer = Allocator.Default.Allocate(sizeof(T) * newCapacity);
+            void* newBuffer = GetAllocator()!.Allocate<T>(newCapacity);
             ref T destination = ref Unsafe.AsRef<T>(newBuffer);
             ref T source = ref Unsafe.AsRef<T>(_buffer);
             int head = (_head + 1) % _capacity;
@@ -168,7 +181,7 @@ namespace NativeCollections
                 head = (_head + 1) % _capacity;
             }
 
-            Allocator.Default.Free(_buffer);
+            GetAllocator()!.Free(_buffer);
             _buffer = newBuffer;
             _capacity = newCapacity;
             _tail = _count;
@@ -180,10 +193,13 @@ namespace NativeCollections
             if (_buffer == null)
                 return;
 
-            Allocator.Default.Free(_buffer);
-            _buffer = null;
-            _capacity = 0;
-            _count = 0;
+            if(Allocator.IsCached(_allocatorID))
+            {
+                GetAllocator()!.Free(_buffer);
+                _buffer = null;
+                _capacity = 0;
+                _count = 0;
+            }
         }
 
         public Enumerator GetEnumerator()

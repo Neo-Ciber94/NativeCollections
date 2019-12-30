@@ -81,22 +81,28 @@ namespace NativeCollections
         private int _count;
         private int _freeCount;
         private int _freeList;
+        private int _allocatorID;
 
-        public NativeSet(int initialCapacity)
+        public NativeSet(int initialCapacity) : this(initialCapacity, Allocator.Default) { }
+
+        public NativeSet(int initialCapacity, Allocator allocator)
         {
             if (initialCapacity <= 0)
                 throw new ArgumentException("initialCapacity should be greater than 0.", nameof(initialCapacity));
 
-            _buffer = Allocator.Default.Allocate<Entry>(initialCapacity);
+            _buffer = (Entry*)allocator.Allocate(initialCapacity, sizeof(Entry));
             _capacity = initialCapacity;
             _count = 0;
             _freeList = -1;
             _freeCount = 0;
+            _allocatorID = allocator.ID;
 
             Initializate();
         }
 
-        public NativeSet(Span<T> elements)
+        public NativeSet(Span<T> elements) : this(elements, Allocator.Default) { }
+
+        public NativeSet(Span<T> elements, Allocator allocator)
         {
             if (elements.IsEmpty)
             {
@@ -104,11 +110,12 @@ namespace NativeCollections
             }
             else
             {
-                _buffer = Allocator.Default.Allocate<Entry>(elements.Length);
+                _buffer = (Entry*)allocator.Allocate(elements.Length, sizeof(Entry));
                 _capacity = elements.Length;
                 _count = 0;
                 _freeList = -1;
                 _freeCount = 0;
+                _allocatorID = allocator.ID;
 
                 Initializate();
 
@@ -126,6 +133,11 @@ namespace NativeCollections
         public bool IsEmpty => _count == 0;
 
         public bool IsValid => _buffer != null;
+
+        public Allocator? GetAllocator()
+        {
+            return Allocator.GetAllocatorByID(_allocatorID);
+        }
 
         public bool Add(T value)
         {
@@ -234,7 +246,7 @@ namespace NativeCollections
                 return;
             }
 
-            Entry* newBuffer = Allocator.Default.Allocate<Entry>(capacity);
+            Entry* newBuffer = (Entry*)GetAllocator()!.Allocate(capacity, sizeof(Entry));
             Unsafe.CopyBlock(newBuffer, _buffer, (uint)(Unsafe.SizeOf<Entry>() * _count));
 
             // Free old buffer
@@ -341,9 +353,12 @@ namespace NativeCollections
 
         private void Resize(int newCapacity)
         {
-            Entry* newBuffer = Allocator.Default.Allocate<Entry>(newCapacity);
+            if (_buffer == null)
+                return;
+
+            Entry* newBuffer = GetAllocator()!.Allocate<Entry>(newCapacity);
             Unsafe.CopyBlock(newBuffer, _buffer, (uint)(sizeof(Entry) * _count));
-            Allocator.Default.Free(_buffer);
+            GetAllocator()!.Free(_buffer);
 
             for(int i = 0; i < newCapacity; i++)
             {
@@ -381,12 +396,15 @@ namespace NativeCollections
             if (_buffer == null)
                 return;
 
-            Allocator.Default.Free(_buffer);
-            _buffer = null;
-            _count = 0;
-            _capacity = 0;
-            _freeCount = 0;
-            _freeList = 0;
+            if (Allocator.IsCached(_allocatorID))
+            {
+                GetAllocator()!.Free(_buffer);
+                _buffer = null;
+                _count = 0;
+                _capacity = 0;
+                _freeCount = 0;
+                _freeList = 0;
+            }
         }
     }
 }

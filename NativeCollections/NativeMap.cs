@@ -19,7 +19,6 @@ namespace NativeCollections
     [DebuggerTypeProxy(typeof(NativeMapDebugView<,>))]
     public unsafe struct NativeMap<TKey, TValue> : IDisposable where TKey : unmanaged where TValue : unmanaged
     {
-
         internal struct Entry
         {
             public TKey key;
@@ -332,22 +331,28 @@ namespace NativeCollections
         private int _capacity;
         private int _freeList;
         private int _freeCount;
+        private int _allocatorID;
 
-        public NativeMap(int initialCapacity)
+        public NativeMap(int initialCapacity) : this(initialCapacity, Allocator.Default) { }
+
+        public NativeMap(int initialCapacity, Allocator allocator)
         {
             if (initialCapacity <= 0)
                 throw new ArgumentException($"initialCapacity should be greater than 0: {initialCapacity}");
 
-            _buffer = Allocator.Default.Allocate<Entry>(initialCapacity);
+            _buffer = (Entry*)allocator.Allocate(initialCapacity, sizeof(Entry));
             _capacity = initialCapacity;
             _count = 0;
             _freeList = -1;
             _freeCount = 0;
+            _allocatorID = allocator.ID;
 
             Initializate();
         }
 
-        public NativeMap(Span<(TKey, TValue)> elements)
+        public NativeMap(Span<(TKey, TValue)> elements) : this(elements, Allocator.Default) { }
+
+        public NativeMap(Span<(TKey, TValue)> elements, Allocator allocator)
         {
             if (elements.IsEmpty)
             {
@@ -355,11 +360,12 @@ namespace NativeCollections
             }
             else
             {
-                _buffer = Allocator.Default.Allocate<Entry>(elements.Length);
+                _buffer = (Entry*)allocator.Allocate(elements.Length, sizeof(Entry));
                 _capacity = elements.Length;
                 _count = 0;
                 _freeList = -1;
                 _freeCount = 0;
+                _allocatorID = allocator.ID;
 
                 Initializate();
 
@@ -377,6 +383,11 @@ namespace NativeCollections
         public readonly bool IsValid => _buffer != null;
 
         public readonly bool IsEmpty => _count == 0;
+
+        public Allocator? GetAllocator()
+        {
+            return Allocator.GetAllocatorByID(_allocatorID);
+        }
 
         public KeyCollection Keys => new KeyCollection(ref this);
 
@@ -600,11 +611,11 @@ namespace NativeCollections
                 return;
             }
 
-            Entry* newBuffer = Allocator.Default.Allocate<Entry>(capacity);
+            Entry* newBuffer = GetAllocator()!.Allocate<Entry>(capacity);
             Unsafe.CopyBlock(newBuffer, _buffer, (uint)(Unsafe.SizeOf<Entry>() * _count));
 
             // Free old buffer
-            Allocator.Default.Free(_buffer);
+            GetAllocator()!.Free(_buffer);
 
             for (int i = 0; i < capacity; i++)
             {
@@ -742,9 +753,12 @@ namespace NativeCollections
 
         private void Resize(int newCapacity)
         {
-            var newBuffer = Allocator.Default.Allocate<Entry>(newCapacity);
+            if (_buffer == null)
+                return;
+
+            Entry* newBuffer = GetAllocator()!.Allocate<Entry>(newCapacity);
             Unsafe.CopyBlock(newBuffer, _buffer, (uint)(sizeof(Entry) * _count));
-            Allocator.Default.Free(_buffer);
+            GetAllocator()!.Free(_buffer);
 
             for (int i = 0; i < newCapacity; i++)
             {
@@ -781,12 +795,15 @@ namespace NativeCollections
             if (_buffer == null)
                 return;
 
-            Allocator.Default.Free(_buffer);
-            _buffer = null;
-            _capacity = 0;
-            _count = 0;
-            _freeCount = 0;
-            _freeList = 0;
+            if (Allocator.IsCached(_allocatorID))
+            {
+                GetAllocator()!.Free(_buffer);
+                _buffer = null;
+                _capacity = 0;
+                _count = 0;
+                _freeCount = 0;
+                _freeList = 0;
+            }
         }
 
         public override string ToString()

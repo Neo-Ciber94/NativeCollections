@@ -75,15 +75,19 @@ namespace NativeCollections
         private Pair* _buffer;
         private int _capacity;
         private int _count;
+        private int _allocatorID;
 
-        public NativeSortedMap(int initialCapacity)
+        public NativeSortedMap(int initialCapacity) : this(initialCapacity, Allocator.Default) { }
+
+        public NativeSortedMap(int initialCapacity, Allocator allocator)
         {
             if (initialCapacity <= 0)
                 throw new ArgumentException("initialCapacity should be greater than 0.", nameof(initialCapacity));
 
-            _buffer = Allocator.Default.Allocate<Pair>(initialCapacity);
+            _buffer = (Pair*)allocator.Allocate(initialCapacity, sizeof(Pair));
             _capacity = initialCapacity;
             _count = 0;
+            _allocatorID = allocator.ID;
         }
 
         public readonly int Length => _count;
@@ -93,6 +97,11 @@ namespace NativeCollections
         public readonly bool IsEmpty => _count == 0;
 
         public readonly bool IsValid => _buffer != null;
+
+        public Allocator? GetAllocator()
+        {
+            return Allocator.GetAllocatorByID(_allocatorID);
+        }
 
         public readonly ref TValue Min
         {
@@ -321,7 +330,10 @@ namespace NativeCollections
 
         private void Resize(int newCapacity)
         {
-            Allocator.Default.Reallocate(_buffer, newCapacity);
+            if (_buffer == null)
+                return;
+
+            _buffer = GetAllocator()!.Reallocate<Pair>(_buffer, newCapacity);
             _capacity = newCapacity;
         }
 
@@ -402,10 +414,13 @@ namespace NativeCollections
             if (_buffer == null)
                 return;
 
-            Allocator.Default.Free(_buffer);
-            _buffer = null;
-            _capacity = 0;
-            _count = 0;
+            if (Allocator.IsCached(_allocatorID))
+            {
+                GetAllocator()!.Free(_buffer);
+                _buffer = null;
+                _capacity = 0;
+                _count = 0;
+            }
         }
     }
 }

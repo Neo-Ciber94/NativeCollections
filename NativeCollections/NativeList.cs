@@ -19,7 +19,7 @@ namespace NativeCollections
     [DebuggerTypeProxy(typeof(NativeListDebugView<>))]
     unsafe public struct NativeList<T> : INativeContainer<T>, IDisposable where T : unmanaged
     {
-        internal void* _buffer;
+        internal T* _buffer;
         private int _capacity;
         private int _count;
         private int _allocatorID;
@@ -42,7 +42,7 @@ namespace NativeCollections
             if (initialCapacity <= 0)
                 throw new ArgumentException($"initialCapacity should be greater than 0: {initialCapacity}");
 
-            _buffer = allocator.Allocate(Unsafe.SizeOf<T>() * initialCapacity);
+            _buffer = allocator.Allocate<T>(initialCapacity);
             _capacity = initialCapacity;
             _count = 0;
             _allocatorID = allocator.ID;
@@ -67,7 +67,7 @@ namespace NativeCollections
             }
             else
             {
-                _buffer = allocator.Allocate(Unsafe.SizeOf<T>() * elements.Length);
+                _buffer = allocator.Allocate<T>(elements.Length);
                 _capacity = elements.Length;
                 _count = _capacity;
                 _allocatorID = allocator.ID;
@@ -92,7 +92,7 @@ namespace NativeCollections
             if (length <= 0)
                 throw new ArgumentException($"Invalid length: {length}", nameof(length));
 
-            _buffer = pointer;
+            _buffer = (T*)pointer;
             _capacity = length;
             _count = length;
             _allocatorID = -1;
@@ -114,7 +114,7 @@ namespace NativeCollections
             if (length <= 0)
                 throw new ArgumentException($"Invalid length: {length}", nameof(length));
 
-            _buffer = pointer;
+            _buffer = (T*)pointer;
             _capacity = length;
             _count = length;
             _allocatorID = allocator.ID;
@@ -158,10 +158,13 @@ namespace NativeCollections
         /// <summary>
         /// Gets the allocator used for this list.
         /// </summary>
-        /// <value>
+        /// <returns>
         /// The allocator.
-        /// </value>
-        public Allocator? Allocator => _buffer == null ? null : Allocator.GetAllocator(_allocatorID);
+        /// </returns>
+        public Allocator? GetAllocator()
+        {
+            return Allocator.GetAllocatorByID(_allocatorID);
+        }
 
         /// <summary>
         /// Gets a reference to the element at the specified index.
@@ -740,7 +743,7 @@ namespace NativeCollections
                 return default;
             }
 
-            NativeArray<T> array = new NativeArray<T>(_count, Allocator!);
+            NativeArray<T> array = new NativeArray<T>(_count, GetAllocator()!);
             Unsafe.CopyBlock(array._buffer, _buffer, (uint)(sizeof(T) * _count));
             return array;
         }
@@ -761,7 +764,7 @@ namespace NativeCollections
             if (_count == _capacity || !createNewArrayIfNeeded)
             {
                 // NativeArray will owns this instance memory
-                NativeArray<T> array = new NativeArray<T>(_buffer, _capacity, Allocator!);
+                NativeArray<T> array = new NativeArray<T>(_buffer, _capacity, GetAllocator()!);
 
                 // Not actual dispose, just invalidate this instance
                 _buffer = null;
@@ -797,7 +800,7 @@ namespace NativeCollections
 
             if (Allocator.IsCached(_allocatorID))
             {
-                Allocator!.Free(_buffer);
+                GetAllocator()!.Free(_buffer);
                 _buffer = null;
                 _capacity = 0;
                 _count = 0;
@@ -825,7 +828,7 @@ namespace NativeCollections
                 return;
 
             newCapacity = newCapacity < 4 ? 4 : newCapacity;
-            Allocator!.Reallocate(_buffer, Unsafe.SizeOf<T>() * newCapacity);
+            _buffer = GetAllocator()!.Reallocate<T>(_buffer, newCapacity);
             _capacity = newCapacity;
         }
 

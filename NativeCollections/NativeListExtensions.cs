@@ -352,7 +352,7 @@ namespace NativeCollections
         public static NativeArray<T> FindAll<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
             int expected = Math.Min(1, list.Length / 2);
-            NativeList<T> matches = new NativeList<T>(expected, list.Allocator!);
+            NativeList<T> matches = new NativeList<T>(expected, list.GetAllocator()!);
 
             foreach (ref var e in list)
             {

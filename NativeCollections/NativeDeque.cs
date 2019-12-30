@@ -10,16 +10,21 @@ namespace NativeCollections
         private T* _buffer;
         private int _capacity;
         private int _count;
+        private int _allocatorID;
+
         private int _head;
         private int _tail;
 
-        public NativeDeque(int initialCapacity)
+        public NativeDeque(int initialCapacity) : this(initialCapacity, Allocator.Default) { }
+
+        public NativeDeque(int initialCapacity, Allocator allocator)
         {
             if (initialCapacity <= 0)
                 throw new ArgumentException("initialCapacity should be greater than 0.", nameof(initialCapacity));
 
-            _buffer = Allocator.Default.Allocate<T>(initialCapacity);
+            _buffer = allocator.Allocate<T>(initialCapacity);
             _capacity = initialCapacity;
+            _allocatorID = allocator.ID;
             _count = 0;
             _head = 0;
             _tail = 0;
@@ -32,6 +37,11 @@ namespace NativeCollections
         public bool IsEmpty => _count == 0;
 
         public bool IsValid => _buffer != null;
+
+        public Allocator? GetAllocator()
+        {
+            return Allocator.GetAllocatorByID(_allocatorID);
+        }
 
         public void AddFirst(T value)
         {
@@ -196,7 +206,10 @@ namespace NativeCollections
 
         private void Resize(int capacity)
         {
-            T* newBuffer = Allocator.Default.Allocate<T>(capacity);
+            if (_buffer == null)
+                return;
+
+            T* newBuffer = GetAllocator()!.Allocate<T>(capacity);
 
             int i = _tail;
             int j = 0;
@@ -207,7 +220,8 @@ namespace NativeCollections
                 i = (i + 1) % capacity;
             }
 
-            Allocator.Default.Free(_buffer);
+            GetAllocator()!.Free(_buffer);
+            _buffer = newBuffer;
             _capacity = capacity;
             _head = _count;
             _tail = 0;
@@ -218,11 +232,14 @@ namespace NativeCollections
             if (_buffer == null)
                 return;
 
-            Allocator.Default.Free(_buffer);
-            _buffer = null;
-            _count = 0;
-            _head = 0;
-            _tail = 0;
+            if (Allocator.IsCached(_allocatorID))
+            {
+                GetAllocator()!.Free(_buffer);
+                _buffer = null;
+                _count = 0;
+                _head = 0;
+                _tail = 0;
+            }
         }
     }
 }

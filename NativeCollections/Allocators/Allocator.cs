@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using NativeCollections.Allocators.Internal;
 
 namespace NativeCollections.Allocators
 {
@@ -9,16 +10,16 @@ namespace NativeCollections.Allocators
     {
         private const int MaxAllocatorCacheSize = 12;
         private static readonly Allocator?[] _cacheAllocators = new Allocator[MaxAllocatorCacheSize];
-        private static int _nextID = 0;
+        private static int _nextID = 1;
 
         public static Allocator Default { get; } = DefaultKernel32HeapAllocator.Instance;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Allocator? GetAllocator(int id)
+        public static Allocator? GetAllocatorByID(int id)
         {
-            if(id >= 0 && id < MaxAllocatorCacheSize)
+            if(id > 0 && id < MaxAllocatorCacheSize)
             {
-                return _cacheAllocators[id];
+                return _cacheAllocators[id - 1];
             }
 
             return null;
@@ -27,7 +28,7 @@ namespace NativeCollections.Allocators
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsCached(int id)
         {
-            return id >= 0 && id < MaxAllocatorCacheSize;
+            return id > 0 && id < MaxAllocatorCacheSize;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -39,9 +40,9 @@ namespace NativeCollections.Allocators
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int AddInstanceToCache(Allocator allocator) 
         {
-            if(_nextID < MaxAllocatorCacheSize)
+            if(_nextID <= MaxAllocatorCacheSize)
             {
-                _cacheAllocators[_nextID] = allocator;
+                _cacheAllocators[_nextID - 1] = allocator;
                 return _nextID++;
             }
 
@@ -54,9 +55,9 @@ namespace NativeCollections.Allocators
             if(allocator != null)
             {
                 int id = allocator.ID;
-                if(id >= 0 && id < MaxAllocatorCacheSize)
+                if(id > 0 && id < MaxAllocatorCacheSize)
                 {
-                    _cacheAllocators[id] = null;
+                    _cacheAllocators[id - 1] = null;
                     _nextID--;
                     return true;
                 }
@@ -77,10 +78,10 @@ namespace NativeCollections.Allocators
 
         public int ID { get; } = -1;
 
-        #region Virtual and Abstract Methods
-        public abstract unsafe void* Allocate(int size, int alignment = 1, bool initMemory = true);
-        
-        public abstract unsafe void* Reallocate(void* pointer, int size, int alignment = 1, bool initMemory = true);
+        #region Virtual and Abstract methods
+        public abstract unsafe void* Allocate(int elementCount, int elementSize = 1, bool initMemory = true);
+
+        public abstract unsafe void* Reallocate(void* pointer, int elementCount, int elementSize = 1, bool initMemory = true);
         
         public abstract unsafe void Free(void* pointer);
 
@@ -94,13 +95,13 @@ namespace NativeCollections.Allocators
         #endregion
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe T* Allocate<T>(int elementCount) where T : unmanaged
+        public unsafe T* Allocate<T>(int elementCount) where T: unmanaged
         {
             return (T*)Allocate(elementCount, sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe T* ReAllocate<T>(T* pointer, int elementCount) where T : unmanaged
+        public unsafe T* Reallocate<T>(T* pointer, int elementCount) where T: unmanaged
         {
             return (T*)Reallocate(pointer, elementCount, sizeof(T));
         }
@@ -108,7 +109,7 @@ namespace NativeCollections.Allocators
         [Obsolete("This method is experimental and could be removed")]
         public unsafe void Borrow<T>(int elementCount, SpanAction<T> action) where T: unmanaged
         {
-            void* memory = Allocate<T>(elementCount);
+            void* memory = Default.Allocate(elementCount, sizeof(T));
 
             try
             {

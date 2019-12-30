@@ -259,7 +259,27 @@ namespace NativeCollections.Tests
         [Test()]
         public void ToNativeListAndDisposeTest()
         {
-            Assert.Fail("NativeList is not tested yet");
+            NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 1, 2, 3, 4, 5 });
+            NativeList<int> list = array.ToNativeListAndDispose();
+
+            Assert.IsTrue(array.IsEmpty);
+            Assert.IsFalse(array.IsValid);
+            Assert.AreEqual(0, array.Length);
+
+            Assert.AreEqual(5, list.Length);
+            Assert.AreEqual(5, list.Capacity);
+            Assert.IsTrue(list.IsValid);
+
+            list.Dispose();
+
+            unsafe
+            {
+                Assert.True(list.GetUnsafePointer() == null);
+            }
+
+            Assert.IsFalse(list.IsValid);
+            Assert.AreEqual(0, list.Length);
+            Assert.AreEqual(0, list.Capacity);
         }
 
         [Test()]
