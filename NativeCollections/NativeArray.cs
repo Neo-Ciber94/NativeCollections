@@ -14,110 +14,52 @@ namespace NativeCollections
     /// Represents a collection of objects of the same type allocated with unmanaged memory that must be disponse after use.
     /// </summary>
     /// <typeparam name="T">Type of the objects</typeparam>
+    /// <seealso cref="NativeCollections.INativeContainer{T}" />
     /// <seealso cref="System.IDisposable" />
     [DebuggerDisplay("Length = {Length}")]
     [DebuggerTypeProxy(typeof(NativeArrayDebugView<>))]
     unsafe public struct NativeArray<T> : INativeContainer<T>, IDisposable where T : unmanaged
     {
-        /// <summary>
-        /// Exposes methods for iterate over the contents of a <see cref="NativeArray{T}"/>.
-        /// </summary>
-        /// <seealso cref="NativeCollections.INativeContainer{T}" />
-        /// <seealso cref="System.IDisposable" />
-        public ref struct Enumerator
-        {
-            private void* _pointer;
-            private int _length;
-            private int _index;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="Enumerator"/> struct.
-            /// </summary>
-            /// <param name="array">The array.</param>
-            public Enumerator(ref NativeArray<T> array)
-            {
-                _pointer = array._buffer;
-                _length = array._capacity;
-                _index = -1;
-            }
-            
-            /// <summary>
-            /// Gets a reference to the current value.
-            /// </summary>
-            /// <value>
-            /// The current value.
-            /// </value>
-            /// <exception cref="ArgumentOutOfRangeException"></exception>
-            public ref T Current
-            {
-                get
-                {
-                    if (_index < 0 || _index > _length)
-                        throw new ArgumentOutOfRangeException("index", _index.ToString());
-
-                    ref T pointer = ref Unsafe.AsRef<T>(_pointer);
-                    return ref Unsafe.Add(ref pointer, _index);
-                }
-            }
-
-            /// <summary>
-            /// Disposes this enumerator.
-            /// </summary>
-            public void Dispose()
-            {
-                if (_pointer == null)
-                    return;
-
-                _pointer = null;
-                _length = 0;
-                _index = 0;
-            }
-
-            /// <summary>
-            /// Moves to the next value.
-            /// </summary>
-            /// <returns><c>true</c> if has a next value, otherwise <c>false</c></returns>
-            public bool MoveNext()
-            {
-                int i = _index + 1;
-                if (i < _length)
-                {
-                    _index = i;
-                    return true;
-                }
-                return false;
-            }
-
-            /// <summary>
-            /// Resets this enumerator.
-            /// </summary>
-            public void Reset()
-            {
-                _index = -1;
-            }
-        }
-
         internal void* _buffer;
         private int _capacity;
+        private int _allocatorID;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NativeArray{T}" /> struct.
         /// </summary>
         /// <param name="capacity">The capacity of the array.</param>
-        public NativeArray(int capacity)
+        public NativeArray(int capacity) : this(capacity, Allocator.Default) { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeArray{T}" /> struct.
+        /// </summary>
+        /// <param name="capacity">The capacity of the array.</param>
+        /// <param name="allocator">The allocator used for this array.</param> 
+        public NativeArray(int capacity, Allocator allocator)
         {
             if (capacity <= 0)
                 throw new ArgumentException($"capacity must be greater than 0: {capacity}");
 
-            _buffer = Allocator.Default.Allocate(sizeof(T) * capacity);
+            if (!Allocator.IsCached(allocator))
+                throw new ArgumentException("The allocator is not in cache, calls 'base(true)' on the constructor to add the allocator to cache", nameof(allocator));
+
+            _buffer = allocator.Allocate(sizeof(T) * capacity);
             _capacity = capacity;
+            _allocatorID = allocator.ID;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NativeArray{T}" /> struct by copying the specify elements.
         /// </summary>
         /// <param name="elements">The elements to initializate the array.</param>
-        public NativeArray(Span<T> elements)
+        public NativeArray(Span<T> elements) : this(elements, Allocator.Default) { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeArray{T}" /> struct by copying the specify elements.
+        /// </summary>
+        /// <param name="elements">The elements to initializate the array.</param>
+        /// <param name="allocator">The allocator used for this array.</param> 
+        public NativeArray(Span<T> elements, Allocator allocator)
         {
             if (elements.IsEmpty)
             {
@@ -125,8 +67,9 @@ namespace NativeCollections
             }
             else
             {
-                _buffer = Allocator.Default.Allocate(sizeof(T) * elements.Length);
+                _buffer = allocator.Allocate(sizeof(T) * elements.Length);
                 _capacity = elements.Length;
+                _allocatorID = allocator.ID;
 
                 void* source = Unsafe.AsPointer(ref MemoryMarshal.GetReference(elements));
                 Unsafe.CopyBlock(_buffer, source, (uint)(sizeof(T) * _capacity));
@@ -148,6 +91,26 @@ namespace NativeCollections
 
             _buffer = pointer;
             _capacity = length;
+            _allocatorID = -1;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeArray{T}" /> struct by using the given pointer.
+        /// </summary>
+        /// <param name="pointer">The pointer to the elements.</param>
+        /// <param name="length">The number of elements in the pointer.</param>
+        /// <param name="allocator">The allocator where reallocate or free the memory of the given pointer.</param>
+        public NativeArray(void* pointer, int length, Allocator allocator)
+        {
+            if (pointer == null)
+                throw new ArgumentException("Invalid pointer");
+
+            if (length <= 0)
+                throw new ArgumentException($"Invalid length: {length}", nameof(length));
+
+            _buffer = pointer;
+            _capacity = length;
+            _allocatorID = allocator.ID;
         }
 
         /// <summary>
@@ -173,6 +136,14 @@ namespace NativeCollections
         ///   <c>true</c> if this array is empty; otherwise, <c>false</c>.
         /// </value>
         public bool IsEmpty => _capacity == 0;
+
+        /// <summary>
+        /// Gets the allocator used for this array.
+        /// </summary>
+        /// <value>
+        /// The allocator.
+        /// </value>
+        public Allocator? Allocator => _buffer == null? null : Allocator.GetAllocator(_allocatorID);
 
         /// <summary>
         /// Gets a reference to the element at the specified index.
@@ -485,9 +456,13 @@ namespace NativeCollections
             if (_buffer == null)
                 return;
 
-            Allocator.Default.Free(_buffer);
-            _buffer = null;
-            _capacity = 0;
+            if (Allocator.IsCached(_allocatorID))
+            {
+                Allocator!.Free(_buffer);
+                _buffer = null;
+                _capacity = 0;
+                _allocatorID = -1;
+            }
         }
 
         /// <summary>
@@ -505,6 +480,7 @@ namespace NativeCollections
             // Invalidate this NativeArray, not actual dispose
             _buffer = null;
             _capacity = 0;
+            _allocatorID = -1;
 
             return list;
         }
@@ -526,6 +502,11 @@ namespace NativeCollections
         /// </returns>
         public override string ToString()
         {
+            if (_buffer == null)
+            {
+                return "[Invalid]";
+            }
+
             if (_capacity == 0)
             {
                 return "[]";
@@ -564,6 +545,87 @@ namespace NativeCollections
         public Enumerator GetEnumerator()
         {
             return new Enumerator(ref this);
+        }
+
+        /// <summary>
+        /// Exposes methods for iterate over the contents of a <see cref="NativeArray{T}"/>.
+        /// </summary>
+        /// <seealso cref="NativeCollections.INativeContainer{T}" />
+        /// <seealso cref="System.IDisposable" />
+        public ref struct Enumerator
+        {
+            private void* _pointer;
+            private int _length;
+            private int _index;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="Enumerator"/> struct.
+            /// </summary>
+            /// <param name="array">The array.</param>
+            public Enumerator(ref NativeArray<T> array)
+            {
+                _pointer = array._buffer;
+                _length = array._capacity;
+                _index = -1;
+            }
+
+            /// <summary>
+            /// Gets a reference to the current value.
+            /// </summary>
+            /// <value>
+            /// The current value.
+            /// </value>
+            /// <exception cref="ArgumentOutOfRangeException"></exception>
+            public ref T Current
+            {
+                get
+                {
+                    if (_index < 0 || _index > _length)
+                        throw new ArgumentOutOfRangeException("index", _index.ToString());
+
+                    ref T pointer = ref Unsafe.AsRef<T>(_pointer);
+                    return ref Unsafe.Add(ref pointer, _index);
+                }
+            }
+
+            /// <summary>
+            /// Disposes this enumerator.
+            /// </summary>
+            public void Dispose()
+            {
+                if (_pointer == null)
+                    return;
+
+                _pointer = null;
+                _length = 0;
+                _index = 0;
+            }
+
+            /// <summary>
+            /// Moves to the next value.
+            /// </summary>
+            /// <returns><c>true</c> if has a next value, otherwise <c>false</c></returns>
+            public bool MoveNext()
+            {
+                if (_pointer == null)
+                    return false;
+
+                int i = _index + 1;
+                if (i < _length)
+                {
+                    _index = i;
+                    return true;
+                }
+                return false;
+            }
+
+            /// <summary>
+            /// Resets this enumerator.
+            /// </summary>
+            public void Reset()
+            {
+                _index = -1;
+            }
         }
     }
 

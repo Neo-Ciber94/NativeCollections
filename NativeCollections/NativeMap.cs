@@ -791,10 +791,17 @@ namespace NativeCollections
 
         public override string ToString()
         {
-            if (_count == 0)
-                return "[]";
+            if (_buffer == null)
+            {
+                return "[Invalid]";
+            }
 
-            // TODO: Reduce StringBuilderCache calls overhead by implementing ToString() for (1..10) elements
+            if (_count == 0)
+            {
+                return "[]";
+            }
+
+            // TODO: Reduce StringBuilderCache calls overhead by implementing ToString() for (1..10) elements?
 
             StringBuilder sb = StringBuilderCache.Acquire();
             sb.Append('[');

@@ -8,7 +8,7 @@ namespace NativeCollections.Allocators
     {
         public static readonly DefaultKernel32LocalAllocator Instance = new DefaultKernel32LocalAllocator();
 
-        private DefaultKernel32LocalAllocator() { }
+        private DefaultKernel32LocalAllocator() : base(true) { }
 
         public override unsafe void* Allocate(int size, int alignment, bool initMemory = true)
         {

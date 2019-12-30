@@ -33,7 +33,7 @@ namespace NativeCollections
         public bool IsEmpty { get; }
 
         /// <summary>
-        /// Copies the content of this container to a <see cref="Span{T}"/>
+        /// Copies the content of this container to a <see cref="Span{T}"/>.
         /// </summary>
         /// <param name="span">The destination span to copy the data.</param>
         /// <param name="destinationIndex">Start index of the destination where start to copy.</param>

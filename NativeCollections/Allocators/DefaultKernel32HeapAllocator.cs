@@ -9,7 +9,7 @@ namespace NativeCollections.Allocators
 
         private static readonly void* _HeapPointer = Kernel32HeapMemory.GetProcessHeap();
 
-        private DefaultKernel32HeapAllocator() { }
+        private DefaultKernel32HeapAllocator() : base(true) { }
 
         public override unsafe void* Allocate(int size, int alignment = 1, bool initMemory = true)
         {

@@ -85,6 +85,94 @@ namespace NativeCollections
             get => new Span<T>(_pointer, _length);
         }
 
-        public RefEnumerator<T> GetEnumerator() => new RefEnumerator<T>(_pointer, _length);
+        /// <summary>
+        /// Gets an enumerator for iterate over the elements of this slice.
+        /// </summary>
+        /// <returns>An enumerator over this array elements.</returns>
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(this);
+        }
+
+        /// <summary>
+        /// Exposes methods for iterate over the contents of a <see cref="NativeSlice{T}"/>.
+        /// </summary>
+        /// <seealso cref="NativeCollections.INativeContainer{T}" />
+        /// <seealso cref="System.IDisposable" />
+        public ref struct Enumerator
+        {
+            private void* _pointer;
+            private int _length;
+            private int _index;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="Enumerator"/> struct.
+            /// </summary>
+            /// <param name="slice">The slice.</param>
+            public Enumerator(in NativeSlice<T> slice)
+            {
+                _pointer = slice._pointer;
+                _length = slice._length;
+                _index = -1;
+            }
+
+            /// <summary>
+            /// Gets a reference to the current value.
+            /// </summary>
+            /// <value>
+            /// The current value.
+            /// </value>
+            /// <exception cref="ArgumentOutOfRangeException"></exception>
+            public ref T Current
+            {
+                get
+                {
+                    if (_index < 0 || _index > _length)
+                        throw new ArgumentOutOfRangeException("index", _index.ToString());
+
+                    ref T pointer = ref Unsafe.AsRef<T>(_pointer);
+                    return ref Unsafe.Add(ref pointer, _index);
+                }
+            }
+
+            /// <summary>
+            /// Disposes this enumerator.
+            /// </summary>
+            public void Dispose()
+            {
+                if (_pointer == null)
+                    return;
+
+                _pointer = null;
+                _length = 0;
+                _index = 0;
+            }
+
+            /// <summary>
+            /// Moves to the next value.
+            /// </summary>
+            /// <returns><c>true</c> if has a next value, otherwise <c>false</c></returns>
+            public bool MoveNext()
+            {
+                if (_pointer == null)
+                    return false;
+
+                int i = _index + 1;
+                if (i < _length)
+                {
+                    _index = i;
+                    return true;
+                }
+                return false;
+            }
+
+            /// <summary>
+            /// Resets this enumerator.
+            /// </summary>
+            public void Reset()
+            {
+                _index = -1;
+            }
+        }
     }
 }

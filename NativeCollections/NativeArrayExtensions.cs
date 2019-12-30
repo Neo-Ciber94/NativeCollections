@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using NativeCollections.Utility;
 
 namespace NativeCollections
@@ -10,12 +11,36 @@ namespace NativeCollections
     unsafe public static class NativeArrayExtensions
     {
         /// <summary>
+        /// Releases the resources used for this array and each of its elements.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements</typeparam>
+        /// <param name="array">The array.</param>
+        /// <param name="disposing">if set to <c>true</c> will call dispose for each element in the array.</param>
+        public static void Dispose<T>(this ref NativeArray<T> array, bool disposing) where T : unmanaged, IDisposable
+        {
+            try
+            {
+                if (disposing)
+                {
+                    foreach (ref var e in array)
+                    {
+                        e.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                array.Dispose();
+            }
+        }
+
+        /// <summary>
         /// Sorts the content of this array.
         /// </summary>
         /// <typeparam name="T">Type of the elements</typeparam>
         /// <param name="array">The array to sort.</param>
         /// <exception cref="ArgumentException">If the array is invalid</exception>
-        public static void Sort<T>(this NativeArray<T> array) where T : unmanaged
+        public static void Sort<T>(this NativeArray<T> array) where T : unmanaged, IComparable<T>
         {
             Sort(array, 0, array.Length - 1, Comparer<T>.Default);
         }
@@ -29,7 +54,7 @@ namespace NativeCollections
         /// <param name="end">The end index.</param>
         /// <exception cref="ArgumentException">If the array is invalid</exception>
         /// <exception cref="ArgumentOutOfRangeException">If the specified range is invalid</exception>
-        public static void Sort<T>(this NativeArray<T> array, int start, int end) where T : unmanaged
+        public static void Sort<T>(this NativeArray<T> array, int start, int end) where T : unmanaged, IComparable<T>
         {
             Sort(array, start, end, Comparer<T>.Default);
         }
@@ -106,9 +131,23 @@ namespace NativeCollections
         /// <param name="array">The array to sort.</param>
         /// <param name="selector">The selects the key used for sort.</param>
         /// <exception cref="ArgumentException">If the array is invalid</exception>
-        public static void SortBy<T, TSelect>(this NativeArray<T> array, Func<T, TSelect> selector) where T: unmanaged
+        public static void SortBy<T, TSelect>(this NativeArray<T> array, Func<T, TSelect> selector) where T: unmanaged where TSelect: IComparable<TSelect>
         {
             SortBy(array, 0, array.Length - 1, Comparer<TSelect>.Default, selector);
+        }
+
+        /// <summary>
+        /// Sorts the content of this array.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements</typeparam>
+        /// <typeparam name="TSelect">The type of the key used for sorting</typeparam>
+        /// <param name="array">The array to sort.</param>
+        /// <param name="comparer">The comparer used for sorting</param>
+        /// <param name="selector">The selects the key used for sort.</param>
+        /// <exception cref="ArgumentException">If the array is invalid</exception>
+        public static void SortBy<T, TSelect>(this NativeArray<T> array, IComparer<TSelect> comparer, Func<T, TSelect> selector) where T : unmanaged
+        {
+            SortBy(array, 0, array.Length - 1, comparer, selector);
         }
 
         /// <summary>
@@ -122,7 +161,7 @@ namespace NativeCollections
         /// <param name="selector">The selects the key used for sort.</param>
         /// <exception cref="ArgumentException">If the array is invalid</exception>
         /// <exception cref="ArgumentOutOfRangeException">If the specified range is invalid</exception>
-        public static void SortBy<T, TSelect>(this NativeArray<T> array, int start, int end, Func<T, TSelect> selector) where T : unmanaged
+        public static void SortBy<T, TSelect>(this NativeArray<T> array, int start, int end, Func<T, TSelect> selector) where T : unmanaged where TSelect: IComparable<TSelect>
         {
             SortBy(array, start, end, Comparer<TSelect>.Default, selector);
         }
@@ -139,7 +178,7 @@ namespace NativeCollections
         /// <param name="selector">The selects the key used for sort.</param>
         /// <exception cref="ArgumentException">If the array is invalid</exception>
         /// <exception cref="ArgumentOutOfRangeException">If the specified range is invalid</exception>
-        public static void SortBy<T, TSelect>(this NativeArray<T> array, int start, int end, IComparer<TSelect> comparer, Func<T, TSelect> selector)where T : unmanaged
+        public static void SortBy<T, TSelect>(this NativeArray<T> array, int start, int end, IComparer<TSelect> comparer, Func<T, TSelect> selector) where T : unmanaged
         {
             if (!array.IsValid)
             {
@@ -163,7 +202,7 @@ namespace NativeCollections
         /// <param name="array">The array to sort.</param>
         /// <param name="selector">The selects the key used for sort.</param>
         /// <exception cref="ArgumentException">If the array is invalid</exception>
-        public static void SortByDecending<T, TSelect>(this NativeArray<T> array, Func<T, TSelect> selector) where T : unmanaged
+        public static void SortByDecending<T, TSelect>(this NativeArray<T> array, Func<T, TSelect> selector) where T : unmanaged where TSelect : IComparable<TSelect>
         {
             SortByDecending(array, 0, array.Length - 1, Comparer<TSelect>.Default, selector);
         }
@@ -179,9 +218,23 @@ namespace NativeCollections
         /// <param name="selector">The selects the key used for sort.</param>
         /// <exception cref="ArgumentException">If the array is invalid</exception>
         /// <exception cref="ArgumentOutOfRangeException">If the specified range is invalid</exception>
-        public static void SortByDecending<T, TSelect>(this NativeArray<T> array, int start, int end, Func<T, TSelect> selector) where T : unmanaged
+        public static void SortByDecending<T, TSelect>(this NativeArray<T> array, int start, int end, Func<T, TSelect> selector) where T : unmanaged where TSelect : IComparable<TSelect>
         {
             SortByDecending(array, start, end, Comparer<TSelect>.Default, selector);
+        }
+
+        /// <summary>
+        /// Sorts by decending the content of this array.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements</typeparam>
+        /// <typeparam name="TSelect">The type of the key used for sorting</typeparam>
+        /// <param name="array">The array to sort.</param>
+        /// <param name="comparer">The comparer used for sorting</param>
+        /// <param name="selector">The selects the key used for sort.</param>
+        /// <exception cref="ArgumentException">If the array is invalid</exception>
+        public static void SortByDecending<T, TSelect>(this NativeArray<T> array, IComparer<TSelect> comparer, Func<T, TSelect> selector) where T : unmanaged
+        {
+            SortByDecending(array, 0, array.Length - 1, comparer, selector);
         }
 
         /// <summary>
@@ -220,7 +273,7 @@ namespace NativeCollections
         /// <param name="value">The value to find.</param>
         /// <returns>The index of the value or the index which the value should be as ~index.</returns>
         /// <exception cref="ArgumentException">If the array is invalid</exception>
-        public static int BinarySearch<T>(this NativeArray<T> array, T value) where T : unmanaged
+        public static int BinarySearch<T>(this NativeArray<T> array, T value) where T : unmanaged, IComparable<T>
         {
             return BinarySearch(array, 0, array.Length - 1, value, Comparer<T>.Default);
         }
@@ -236,7 +289,7 @@ namespace NativeCollections
         /// <returns>The index of the value or the index which the value should be as ~index.</returns>
         /// <exception cref="ArgumentException">If the array is invalid</exception>
         /// <exception cref="ArgumentOutOfRangeException">If the specified range is invalid</exception>
-        public static int BinarySearch<T>(this NativeArray<T> array, int start, int end, T value) where T : unmanaged
+        public static int BinarySearch<T>(this NativeArray<T> array, int start, int end, T value) where T : unmanaged, IComparable<T>
         {
             return BinarySearch(array, start, end, value, Comparer<T>.Default);
         }
@@ -269,23 +322,188 @@ namespace NativeCollections
         }
 
         /// <summary>
+        /// Finds the first element that matchs the specified condition.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="array">The array.</param>
+        /// <param name="predicate">The predicate to use.</param>
+        /// <returns>The first element that matchs the condition or null if not found.</returns>
+        public static T? FindFirst<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
+        {
+            foreach (ref var e in array)
+            {
+                if (predicate(e))
+                {
+                    return e;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Finds the last element that matchs the specified condition.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="array">The array.</param>
+        /// <param name="predicate">The predicate to use.</param>
+        /// <returns>The last element that matchs the condition or null if not found.</returns>
+        public static T? FindLast<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (predicate(array[^i]))
+                {
+                    return array[^i];
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Finds the first element that matchs the specified condition.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="array">The array.</param>
+        /// <param name="predicate">The predicate to use.</param>
+        /// <returns>A reference to the first element that matchs the condition or null if not found.</returns>
+        public static ref T? FindFirstRef<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
+        {
+            foreach (ref var e in array)
+            {
+                if (predicate(e))
+                {
+                    return ref Unsafe.As<T, T?>(ref e);
+                }
+            }
+
+            return ref UnsafeUtilities.NullRef<T?>();
+        }
+
+        /// <summary>
+        /// Finds the last element that matchs the specified condition.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="array">The array.</param>
+        /// <param name="predicate">The predicate to use.</param>
+        /// <returns>A reference to the last element that matchs the condition or null if not found.</returns>
+        public static ref T? FindLastRef<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (predicate(array[^i]))
+                {
+                    return ref Unsafe.As<T, T?>(ref array[^i]);
+                }
+            }
+
+            return ref UnsafeUtilities.NullRef<T?>();
+        }
+
+        /// <summary>
+        /// Finds alls elements that match the specified predicate.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="array">The array.</param>
+        /// <param name="predicate">The predicate to use.</param>
+        /// <returns>An NativeArray with all the matches.</returns>
+        public static NativeArray<T> FindAll<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
+        {
+            int expected = Math.Min(1, array.Length / 2);
+            NativeList<T> matches = new NativeList<T>(expected, array.Allocator!);
+
+            foreach (ref var e in array)
+            {
+                if (predicate(e))
+                {
+                    matches.Add(e);
+                }
+            }
+
+            return matches.ToNativeArrayAndDispose();
+        }
+
+        /// <summary>
+        /// Finds the index of the first element that meet the given condition.
+        /// </summary>
+        /// <typeparam name="T">Type of the element.</typeparam>
+        /// <param name="array">The array.</param>
+        /// <param name="predicate">The predicate to use.</param>
+        /// <returns>The index of the first element that meet the condition.</returns>
+        public static int FindIndex<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (predicate(array[i]))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>
+        /// Finds the index of the last element that meet the given condition.
+        /// </summary>
+        /// <typeparam name="T">Type of the element.</typeparam>
+        /// <param name="array">The array.</param>
+        /// <param name="predicate">The predicate to use.</param>
+        /// <returns>The index of the last element that meet the condition.</returns>
+        public static int FindLastIndex<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (predicate(array[^i]))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>
         /// Determines whether exists a value that match the specified predicate.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="array">The array.</param>
-        /// <param name="match">The predicate used.</param>
+        /// <param name="predicate">The predicate used.</param>
         /// <returns><c>true</c> if a value exists; otherwise <c>false</c>.</returns>
-        public static bool Exists<T>(this NativeArray<T> array, Predicate<T> match) where T: unmanaged
+        public static bool Exists<T>(this NativeArray<T> array, Predicate<T> predicate) where T: unmanaged
         {
             for(int i = 0; i < array.Length; i++)
             {
-                if (match(array[i]))
+                if (predicate(array[i]))
                 {
                     return true;
                 }
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Determines whether all the elements in the array meet the specified condition.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements</typeparam>
+        /// <param name="array">The array.</param>
+        /// <param name="predicate">The condition to use.</param>
+        /// <returns>
+        ///     <c>true</c> if all the elements meet the condition; otherwise <c>false</c>.
+        /// </returns>
+        public static bool TrueForAll<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (!predicate(array[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -345,30 +563,6 @@ namespace NativeCollections
             for (int i = 0; i < length; i++)
             {
                 action(ref array[i], i);
-            }
-        }
-
-        /// <summary>
-        /// Releases the resources used for this array and each of its elements.
-        /// </summary>
-        /// <typeparam name="T">Type of the elements</typeparam>
-        /// <param name="array">The array.</param>
-        /// <param name="disposing">if set to <c>true</c> will call dispose for each element in the array.</param>
-        public static void Dispose<T>(this ref NativeArray<T> array, bool disposing) where T : unmanaged, IDisposable
-        {
-            try
-            {
-                if (disposing)
-                {
-                    foreach (ref var e in array)
-                    {
-                        e.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                array.Dispose();
             }
         }
     }
