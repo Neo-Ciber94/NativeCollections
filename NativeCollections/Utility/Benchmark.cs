@@ -25,7 +25,7 @@ namespace NativeCollections.Utility
 
     public static class Benchmark
     {
-        public static void ComputeAndLog(string name, uint samples, Action action)
+        public static void ComputeTimeAndLog(string name, uint samples, Action action)
         {
             var result = Compute(samples, action);
             Console.WriteLine($"{name} >> {result}");

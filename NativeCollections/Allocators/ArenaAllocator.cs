@@ -1,12 +1,13 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace NativeCollections.Allocators
 {
     unsafe public sealed class ArenaAllocator : Allocator, IDisposable
     {
-        private readonly byte* _start;
-        private readonly byte* _end;
+        private byte* _buffer;
+        private int _length;
         private byte* _prevOffset;
         private byte* _offset;
 
@@ -15,17 +16,33 @@ namespace NativeCollections.Allocators
             if (totalBytes <= 0)
                 throw new ArgumentException(nameof(totalBytes));
 
-            _start = (byte*)Default.Allocate(totalBytes);
-            _end = _start + totalBytes;
-            _offset = _start;
+            _buffer = (byte*)Default.Allocate(totalBytes);
+            _length = totalBytes;
+            _offset = _buffer;
         }
 
         public override unsafe void* Allocate(int elementCount, int elementSize = 1, bool initMemory = true)
         {
+            if (elementCount <= 0)
+            {
+                throw new ArgumentException(elementCount.ToString(), nameof(elementCount));
+            }
+
+            if (elementSize <= 0)
+            {
+                throw new ArgumentException(elementSize.ToString(), nameof(elementSize));
+            }
+
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("ArenaAllocator have been disposed");
+            }
+
             int totalBytes = elementCount * elementSize;
             byte* next = _offset + totalBytes;
+            byte* end = _buffer + _length;
 
-            if(next > _end)
+            if(next > end)
             {
                 throw new OutOfMemoryException();
             }
@@ -38,7 +55,19 @@ namespace NativeCollections.Allocators
 
         public override void* Reallocate(void* pointer, int elementCount, int elementSize = 1, bool initMemory = true)
         {
-            if(_prevOffset == pointer)
+            if (pointer == null)
+                throw new ArgumentException("The pointer is null");
+
+            if (elementCount <= 0)
+                throw new ArgumentException(elementCount.ToString(), nameof(elementCount));
+
+            if (elementSize <= 0)
+                throw new ArgumentException(elementSize.ToString(), nameof(elementSize));
+
+            if (!IsOwner(pointer))
+                throw new InvalidOperationException("ArenaAllocator don't owns the given memory block.");
+
+            if (_prevOffset == pointer)
             {
                 int prevBlockSize = (int)(_offset - _prevOffset);
                 int totalBytes = (elementCount * elementSize) - prevBlockSize;
@@ -50,8 +79,9 @@ namespace NativeCollections.Allocators
                 else
                 {
                     byte* next = _offset + totalBytes;
+                    byte* end = _buffer + _length;
 
-                    if (next > _end)
+                    if (next > end)
                     {
                         throw new OutOfMemoryException();
                     }
@@ -72,11 +102,22 @@ namespace NativeCollections.Allocators
             // There is not memory free in arena allocators
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool IsOwner(void* pointer) => _buffer != null && pointer >= _buffer && pointer < (_buffer + _length);
+
         public void Dispose()
         {
+            if (_buffer == null)
+                return;
+
             Dispose(true);
-            Default.Free(_start);
+            Default.Free(_buffer);
             GC.SuppressFinalize(this);
+
+            _buffer = null;
+            _length = 0;
+            _offset = null;
+            _prevOffset = null;
         }
 
         ~ArenaAllocator()

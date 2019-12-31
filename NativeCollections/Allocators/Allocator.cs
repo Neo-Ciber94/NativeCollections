@@ -12,7 +12,7 @@ namespace NativeCollections.Allocators
         private static readonly Allocator?[] _cacheAllocators = new Allocator[MaxAllocatorCacheSize];
         private static int _nextID = 1;
 
-        public static Allocator Default { get; } = DefaultKernel32HeapAllocator.Instance;
+        public static Allocator Default { get; } = DefaultHeapAllocator.Instance;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Allocator? GetAllocatorByID(int id)
@@ -106,7 +106,6 @@ namespace NativeCollections.Allocators
             return (T*)Reallocate(pointer, elementCount, sizeof(T));
         }
 
-        [Obsolete("This method is experimental and could be removed")]
         public unsafe void Borrow<T>(int elementCount, SpanAction<T> action) where T: unmanaged
         {
             void* memory = Default.Allocate(elementCount, sizeof(T));

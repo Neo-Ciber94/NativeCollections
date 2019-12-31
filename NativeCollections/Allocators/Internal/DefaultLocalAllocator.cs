@@ -4,22 +4,22 @@ using NativeCollections.Internal;
 
 namespace NativeCollections.Allocators.Internal
 {
-    unsafe public sealed class DefaultKernel32LocalAllocator : Allocator
+    unsafe public sealed class DefaultLocalAllocator : Allocator
     {
-        public static readonly DefaultKernel32LocalAllocator Instance = new DefaultKernel32LocalAllocator();
+        public static readonly DefaultLocalAllocator Instance = new DefaultLocalAllocator();
 
-        private DefaultKernel32LocalAllocator() : base(true) { }
+        private DefaultLocalAllocator() : base(true) { }
 
         public override unsafe void* Allocate(int elementCount, int elementSize = 1, bool initMemory = true)
         {
             if (elementCount <= 0)
             {
-                throw new ArgumentException(nameof(elementCount));
+                throw new ArgumentException(elementCount.ToString(), nameof(elementCount));
             }
 
-            if(elementSize <= 0)
+            if (elementSize <= 0)
             {
-                throw new ArgumentException(nameof(elementSize));
+                throw new ArgumentException(elementSize.ToString(), nameof(elementSize));
             }
 
             LocalMemoryFlags flags = initMemory? LocalMemoryFlags.LPTR: LocalMemoryFlags.LMEM_FIXED;
@@ -42,12 +42,12 @@ namespace NativeCollections.Allocators.Internal
 
             if (elementCount <= 0)
             {
-                throw new ArgumentException(nameof(elementCount));
+                throw new ArgumentException(elementCount.ToString(), nameof(elementCount));
             }
 
             if (elementSize <= 0)
             {
-                throw new ArgumentException(nameof(elementSize));
+                throw new ArgumentException(elementSize.ToString(), nameof(elementSize));
             }
 
             LocalMemoryFlags flags = initMemory ? LocalMemoryFlags.LMEM_ZEROINIT : LocalMemoryFlags.LMEM_MOVEABLE;
@@ -77,6 +77,11 @@ namespace NativeCollections.Allocators.Internal
 
         public int SizeOf(void* pointer)
         {
+            if (pointer == null)
+            {
+                throw new ArgumentException("Invalid pointer");
+            }
+
             return (int)Kernel32LocalMemory.LocalSize(pointer);
         }
     }
