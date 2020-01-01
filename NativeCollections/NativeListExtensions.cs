@@ -291,11 +291,11 @@ namespace NativeCollections
         /// <returns>The last element that matchs the condition or null if not found.</returns>
         public static T? FindLast<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
-            for (int i = 0; i < list.Length; i++)
+            for (int i = list.Length - 1; i >= 0; --i)
             {
-                if (predicate(list[^i]))
+                if (predicate(list[i]))
                 {
-                    return list[^i];
+                    return list[i];
                 }
             }
 
@@ -308,18 +308,19 @@ namespace NativeCollections
         /// <typeparam name="T">Type of the elements.</typeparam>
         /// <param name="list">The list.</param>
         /// <param name="predicate">The predicate to use.</param>
-        /// <returns>A reference to the first element that matchs the condition or null if not found.</returns>
-        public static ref T? FindFirstRef<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
+        /// <returns>A reference to the first element that matchs the condition.</returns>
+        /// <exception cref="InvalidOperationException">If no value is not found.</exception>
+        public static ref T FindFirstRef<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
             foreach (ref var e in list)
             {
                 if (predicate(e))
                 {
-                    return ref Unsafe.As<T, T?>(ref e);
+                    return ref e;
                 }
             }
 
-            return ref UnsafeUtilities.NullRef<T?>();
+            throw new InvalidOperationException("No value found");
         }
 
         /// <summary>
@@ -328,18 +329,19 @@ namespace NativeCollections
         /// <typeparam name="T">Type of the elements.</typeparam>
         /// <param name="list">The list.</param>
         /// <param name="predicate">The predicate to use.</param>
-        /// <returns>A reference to the last element that matchs the condition or null if not found.</returns>
-        public static ref T? FindLastRef<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
+        /// <returns>A reference to the last element that matchs the condition.</returns>
+        /// <exception cref="InvalidOperationException">If no value is not found.</exception>
+        public static ref T FindLastRef<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
-            for(int i = 0; i < list.Length; i++)
+            for (int i = list.Length - 1; i >= 0; --i)
             {
-                if (predicate(list[^i]))
+                if (predicate(list[i]))
                 {
-                    return ref Unsafe.As<T, T?>(ref list[^i]);
+                    return ref list[i];
                 }
             }
 
-            return ref UnsafeUtilities.NullRef<T?>();
+            throw new InvalidOperationException("No value found");
         }
 
         /// <summary>
@@ -374,7 +376,7 @@ namespace NativeCollections
         /// <returns>The index of the first element that meet the condition.</returns>
         public static int FindIndex<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
-            for (int i = 0; i < list.Length; i++)
+            for (int i = 0; i < list.Length; ++i)
             {
                 if (predicate(list[i]))
                 {
@@ -394,9 +396,9 @@ namespace NativeCollections
         /// <returns>The index of the last element that meet the condition.</returns>
         public static int FindLastIndex<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
-            for (int i = 0; i < list.Length; i++)
+            for (int i = list.Length - 1; i >= 0; --i)
             {
-                if (predicate(list[^i]))
+                if (predicate(list[i]))
                 {
                     return i;
                 }
@@ -412,9 +414,9 @@ namespace NativeCollections
         /// <param name="list">The list.</param>
         /// <param name="predicate">The predicate used.</param>
         /// <returns><c>true</c> if a value exists; otherwise <c>false</c>.</returns>
-        public static bool Exists<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
+        public static bool AnyMatch<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
-            for (int i = 0; i < list.Length; i++)
+            for (int i = 0; i < list.Length; ++i)
             {
                 if (predicate(list[i]))
                 {
@@ -434,11 +436,33 @@ namespace NativeCollections
         /// <returns>
         ///     <c>true</c> if all the elements meet the condition; otherwise <c>false</c>.
         /// </returns>
-        public static bool TrueForAll<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
+        public static bool AllMatch<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
-            for (int i = 0; i < list.Length; i++)
+            for (int i = 0; i < list.Length; ++i)
             {
                 if (!predicate(list[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Determines whether neither the elements in the list meet the specified condition.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements</typeparam>
+        /// <param name="list">The list.</param>
+        /// <param name="predicate">The condition to use.</param>
+        /// <returns>
+        ///     <c>true</c> if none the elements meet the condition; otherwise <c>false</c>.
+        /// </returns>
+        public static bool NoneMatch<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
+        {
+            for (int i = 0; i < list.Length; ++i)
+            {
+                if (predicate(list[i]))
                 {
                     return false;
                 }
@@ -500,7 +524,7 @@ namespace NativeCollections
                 throw new ArgumentOutOfRangeException($"Invalid range, start: {start}, end: {end}");
             }
 
-            return NativeCollectionUtilities.BinarySearch(list._buffer, start, end, value, comparer);
+            return UnsafeUtilities.BinarySearch(list._buffer, start, end, value, comparer);
         }
 
         /// <summary>
@@ -512,7 +536,7 @@ namespace NativeCollections
         public static void ForEach<T>(this NativeList<T> list, Action<T> action) where T : unmanaged
         {
             int length = list.Length;
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < length; ++i)
             {
                 action(list[i]);
             }
@@ -527,7 +551,7 @@ namespace NativeCollections
         public static void ForEach<T>(this NativeList<T> list, Action<T, int> action) where T : unmanaged
         {
             int length = list.Length;
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < length; ++i)
             {
                 action(list[i], i);
             }
@@ -542,7 +566,7 @@ namespace NativeCollections
         public static void ForEachRef<T>(this NativeList<T> list, RefAction<T> action) where T : unmanaged
         {
             int length = list.Length;
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < length; ++i)
             {
                 action(ref list[i]);
             }
@@ -557,7 +581,7 @@ namespace NativeCollections
         public static void ForEachRef<T>(this NativeList<T> list, RefIndexedAction<T> action) where T : unmanaged
         {
             int length = list.Length;
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < length; ++i)
             {
                 action(ref list[i], i);
             }

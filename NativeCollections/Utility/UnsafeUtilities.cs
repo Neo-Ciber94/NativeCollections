@@ -3,9 +3,9 @@
 namespace NativeCollections.Utility
 {
     /// <summary>
-    /// A set of utility methods that make use of <see cref="Unsafe"/>.
+    /// A set of utility methods for unsafe operations.
     /// </summary>
-    unsafe public static class UnsafeUtilities
+    unsafe public static partial class UnsafeUtilities
     {
         /// <summary>
         /// Gets the address of the given value.

@@ -3,33 +3,64 @@ using System.Runtime.CompilerServices;
 
 namespace NativeCollections
 {
+    /// <summary>
+    /// Represents a reference to a value.
+    /// </summary>
+    /// <typeparam name="T">Type of the value.</typeparam>
     unsafe public readonly ref struct ByReference<T>
     {
-        public static ByReference<T> Null => default;
-
         private readonly void* _pointer;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ByReference{T}" /> struct.
+        /// </summary>
+        /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ByReference(ref T value)
         {
             _pointer = Unsafe.AsPointer(ref value);
         }
-
-        public ref readonly T Value
+        
+        internal ByReference(void* pointer)
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => ref Unsafe.AsRef<T>(_pointer);
+            _pointer = pointer;
         }
 
-        public bool HasValue
+        /// <summary>
+        /// Gets a reference to the value.
+        /// </summary>
+        public ref T Value
+        {
+           
+            get
+            {
+                if(_pointer == null)
+                {
+                    throw new InvalidOperationException("No value");
+                }
+
+                return ref Unsafe.AsRef<T>(_pointer);
+            }
+        }
+        
+        /// <summary>
+        /// Determines if there is a reference to a value.
+        /// </summary>
+        public bool IsNull
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _pointer != null;
         }
 
+        /// <summary>
+        /// Gets a string representation of the value of this reference.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
         public override string ToString()
         {
-            return HasValue ? Value!.ToString()! : "null";
+            return IsNull ? Value!.ToString()! : "null";
         }
 
         public override int GetHashCode()
@@ -40,11 +71,6 @@ namespace NativeCollections
         public override bool Equals(object? obj)
         {
             throw new NotSupportedException();
-        }
-
-        public static implicit operator ByReference<T>(ByMutableReference<T> reference)
-        {
-            return new ByReference<T>(ref reference.Value);
         }
 
         public static bool operator ==(ByReference<T> left, ByReference<T> right)

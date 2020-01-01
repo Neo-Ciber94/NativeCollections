@@ -158,7 +158,7 @@ namespace NativeCollections
         {
             get
             {
-                if (index < 0 || index > _capacity)
+                if (index < 0 || index >= _capacity)
                     throw new ArgumentOutOfRangeException("index", $"{index}");
 
                 ref T pointer = ref Unsafe.AsRef<T>(_buffer);
@@ -180,7 +180,7 @@ namespace NativeCollections
             {
                 int i = index.IsFromEnd ? _capacity - index.Value - 1: index.Value;
 
-                if (i < 0 || i > _capacity)
+                if (i < 0 || i >= _capacity)
                     throw new ArgumentOutOfRangeException("index", $"{index}");
 
                 ref T pointer = ref Unsafe.AsRef<T>(_buffer);
@@ -273,7 +273,7 @@ namespace NativeCollections
                 throw new ArgumentOutOfRangeException($"Invalid range; start: {start}, end: {end}");
             }
 
-            NativeCollectionUtilities.Reverse<T>(_buffer, start, end);
+            UnsafeUtilities.Reverse<T>(_buffer, start, end);
         }
 
         /// <summary>
@@ -328,7 +328,7 @@ namespace NativeCollections
                 throw new ArgumentOutOfRangeException($"Invalid range; start: {start}, end: {end}");
             }
 
-            return NativeCollectionUtilities.IndexOf(_buffer, start, end, value);
+            return UnsafeUtilities.IndexOf(_buffer, start, end, value);
         }
 
         /// <summary>
@@ -371,7 +371,7 @@ namespace NativeCollections
                 throw new ArgumentOutOfRangeException($"Invalid range; start: {start}, end: {end}");
             }
 
-            return NativeCollectionUtilities.LastIndexOf(_buffer, start, end, value);
+            return UnsafeUtilities.LastIndexOf(_buffer, start, end, value);
         }
 
         /// <summary>

@@ -497,7 +497,7 @@ namespace NativeCollections
             value = default;
             return false;
         }
-
+        
         public TValue GetValue(TKey key)
         {
             if (!TryGetValue(key, out TValue value))

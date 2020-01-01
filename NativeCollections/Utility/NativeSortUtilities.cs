@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -7,34 +8,163 @@ namespace NativeCollections.Utility
 {
     unsafe public static class NativeSortUtilities
     {
-        public static void Sort<T>(void* pointer, int length)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Sort<T>(void* pointer, int length) where T: IComparable<T>
         {
             Sort(pointer, 0, length - 1, false, Comparer<T>.Default);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Sort<T>(void* pointer, int length, Comparison<T> comparison)
         {
             Sort(pointer, 0, length - 1, false, comparison);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Sort<T>(void* pointer, int length, IComparer<T> comparer)
         {
             Sort(pointer, 0, length - 1, false, comparer);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Sort<T>(void* pointer, int low, int high, bool decending, Comparison<T> comparison)
         {
             QuickSort(pointer, low, high, decending, comparison);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Sort<T>(void* pointer, int low, int high, bool decending, IComparer<T> comparer)
         {
             QuickSort(pointer, low, high, decending, comparer);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SortBy<T, TSelect>(void* pointer, int low, int high, bool decending, IComparer<TSelect> comparer, Func<T, TSelect> selector)
         {
             QuickSort(pointer, low, high, decending, comparer, selector);
+        }
+
+        /// <summary>
+        /// Determines whether the elements in the specified pointer are sorted.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="pointer">The pointer.</param>
+        /// <param name="low">The start.<param>
+        /// <param name="high">The end.</param>
+        /// <param name="decending">if <c>true</c> will check if are sorted by decending; otherwise by ascending.</param>
+        /// <returns>
+        ///   <c>true</c> if the elements in the specified pointer are sorted; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool IsSorted<T>(void* pointer, int low, int high, bool decending) where T: IComparable<T>
+        {
+            Debug.Assert(pointer != null, "Pointer is null");
+            Debug.Assert(low < high, "Invalid range");
+
+            ref T ptr = ref Unsafe.AsRef<T>(pointer);
+
+            int next = low;
+            while (++next < high)
+            {
+                ref T x = ref Unsafe.Add(ref ptr, low);
+                ref T y = ref Unsafe.Add(ref ptr, next);
+
+                int comp = x.CompareTo(y);
+
+                if (decending)
+                {
+                    if (comp < 0)
+                        return false;
+                }
+                else
+                {
+                    if (comp > 0)
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Determines whether the elements in the specified pointer are sorted.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="pointer">The pointer.</param>
+        /// <param name="low">The start.<param>
+        /// <param name="high">The end.</param>
+        /// <param name="decending">if <c>true</c> will check if are sorted by decending; otherwise by ascending.</param>
+        /// <param name="comparer">The comparer.</param>
+        /// <returns>
+        ///   <c>true</c> if the elements in the specified pointer are sorted; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool IsSorted<T>(void* pointer, int low, int high, bool decending, IComparer<T> comparer)
+        {
+            Debug.Assert(pointer != null, "Pointer is null");
+            Debug.Assert(low < high, "Invalid range");
+
+            ref T ptr = ref Unsafe.AsRef<T>(pointer);
+
+            int next = low;
+            while (++next < high)
+            {
+                ref T x = ref Unsafe.Add(ref ptr, low);
+                ref T y = ref Unsafe.Add(ref ptr, next);
+
+                int comp = comparer.Compare(x, y);
+                if (decending)
+                {
+                    if (comp < 0)
+                        return false;
+                }
+                else
+                {
+                    if (comp > 0)
+                        return false;
+                }
+            }
+
+            return true;
+        }
+        
+        /// <summary>
+        /// Determines whether the elements in the specified pointer are sorted.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="pointer">The pointer.</param>
+        /// <param name="low">The start.<param>
+        /// <param name="high">The end.</param>
+        /// <param name="decending">if <c>true</c> will check if are sorted by decending; otherwise by ascending.</param>
+        /// <param name="comparison">The comparison.</param>
+        /// <returns>
+        ///   <c>true</c> if the elements in the specified pointer are sorted; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool IsSorted<T>(void* pointer, int low, int high, bool decending, Comparison<T> comparison)
+        {
+            Debug.Assert(pointer != null, "Pointer is null");
+            Debug.Assert(low < high, "Invalid range");
+
+            ref T ptr = ref Unsafe.AsRef<T>(pointer);
+
+            int next = low;
+            while(++next < high)
+            {
+                ref T x = ref Unsafe.Add(ref ptr, low);
+                ref T y = ref Unsafe.Add(ref ptr, next);
+
+                int comp = comparison(x, y);
+                if (decending)
+                {
+                    if (comp < 0)
+                        return false;
+                }
+                else
+                {
+                    if (comp > 0)
+                        return false;
+                }
+            }
+
+            return true;
         }
 
         #region InsertionSort

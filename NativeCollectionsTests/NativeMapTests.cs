@@ -270,7 +270,7 @@ namespace NativeCollections.Tests
 
             if (map.TryGetValueReference(4, out var otherValue))
             {
-                Assert.IsFalse(otherValue.HasValue);
+                Assert.IsFalse(otherValue.IsNull);
             }
 
             DisposeNativeStrings(map);

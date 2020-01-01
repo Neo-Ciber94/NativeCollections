@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NativeCollections.Allocators;
@@ -8,7 +9,7 @@ namespace NativeCollections
 {
     unsafe public struct NativeQueue<T> : IDisposable where T : unmanaged
     {
-        internal void* _buffer;
+        internal T* _buffer;
         private int _capacity;
         private int _count;
         private int _allocatorID;
@@ -23,7 +24,7 @@ namespace NativeCollections
             if (initialCapacity <= 0)
                 throw new ArgumentException($"capacity must be greater than 0: {initialCapacity}");
 
-            _buffer = allocator.Allocate(initialCapacity, sizeof(T));
+            _buffer = (T*)allocator.Allocate(initialCapacity, sizeof(T));
             _capacity = initialCapacity;
             _count = _head = _tail = 0;
             _allocatorID = allocator.ID;
@@ -39,7 +40,7 @@ namespace NativeCollections
             }
             else
             {
-                _buffer = allocator.Allocate(elements.Length, sizeof(T));
+                _buffer = (T*)allocator.Allocate(elements.Length, sizeof(T));
                 _capacity = elements.Length;
                 _count = _capacity;
                 _head = _tail = 0;
@@ -136,7 +137,17 @@ namespace NativeCollections
 
         public bool Contains(T value)
         {
-            return NativeCollectionUtilities.IndexOf<T>(_buffer, _capacity, value) >= 0;
+            var comparer = EqualityComparer<T>.Default;
+
+            for(int i = _head; _head != _tail; i = (i + 1) % _capacity)
+            {
+                if(comparer.Equals(_buffer[i], value))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public void TrimExcess()
@@ -169,7 +180,7 @@ namespace NativeCollections
 
             newCapacity = newCapacity < 4 ? 4 : newCapacity;
 
-            void* newBuffer = GetAllocator()!.Allocate<T>(newCapacity);
+            T* newBuffer = (T*)GetAllocator()!.Allocate<T>(newCapacity);
             ref T destination = ref Unsafe.AsRef<T>(newBuffer);
             ref T source = ref Unsafe.AsRef<T>(_buffer);
             int head = (_head + 1) % _capacity;

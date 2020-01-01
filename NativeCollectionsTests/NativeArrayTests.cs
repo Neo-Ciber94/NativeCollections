@@ -324,6 +324,8 @@ namespace NativeCollections.Tests
             Assert.IsFalse(enumerator.MoveNext());
         }
 
+        // Extensions
+
         [Test()]
         public void SortTest()
         {

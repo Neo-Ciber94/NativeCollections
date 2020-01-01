@@ -318,7 +318,7 @@ namespace NativeCollections
                 throw new ArgumentOutOfRangeException($"Invalid range, start: {start}, end: {end}");
             }
 
-            return NativeCollectionUtilities.BinarySearch(array._buffer, start, end, value, comparer);
+            return UnsafeUtilities.BinarySearch(array._buffer, start, end, value, comparer);
         }
 
         /// <summary>
@@ -350,11 +350,11 @@ namespace NativeCollections
         /// <returns>The last element that matchs the condition or null if not found.</returns>
         public static T? FindLast<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
         {
-            for (int i = 0; i < array.Length; i++)
+            for (int i = array.Length - 1; i >= 0; --i)
             {
-                if (predicate(array[^i]))
+                if (predicate(array[i]))
                 {
-                    return array[^i];
+                    return array[i];
                 }
             }
 
@@ -367,18 +367,19 @@ namespace NativeCollections
         /// <typeparam name="T">Type of the elements.</typeparam>
         /// <param name="array">The array.</param>
         /// <param name="predicate">The predicate to use.</param>
-        /// <returns>A reference to the first element that matchs the condition or null if not found.</returns>
-        public static ref T? FindFirstRef<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
+        /// <returns>A reference to the first element that matchs the condition.</returns>
+        /// <exception cref="InvalidOperationException">If no value is not found.</exception>
+        public static ref T FindFirstRef<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
         {
             foreach (ref var e in array)
             {
                 if (predicate(e))
                 {
-                    return ref Unsafe.As<T, T?>(ref e);
+                    return ref e;
                 }
             }
 
-            return ref UnsafeUtilities.NullRef<T?>();
+            throw new InvalidOperationException("No value found");
         }
 
         /// <summary>
@@ -387,18 +388,19 @@ namespace NativeCollections
         /// <typeparam name="T">Type of the elements.</typeparam>
         /// <param name="array">The array.</param>
         /// <param name="predicate">The predicate to use.</param>
-        /// <returns>A reference to the last element that matchs the condition or null if not found.</returns>
-        public static ref T? FindLastRef<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
+        /// <returns>A reference to the last element that matchs the condition.</returns>
+        /// <exception cref="InvalidOperationException">If no value is not found.</exception>
+        public static ref T FindLastRef<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
         {
-            for (int i = 0; i < array.Length; i++)
+            for (int i = array.Length - 1; i >= 0; --i)
             {
-                if (predicate(array[^i]))
+                if (predicate(array[i]))
                 {
-                    return ref Unsafe.As<T, T?>(ref array[^i]);
+                    return ref array[i];
                 }
             }
 
-            return ref UnsafeUtilities.NullRef<T?>();
+            throw new InvalidOperationException("No value found");
         }
 
         /// <summary>
@@ -433,7 +435,7 @@ namespace NativeCollections
         /// <returns>The index of the first element that meet the condition.</returns>
         public static int FindIndex<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
         {
-            for (int i = 0; i < array.Length; i++)
+            for (int i = 0; i < array.Length; ++i)
             {
                 if (predicate(array[i]))
                 {
@@ -453,9 +455,9 @@ namespace NativeCollections
         /// <returns>The index of the last element that meet the condition.</returns>
         public static int FindLastIndex<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
         {
-            for (int i = 0; i < array.Length; i++)
+            for (int i = array.Length - 1; i >= 0; --i)
             {
-                if (predicate(array[^i]))
+                if (predicate(array[i]))
                 {
                     return i;
                 }
@@ -471,9 +473,9 @@ namespace NativeCollections
         /// <param name="array">The array.</param>
         /// <param name="predicate">The predicate used.</param>
         /// <returns><c>true</c> if a value exists; otherwise <c>false</c>.</returns>
-        public static bool Exists<T>(this NativeArray<T> array, Predicate<T> predicate) where T: unmanaged
+        public static bool AnyMatch<T>(this NativeArray<T> array, Predicate<T> predicate) where T: unmanaged
         {
-            for(int i = 0; i < array.Length; i++)
+            for(int i = 0; i < array.Length; ++i)
             {
                 if (predicate(array[i]))
                 {
@@ -493,11 +495,33 @@ namespace NativeCollections
         /// <returns>
         ///     <c>true</c> if all the elements meet the condition; otherwise <c>false</c>.
         /// </returns>
-        public static bool TrueForAll<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
+        public static bool AllMatch<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
         {
-            for (int i = 0; i < array.Length; i++)
+            for (int i = 0; i < array.Length; ++i)
             {
                 if (!predicate(array[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Determines whether neither of the elements in the array meet the specified condition.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements</typeparam>
+        /// <param name="array">The array.</param>
+        /// <param name="predicate">The condition to use.</param>
+        /// <returns>
+        ///     <c>true</c> if none the elements meet the condition; otherwise <c>false</c>.
+        /// </returns>
+        public static bool NoneMatch<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
+        {
+            for (int i = 0; i < array.Length; ++i)
+            {
+                if (predicate(array[i]))
                 {
                     return false;
                 }
@@ -515,7 +539,7 @@ namespace NativeCollections
         public static void ForEach<T>(this NativeArray<T> array, Action<T> action) where T: unmanaged
         {
             int length = array.Length;
-            for(int i = 0; i < length; i++)
+            for(int i = 0; i < length; ++i)
             {
                 action(array[i]);
             }
@@ -530,7 +554,7 @@ namespace NativeCollections
         public static void ForEach<T>(this NativeArray<T> array, Action<T, int> action) where T : unmanaged
         {
             int length = array.Length;
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < length; ++i)
             {
                 action(array[i], i);
             }
@@ -545,7 +569,7 @@ namespace NativeCollections
         public static void ForEachRef<T>(this NativeArray<T> array, RefAction<T> action) where T : unmanaged
         {
             int length = array.Length;
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < length; ++i)
             {
                 action(ref array[i]);
             }
@@ -560,7 +584,7 @@ namespace NativeCollections
         public static void ForEachRef<T>(this NativeArray<T> array, RefIndexedAction<T> action) where T : unmanaged
         {
             int length = array.Length;
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < length; ++i)
             {
                 action(ref array[i], i);
             }
