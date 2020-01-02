@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "NativeCollections": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

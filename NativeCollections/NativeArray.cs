@@ -460,9 +460,7 @@ namespace NativeCollections
             if (Allocator.IsCached(_allocatorID))
             {
                 GetAllocator()!.Free(_buffer);
-                _buffer = null;
-                _capacity = 0;
-                _allocatorID = -1;
+                this = default;
             }
         }
 
@@ -479,9 +477,7 @@ namespace NativeCollections
             NativeList<T> list = new NativeList<T>(_buffer, _capacity, GetAllocator()!);
 
             // Invalidate this NativeArray, not actual dispose
-            _buffer = null;
-            _capacity = 0;
-            _allocatorID = -1;
+            this = default;
 
             return list;
         }

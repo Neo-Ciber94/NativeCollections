@@ -12,7 +12,21 @@ namespace NativeCollections.Allocators
         private static readonly Allocator?[] _cacheAllocators = new Allocator[MaxAllocatorCacheSize];
         private static int _nextID = 1;
 
-        public static Allocator Default { get; } = DefaultHeapAllocator.Instance;
+        unsafe public static Allocator Default { get; }
+
+        static Allocator()
+        {
+            //Default = DefaultHeapAllocator.Instance;
+#if DEBUG
+            unsafe
+            {
+                DefaultHeapAllocator defaultAllocator = DefaultHeapAllocator.Instance;
+                Default = new DebugAllocator(defaultAllocator, defaultAllocator.SizeOf);
+            }
+#else
+            Default = DefaultHeapAllocator.Instance;
+#endif
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Allocator? GetAllocatorByID(int id)
@@ -78,7 +92,7 @@ namespace NativeCollections.Allocators
 
         public int ID { get; } = -1;
 
-        #region Virtual and Abstract methods
+#region Virtual and Abstract methods
         public abstract unsafe void* Allocate(int elementCount, int elementSize = 1, bool initMemory = true);
 
         public abstract unsafe void* Reallocate(void* pointer, int elementCount, int elementSize = 1, bool initMemory = true);
@@ -92,7 +106,7 @@ namespace NativeCollections.Allocators
                 RemoveInstanceFromCache(this);
             }
         }
-        #endregion
+#endregion
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe T* Allocate<T>(int elementCount) where T: unmanaged

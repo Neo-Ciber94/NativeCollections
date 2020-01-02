@@ -260,6 +260,18 @@ namespace NativeCollections
             return defaultValue;
         }
 
+        public ref TValue GetValueReference(TKey key)
+        {
+            int index = BinarySearch(key);
+
+            if (index >= 0)
+            {
+                return ref _buffer[index].value;
+            }
+
+            throw new KeyNotFoundException(key.ToString());
+        }
+
         public bool ContainsKey(TKey key)
         {
             if(_count == 0)

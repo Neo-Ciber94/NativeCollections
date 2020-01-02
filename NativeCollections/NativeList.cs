@@ -222,7 +222,7 @@ namespace NativeCollections
 
             if (_count == _capacity)
             {
-                ResizeIfNeeded(_count + 1);
+                RequireCapacity(_count + 1);
             }
 
             ref T startAddress = ref Unsafe.AsRef<T>(_buffer);
@@ -264,7 +264,7 @@ namespace NativeCollections
             if (length <= 0)
                 throw new ArgumentException(nameof(length), length.ToString());
 
-            ResizeIfNeeded(_count + length);
+            RequireCapacity(_count + length);
 
             void* destination = ((byte*)_buffer) + Unsafe.SizeOf<T>() * _count;
             Unsafe.CopyBlock(destination, source, (uint)(length * Unsafe.SizeOf<T>()));
@@ -330,7 +330,7 @@ namespace NativeCollections
             if (length <= 0)
                 throw new ArgumentException(nameof(length), length.ToString());
 
-            ResizeIfNeeded(_count + length);
+            RequireCapacity(_count + length);
 
             int size = _count - index;
             void* targetPtr = _buffer + index;
@@ -730,7 +730,7 @@ namespace NativeCollections
         /// Creates a new <see cref="NativeArray{T}"/> with the elements of this list and dispose this list.
         /// </summary>
         /// <param name="createNewArrayIfNeeded">If <c>true</c> a new array will be created if the capacity of this
-        /// list is diferent than its length; otherwise is guaranteed the new array will use this list memory.</param>
+        /// list is different than its length; otherwise is guaranteed the new array will use this list memory.</param>
         /// <returns>A newly created array with this list elements.</returns>
         public NativeArray<T> ToNativeArrayAndDispose(bool createNewArrayIfNeeded = true)
         {
@@ -745,10 +745,7 @@ namespace NativeCollections
                 NativeArray<T> array = new NativeArray<T>(_buffer, _capacity, GetAllocator()!);
 
                 // Not actual dispose, just invalidate this instance
-                _buffer = null;
-                _capacity = 0;
-                _count = 0;
-
+                this = default;
                 return array;
             }
             else
@@ -779,9 +776,7 @@ namespace NativeCollections
             if (Allocator.IsCached(_allocatorID))
             {
                 GetAllocator()!.Free(_buffer);
-                _buffer = null;
-                _capacity = 0;
-                _count = 0;
+                this = default;
             }
         }
 
@@ -811,7 +806,7 @@ namespace NativeCollections
                 return;
             }
 
-            SetCapacity(capacity);
+            Resize(capacity);
         }
 
         /// <summary>
@@ -820,35 +815,28 @@ namespace NativeCollections
         /// <param name="capacity">The expected min capacity.</param>
         public void EnsureCapacity(int capacity)
         {
-            Debug.Assert(_buffer != null, "NativeList is invalid");
-
-            if (capacity <= 0)
-            {
-                throw new ArgumentException(capacity.ToString(), nameof(capacity));
-            }
-
             if (capacity > _capacity)
             {
-                SetCapacity(capacity);
+                Resize(capacity);
             }
         }
 
-        private void ResizeIfNeeded(int min)
+        private void RequireCapacity(int min)
         {
             if (min > _capacity)
             {
                 if (min < _capacity * 2)
                 {
-                    SetCapacity(_capacity * 2);
+                    Resize(_capacity * 2);
                 }
                 else
                 {
-                    SetCapacity(min);
+                    Resize(min);
                 }
             }
         }
 
-        private void SetCapacity(int newCapacity)
+        private void Resize(int newCapacity)
         {
             if (_buffer == null)
                 return;

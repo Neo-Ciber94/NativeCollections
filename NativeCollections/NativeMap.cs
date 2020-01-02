@@ -15,9 +15,16 @@ namespace NativeCollections
         Replace
     }
 
+    /// <summary>
+    /// Represents a collection of key-values where each key is associated with a single value.
+    /// </summary>
+    /// <typeparam name="TKey">The type of the key.</typeparam>
+    /// <typeparam name="TValue">The type of the value.</typeparam>
+    /// <seealso cref="NativeCollections.INativeContainer{System.Collections.Generic.KeyValuePair{TKey, TValue}}" />
+    /// <seealso cref="System.IDisposable" />
     [DebuggerDisplay("Length = {Length}")]
     [DebuggerTypeProxy(typeof(NativeMapDebugView<,>))]
-    public unsafe struct NativeMap<TKey, TValue> : IDisposable where TKey : unmanaged where TValue : unmanaged
+    public unsafe struct NativeMap<TKey, TValue> : INativeContainer<KeyValuePair<TKey, TValue>>, IDisposable where TKey : unmanaged where TValue : unmanaged
     {
         internal struct Entry
         {
@@ -265,67 +272,6 @@ namespace NativeCollections
             }
         }
 
-        public ref struct Enumerator
-        {
-            private Entry* _entries;
-            private int _count;
-            private int _index;
-
-            public Enumerator(ref NativeMap<TKey, TValue> map)
-            {
-                _entries = map._buffer;
-                _count = map._count;
-                _index = -1;
-            }
-
-            public ref KeyValuePair<TKey, TValue> Current
-            {
-                get
-                {
-                    if (_index < 0 || _index > _count)
-                        throw new ArgumentOutOfRangeException("index", _index.ToString());
-
-                    // KeyValuePair 'key' and 'value' are aligned with NativeMap.Entry 'key' and 'value'
-                    return ref Unsafe.As<Entry, KeyValuePair<TKey, TValue>>(ref _entries[_index]);
-                }
-            }
-
-            public void Dispose()
-            {
-                if (_entries == null)
-                    return;
-
-                _entries = null;
-                _count = 0;
-                _index = -1;
-            }
-
-            public bool MoveNext()
-            {
-                if (_count == 0)
-                    return false;
-
-                int i = _index + 1;
-                while (i < _count)
-                {
-                    if (_entries[i].hashCode >= 0)
-                    {
-                        _index = i;
-                        return true;
-                    }
-
-                    i++;
-                }
-
-                return false;
-            }
-
-            public void Reset()
-            {
-                _index = -1;
-            }
-        }
-
         internal Entry* _buffer;
         private int _count;
         private int _capacity;
@@ -333,8 +279,17 @@ namespace NativeCollections
         private int _freeCount;
         private int _allocatorID;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeMap{TKey, TValue}" /> struct.
+        /// </summary>
+        /// <param name="initialCapacity">The initial capacity.</param>
         public NativeMap(int initialCapacity) : this(initialCapacity, Allocator.Default) { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeMap{TKey, TValue}" /> struct.
+        /// </summary>
+        /// <param name="initialCapacity">The initial capacity.</param>
+        /// <param name="allocator">The allocator.</param>
         public NativeMap(int initialCapacity, Allocator allocator)
         {
             if (initialCapacity <= 0)
@@ -350,8 +305,17 @@ namespace NativeCollections
             Initializate();
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeMap{TKey, TValue}" /> struct.
+        /// </summary>
+        /// <param name="elements">The initial elements.</param>
         public NativeMap(Span<(TKey, TValue)> elements) : this(elements, Allocator.Default) { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeMap{TKey, TValue}" /> struct.
+        /// </summary>
+        /// <param name="elements">The initial elements.</param>
+        /// <param name="allocator">The allocator.</param>
         public NativeMap(Span<(TKey, TValue)> elements, Allocator allocator)
         {
             if (elements.IsEmpty)
@@ -376,14 +340,30 @@ namespace NativeCollections
             }
         }
 
+        /// <summary>
+        /// Gets the number of elements on this map.
+        /// </summary>
         public readonly int Length => _count - _freeCount;
 
+        /// <summary>
+        /// Gets the number of elements this map can hold without resize.
+        /// </summary>
         public readonly int Capacity => _capacity;
 
+        /// <summary>
+        /// Checks if this map is allocated.
+        /// </summary>
         public readonly bool IsValid => _buffer != null;
 
+        /// <summary>
+        /// Determines if this map have elements.
+        /// </summary>
         public readonly bool IsEmpty => _count == 0;
 
+        /// <summary>
+        /// Gets the allocator.
+        /// </summary>
+        /// <returns>The allocator used for this map.</returns>
         public Allocator? GetAllocator()
         {
             return Allocator.GetAllocatorByID(_allocatorID);
@@ -393,6 +373,15 @@ namespace NativeCollections
 
         public ValueCollection Values => new ValueCollection(ref this);
 
+        /// <summary>
+        /// Gets or sets the <see cref="TValue" /> associated to the specified key.
+        /// </summary>
+        /// <value>
+        /// The <see cref="TValue" />.
+        /// </value>
+        /// <param name="key">The key.</param>
+        /// <returns>The value associated to the key.</returns>
+        /// <exception cref="KeyNotFoundException"> if the key don't exists when the getter is used.</exception>
         public TValue this[TKey key]
         {
             readonly get
@@ -410,22 +399,45 @@ namespace NativeCollections
             set => AddOrUpdate(key, value);
         }
 
+        /// <summary>
+        /// Adds the specified key and value to the map.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The value.</param>
+        /// <exception cref="InvalidOperationException">If the key already exists.</exception>
         public void Add(TKey key, TValue value)
         {
             if (!TryInsert(key, value, InsertMode.Add))
                 throw new InvalidOperationException($"Duplicated key: {key}");
         }
 
+        /// <summary>
+        /// Attemps to add the specified key and value.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The value.</param>
+        /// <returns><c>true</c> if the pair was added or <c>false</c> if the key already exists.</returns>
         public bool TryAdd(TKey key, TValue value)
         {
             return TryInsert(key, value, InsertMode.Add);
         }
 
+        /// <summary>
+        /// Adds the specified key and value pair to the map, or update the key associated value if already exists.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The value.</param>
         public void AddOrUpdate(TKey key, TValue value)
         {
             TryInsert(key, value, InsertMode.Any);
         }
 
+        /// <summary>
+        /// Replaces the value associated to the specified key.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="newValue">The new value.</param>
+        /// <returns><c>true</c> if the value was replaced otherwise <c>false</c>.</returns>
         public bool Replace(TKey key, TValue newValue)
         {
             if (TryInsert(key, newValue, InsertMode.Replace))
@@ -434,6 +446,11 @@ namespace NativeCollections
             return false;
         }
 
+        /// <summary>
+        /// Removes key and the value associated to it.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <returns><c>true</c> if the key and value were removed.</returns>
         public bool Remove(TKey key)
         {
             var comparer = EqualityComparer<TKey>.Default;
@@ -472,6 +489,12 @@ namespace NativeCollections
             return false;
         }
 
+        /// <summary>
+        /// Attemps to get the value associated to the specifeid key.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The ouput value.</param>
+        /// <returns><c>true</c> if the key exists thus its value will be returned.</returns>
         public bool TryGetValue(TKey key, out TValue value)
         {
             int index = FindEntry(key);
@@ -485,6 +508,12 @@ namespace NativeCollections
             return false;
         }
 
+        /// <summary>
+        /// Attemps to get a reference to the value associated to the specifeid key.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The ouput value reference.</param>
+        /// <returns><c>true</c> if the key exists thus its value will be returned.</returns>
         public bool TryGetValueReference(TKey key, out ByReference<TValue> value)
         {
             int index = FindEntry(key);
@@ -497,7 +526,13 @@ namespace NativeCollections
             value = default;
             return false;
         }
-        
+
+        /// <summary>
+        /// Gets the value associated to the key.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <returns>The value associated to the key.</returns>
+        /// <exception cref="KeyNotFoundException"> if the key don't exists.</exception>
         public TValue GetValue(TKey key)
         {
             if (!TryGetValue(key, out TValue value))
@@ -508,6 +543,12 @@ namespace NativeCollections
             return value;
         }
 
+        /// <summary>
+        /// Gets the value associated to the key or default given value.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="defaultValue">The default value.</param>
+        /// <returns>The value associated to the key or the default value if the key don't exists.</returns>
         public TValue GetValueOrDefault(TKey key, TValue defaultValue)
         {
             if (TryGetValue(key, out TValue value))
@@ -518,11 +559,43 @@ namespace NativeCollections
             return defaultValue;
         }
 
+        /// <summary>
+        /// Gets a reference to the value associated to the given key.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <returns>A reference to the value associated to the key.</returns>
+        /// <exception cref="KeyNotFoundException"> if the key don't exists.</exception>
+        public ref TValue GetValueReference(TKey key)
+        {
+            int index = FindEntry(key);
+
+            if (index >= 0)
+            {
+                return ref _buffer[index].value;
+            }
+
+            throw new KeyNotFoundException(key.ToString());
+        }
+
+        /// <summary>
+        /// Determines whether the map contains the specified key.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <returns>
+        ///   <c>true</c> if the map contains the specified key; otherwise, <c>false</c>.
+        /// </returns>
         public readonly bool ContainsKey(in TKey key)
         {
             return FindEntry(key) >= 0;
         }
 
+        /// <summary>
+        /// Determines whether the map contains the specified value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>
+        ///   <c>true</c> if the map contains the specified value; otherwise, <c>false</c>.
+        /// </returns>
         public readonly bool ContainsValue(in TValue value)
         {
             var comparer = EqualityComparer<TValue>.Default;
@@ -538,16 +611,36 @@ namespace NativeCollections
             return false;
         }
 
+        /// <summary>
+        /// Copies the <see cref="KeyValuePair{TKey, TValue}"/> this map contains to the specified <see cref="Span{T}"/>.
+        /// </summary>
+        /// <param name="span">The destination span.</param>
+        /// <exception cref="ArgumentException">If the span is empty.</exception>
         public readonly void CopyTo(in Span<KeyValuePair<TKey, TValue>> span)
         {
             CopyTo(span, 0, Length);
         }
 
+        /// <summary>
+        /// Copies the <see cref="KeyValuePair{TKey, TValue}"/> this map contains to the specified <see cref="Span{T}"/>.
+        /// </summary>
+        /// <param name="span">The destination span.</param>
+        /// <param name="count">The count.</param>
+        /// <exception cref="ArgumentException">If the span is empty.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">If the count are out of range.</exception>
         public readonly void CopyTo(in Span<KeyValuePair<TKey, TValue>> span, int count)
         {
             CopyTo(span, 0, count);
         }
 
+        /// <summary>
+        /// Copies the <see cref="KeyValuePair{TKey, TValue}"/> this map contains to the specified <see cref="Span{T}"/>.
+        /// </summary>
+        /// <param name="span">The destination span.</param>
+        /// <param name="startIndex">The start index.</param>
+        /// <param name="count">The count.</param>
+        /// <exception cref="ArgumentException">If the span is empty.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">If the range startIndex and count are out of range.</exception>
         public readonly void CopyTo(in Span<KeyValuePair<TKey, TValue>> span, int startIndex, int count)
         {
             if (span.IsEmpty)
@@ -557,7 +650,7 @@ namespace NativeCollections
                 throw new ArgumentOutOfRangeException(nameof(startIndex), startIndex.ToString());
 
             if (count < 0 || count > Length)
-                throw new ArgumentException(nameof(count), count.ToString());
+                throw new ArgumentOutOfRangeException(nameof(count), count.ToString());
 
             int i = 0;
             int j = 0;
@@ -575,6 +668,10 @@ namespace NativeCollections
             while (i < count);
         }
 
+        /// <summary>
+        /// Allocates a new array with the key-values of this map.
+        /// </summary>
+        /// <returns>An array with the key-values of this map.</returns>
         public readonly KeyValuePair<TKey, TValue>[] ToArray()
         {
             if (_count == 0)
@@ -596,11 +693,18 @@ namespace NativeCollections
             return array;
         }
 
+        /// <summary>
+        /// Removes the excess space from this map.
+        /// </summary>
         public void TrimExcess()
         {
             TrimExcess(Length);
         }
 
+        /// <summary>
+        /// Removes the excess space from this map.
+        /// </summary>
+        /// <param name="capacity">The min capacity.</param>
         public void TrimExcess(int capacity)
         {
             if (capacity <= 0)
@@ -646,6 +750,10 @@ namespace NativeCollections
             _capacity = capacity;
         }
 
+        /// <summary>
+        /// Ensures this map can hold the specified amount of elements without resize.
+        /// </summary>
+        /// <param name="capacity">The min capacity.</param>
         public void EnsureCapacity(int capacity)
         {
             if (capacity <= 0)
@@ -655,6 +763,79 @@ namespace NativeCollections
             {
                 Resize(capacity);
             }
+        }
+
+        /// <summary>
+        /// Releases all the resouces used for this map.
+        /// </summary>
+        public void Dispose()
+        {
+            if (_buffer == null)
+                return;
+
+            if (Allocator.IsCached(_allocatorID))
+            {
+                GetAllocator()!.Free(_buffer);
+                this = default;
+            }
+        }
+
+        /// <summary>
+        /// Gets a string representation of the key-values of this map.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            if (_buffer == null)
+            {
+                return "[Invalid]";
+            }
+
+            if (_count == 0)
+            {
+                return "[]";
+            }
+
+            // TODO: Reduce StringBuilderCache calls overhead by implementing ToString() for (1..10) elements?
+
+            StringBuilder sb = StringBuilderCache.Acquire();
+            sb.Append('[');
+
+            Enumerator enumerator = GetEnumerator();
+
+            if (enumerator.MoveNext())
+            {
+                while (true)
+                {
+                    ref KeyValuePair<TKey, TValue> pair = ref enumerator.Current;
+                    sb.Append('{');
+                    sb.Append(pair.Key.ToString());
+                    sb.Append(", ");
+                    sb.Append(pair.Value.ToString());
+                    sb.Append('}');
+
+                    if (!enumerator.MoveNext())
+                    {
+                        break;
+                    }
+
+                    sb.Append(", ");
+                }
+            }
+
+            sb.Append(']');
+            return StringBuilderCache.ToStringAndRelease(ref sb!);
+        }
+
+        /// <summary>
+        /// Gets an enumerator over the key-values of this map.
+        /// </summary>
+        /// <returns>An enumerator over this map key-values.</returns>
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(ref this);
         }
 
         private bool TryInsert(TKey key, TValue value, InsertMode mode)
@@ -790,68 +971,85 @@ namespace NativeCollections
             return hashCode % capacity;
         }
 
-        public void Dispose()
+        /// <summary>
+        /// An enumerator over the key-values of the map.
+        /// </summary>
+        public ref struct Enumerator
         {
-            if (_buffer == null)
-                return;
+            private Entry* _entries;
+            private int _count;
+            private int _index;
 
-            if (Allocator.IsCached(_allocatorID))
+            /// <summary>
+            /// Initializes a new instance of the <see cref="NativeMap{TKey, TValue}.Enumerator" /> struct.
+            /// </summary>
+            /// <param name="map">The map.</param>
+            public Enumerator(ref NativeMap<TKey, TValue> map)
             {
-                GetAllocator()!.Free(_buffer);
-                _buffer = null;
-                _capacity = 0;
-                _count = 0;
-                _freeCount = 0;
-                _freeList = 0;
-            }
-        }
-
-        public override string ToString()
-        {
-            if (_buffer == null)
-            {
-                return "[Invalid]";
+                _entries = map._buffer;
+                _count = map._count;
+                _index = -1;
             }
 
-            if (_count == 0)
+            /// <summary>
+            /// Gets a reference to the current key-value.
+            /// </summary>
+            public ref KeyValuePair<TKey, TValue> Current
             {
-                return "[]";
-            }
-
-            // TODO: Reduce StringBuilderCache calls overhead by implementing ToString() for (1..10) elements?
-
-            StringBuilder sb = StringBuilderCache.Acquire();
-            sb.Append('[');
-
-            Enumerator enumerator = GetEnumerator();
-
-            if (enumerator.MoveNext())
-            {
-                while (true)
+                get
                 {
-                    ref KeyValuePair<TKey, TValue> pair = ref enumerator.Current;
-                    sb.Append('{');
-                    sb.Append(pair.Key.ToString());
-                    sb.Append(", ");
-                    sb.Append(pair.Value.ToString());
-                    sb.Append('}');
+                    if (_index < 0 || _index > _count)
+                        throw new ArgumentOutOfRangeException("index", _index.ToString());
 
-                    if (!enumerator.MoveNext())
-                    {
-                        break;
-                    }
-
-                    sb.Append(", ");
+                    // KeyValuePair 'key' and 'value' are aligned with NativeMap.Entry 'key' and 'value'
+                    return ref Unsafe.As<Entry, KeyValuePair<TKey, TValue>>(ref _entries[_index]);
                 }
             }
 
-            sb.Append(']');
-            return StringBuilderCache.ToStringAndRelease(ref sb!);
-        }
+            /// <summary>
+            /// Invalidaes this enumerator.
+            /// </summary>
+            public void Dispose()
+            {
+                if (_entries == null)
+                    return;
 
-        public Enumerator GetEnumerator()
-        {
-            return new Enumerator(ref this);
+                _entries = null;
+                _count = 0;
+                _index = -1;
+            }
+
+            /// <summary>
+            /// Moves to the next key-value.
+            /// </summary>
+            /// <returns></returns>
+            public bool MoveNext()
+            {
+                if (_count == 0)
+                    return false;
+
+                int i = _index + 1;
+                while (i < _count)
+                {
+                    if (_entries[i].hashCode >= 0)
+                    {
+                        _index = i;
+                        return true;
+                    }
+
+                    i++;
+                }
+
+                return false;
+            }
+
+            /// <summary>
+            /// Resets this enumerator.
+            /// </summary>
+            public void Reset()
+            {
+                _index = -1;
+            }
         }
     }
 }

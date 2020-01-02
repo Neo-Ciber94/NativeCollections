@@ -271,11 +271,12 @@ namespace NativeCollections
         /// <returns>The first element that matchs the condition or null if not found.</returns>
         public static T? FindFirst<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
-            foreach (ref var e in list)
+            for(int i = 0; i < list.Length; ++i)
             {
-                if (predicate(e))
+                ref T value = ref list[i];
+                if (predicate(value))
                 {
-                    return e;
+                    return value;
                 }
             }
 
