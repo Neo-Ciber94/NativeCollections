@@ -33,8 +33,9 @@ namespace NativeCollections.Utility
 
         public static void ComputeGarbageAndLog(string name, uint samples, Action action)
         {
-            var result = MeasureGarbage(samples, action);
-            Console.WriteLine($"{name} >> {result} bytes");
+            double result = MeasureGarbage(samples, action);
+            double kbAllocated = result / 1000;
+            Console.WriteLine($"{name} >> {kbAllocated} Kb");
         }
 
         public static BenchmarkResult Compute(Action action)
@@ -136,7 +137,7 @@ namespace NativeCollections.Utility
             }
 
             long endMemory = GC.GetTotalMemory(forceFullCollection: false);
-            return endMemory - startMemory;
+            return Math.Max(0, endMemory - startMemory);
         }
     }
 }

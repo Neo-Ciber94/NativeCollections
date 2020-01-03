@@ -4,6 +4,11 @@ using NativeCollections.Allocators.Internal;
 
 namespace NativeCollections.Allocators
 {
+    /// <summary>
+    /// Represents an operation performed over the elements of a <see cref="Span{T}"/>.
+    /// </summary>
+    /// <typeparam name="T">Type of the span elements.</typeparam>
+    /// <param name="span">The span.</param>
     public delegate void SpanAction<T>(Span<T> span);
 
     public abstract class Allocator
@@ -120,17 +125,59 @@ namespace NativeCollections.Allocators
             return (T*)Reallocate(pointer, elementCount, sizeof(T));
         }
 
+        /// <summary>
+        /// Allocates the specified amount of elements and perform an operation over them using a <see cref="Span{T}"/>.
+        /// </summary>
+        /// <typeparam name="T">Type of the allocated elements.</typeparam>
+        /// <param name="elementCount">The number of elements to allocate.</param>
+        /// <param name="action">The action to perform over the elements using a span.</param>
         public unsafe void Borrow<T>(int elementCount, SpanAction<T> action) where T: unmanaged
         {
-            void* memory = Default.Allocate(elementCount, sizeof(T));
+            void* memBlock = Allocate<T>(elementCount);
 
             try
             {
-                action(new Span<T>(memory, elementCount));
+                action(new Span<T>(memBlock, elementCount));
             }
             finally
             {
-                Free(memory);
+                Free(memBlock);
+            }
+        }
+
+        /// <summary>
+        /// Allocates the specified amount of elements and perform an operation over them using a <see cref="Span{T}"/>.
+        /// </summary>
+        /// <typeparam name="T">Type of the allocated elements.</typeparam>
+        /// <param name="elementCount">The number of elements to allocate.</param>
+        /// <param name="stackAlloc">If <c>true</c> and the amount of elements is small the allocation may occur in the stack.</param>
+        /// <param name="action">The action to perform over the elements using a span.</param>
+        public unsafe void Borrow<T>(int elementCount, bool stackAlloc, SpanAction<T> action) where T : unmanaged
+        {
+#if X64
+            const int bytesThreshold = 500000;
+#else
+            const int bytesThreshold = 250000;
+#endif
+            int totalBytes = sizeof(T) * elementCount;
+            
+            if(totalBytes > bytesThreshold && stackAlloc)
+            {
+                void* memBlock = stackalloc byte[totalBytes];
+                action(new Span<T>(memBlock, elementCount));
+            }
+            else
+            {
+                void* memBlock = Allocate(totalBytes);
+
+                try
+                {
+                    action(new Span<T>(memBlock, elementCount));
+                }
+                finally
+                {
+                    Free(memBlock);
+                }
             }
         }
     }

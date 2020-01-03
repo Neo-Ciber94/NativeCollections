@@ -39,7 +39,14 @@ namespace NativeCollections
         public NativeStack(int initialCapacity, Allocator allocator)
         {
             if (initialCapacity <= 0)
+            {
                 throw new ArgumentException($"capacity must be greater than 0: {initialCapacity}");
+            }
+
+            if (allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
 
             _buffer = allocator.Allocate<T>(initialCapacity);
             _capacity = initialCapacity;
@@ -60,6 +67,11 @@ namespace NativeCollections
         /// <param name="allocator">The allocator.</param>
         public NativeStack(Span<int> elements, Allocator allocator)
         {
+            if (allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
+
             if (elements.IsEmpty)
             {
                 this = default;

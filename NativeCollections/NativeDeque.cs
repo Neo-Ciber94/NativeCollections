@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using NativeCollections.Allocators;
@@ -7,6 +8,14 @@ using NativeCollections.Utility;
 
 namespace NativeCollections
 {
+    /// <summary>
+    /// Represents a collection where values can be added/remove at the start or end.
+    /// </summary>
+    /// <typeparam name="T">Type of the elements.</typeparam>
+    /// <seealso cref="NativeCollections.INativeContainer{T}" />
+    /// <seealso cref="System.IDisposable" />
+    [DebuggerDisplay("Length = {Length}")]
+    [DebuggerTypeProxy(typeof(NativeDequeDebugView<>))]
     unsafe public struct NativeDeque<T> : INativeContainer<T>, IDisposable where T : unmanaged
     {
         private T* _buffer;
@@ -17,12 +26,30 @@ namespace NativeCollections
         private int _head;
         private int _tail;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeDeque{T}"/> struct.
+        /// </summary>
+        /// <param name="initialCapacity">The initial capacity.</param>
         public NativeDeque(int initialCapacity) : this(initialCapacity, Allocator.Default) { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeDeque{T}"/> struct.
+        /// </summary>
+        /// <param name="initialCapacity">The initial capacity.</param>
+        /// <param name="allocator">The allocator.</param>
+        /// <exception cref="ArgumentException">If the allocator is no in cache.
+        /// </exception>
         public NativeDeque(int initialCapacity, Allocator allocator)
         {
             if (initialCapacity <= 0)
+            {
                 throw new ArgumentException("initialCapacity should be greater than 0.", nameof(initialCapacity));
+            }
+
+            if (allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
 
             _buffer = allocator.Allocate<T>(initialCapacity);
             _capacity = initialCapacity;
@@ -32,10 +59,25 @@ namespace NativeCollections
             _tail = 0;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeDeque{T}"/> struct.
+        /// </summary>
+        /// <param name="elements">The initial elements.</param>
         public NativeDeque(Span<T> elements) : this(elements, Allocator.Default) { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeDeque{T}"/> struct.
+        /// </summary>
+        /// <param name="elements">The elements.</param>
+        /// <param name="allocator">The allocator.</param>
+        /// <exception cref="ArgumentException">If the allocator is no in cache.
         public NativeDeque(Span<T> elements, Allocator allocator)
         {
+            if (allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
+
             if (elements.IsEmpty)
             {
                 this = default;
@@ -51,50 +93,113 @@ namespace NativeCollections
                 _count = length;
                 _allocatorID = allocator.ID;
                 _head = 0;
-                _tail = length;
+                _tail = _capacity - 1;
             }
         }
 
+        /// <summary>
+        /// Gets the number of elements in the deque.
+        /// </summary>
+        /// <value>
+        /// The length.
+        /// </value>
         public int Length => _count;
 
+        /// <summary>
+        /// Gets the number of elements this deque can hold before resize.
+        /// </summary>
+        /// <value>
+        /// The capacity.
+        /// </value>
         public int Capacity => _capacity;
 
+        /// <summary>
+        /// Gets a value indicating whether this deque have elements.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this deque is empty; otherwise, <c>false</c>.
+        /// </value>
         public bool IsEmpty => _count == 0;
 
+        /// <summary>
+        /// Checks if this deque is allocated.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this deque is valid; otherwise, <c>false</c>.
+        /// </value>
         public bool IsValid => _buffer != null;
 
+        /// <summary>
+        /// Gets the allocator.
+        /// </summary>
+        /// <returns></returns>
         public Allocator? GetAllocator()
         {
             return Allocator.GetAllocatorByID(_allocatorID);
         }
 
+        /// <summary>
+        /// Adds at element at the start of the deque.
+        /// </summary>
+        /// <param name="value">The value to add.</param>
         public void AddFirst(T value)
         {
-            if(_count == _capacity)
-            {
-                Resize();
-            }
+            if (_buffer == null)
+                return;
 
-            _buffer[_head] = value;
-            _head = (_head - 1) < 0 ? _capacity : _head - 1;
-            _count++;
-        }
-
-        public void AddLast(T value)
-        {
             if (_count == _capacity)
             {
                 Resize();
             }
 
-            _tail = (_tail + 1) % _capacity;
-            _buffer[_tail] = value;
+            if(_count == 0)
+            {
+                _buffer[_head] = value;
+            }
+            else
+            {
+                _head = (_head - 1) < 0 ? _capacity - 1 : _head - 1;
+                _buffer[_head] = value;
+            }
+
             _count++;
         }
 
-        public T PopFirst()
+        /// <summary>
+        /// Adds at element at the end of the deque.
+        /// </summary>
+        /// <param name="value">The value to add.</param>
+        public void AddLast(T value)
         {
-            if(!TryPopFirst(out T value))
+            if (_buffer == null)
+                return;
+
+            if (_count == _capacity)
+            {
+                Resize();
+            }
+
+            if(_count == 0)
+            {
+                _buffer[_tail] = value;
+            }
+            else
+            {
+                _tail = (_tail + 1) % _capacity;
+                _buffer[_tail] = value;
+            }
+
+            _count++;
+        }
+
+        /// <summary>
+        /// Gets and removes the element at the start of the deque.
+        /// </summary>
+        /// <returns>The element at the start of de deque.</returns>
+        /// <exception cref="InvalidOperationException">If the deque is empty.</exception>
+        public T RemoveFirst()
+        {
+            if(!TryRemoveFirst(out T value))
             {
                 throw new InvalidOperationException("NativeDeque is empty");
             }
@@ -102,9 +207,14 @@ namespace NativeCollections
             return value;
         }
 
-        public T PopLast()
+        /// <summary>
+        /// Gets and removes the element at the end of the deque.
+        /// </summary>
+        /// <returns>The element at the end of de deque.</returns>
+        /// <exception cref="InvalidOperationException">If the deque is empty.</exception>
+        public T RemoveLast()
         {
-            if (!TryPopLast(out T value))
+            if (!TryRemoveLast(out T value))
             {
                 throw new InvalidOperationException("NativeDeque is empty");
             }
@@ -112,6 +222,11 @@ namespace NativeCollections
             return value;
         }
 
+        /// <summary>
+        /// Gets the element at the start of the deque.
+        /// </summary>
+        /// <returns>The element at the start of de deque.</returns>
+        /// <exception cref="InvalidOperationException">If the deque is empty.</exception>
         public T PeekFirst()
         {
             if (!TryPeekFirst(out T value))
@@ -122,9 +237,14 @@ namespace NativeCollections
             return value;
         }
 
+        /// <summary>
+        /// Gets the element at the end of the deque.
+        /// </summary>
+        /// <returns>The element at the end of de deque.</returns>
+        /// <exception cref="InvalidOperationException">If the deque is empty.</exception>
         public T PeekLast()
         {
-            if (!TryPopLast(out T value))
+            if (!TryPeekLast(out T value))
             {
                 throw new InvalidOperationException("NativeDeque is empty");
             }
@@ -132,13 +252,25 @@ namespace NativeCollections
             return value;
         }
 
-        public bool TryPopFirst(out T value)
+        /// <summary>
+        /// Attemps to get and remove the element at the start of the deque.
+        /// </summary>
+        /// <param name="value">The value at the start of the deque.</param>
+        /// <returns><c>true</c> if the value was removed.</returns>
+        public bool TryRemoveFirst(out T value)
         {
+            if(_count == 1)
+            {
+                value = _buffer[_head];
+                _count--;
+                return true;
+            }
+
             if(_count > 0)
             {
-                int next = (_head + 1) % _capacity;
-                value = _buffer[next];
-                _head = next;
+                value = _buffer[_head];
+                _buffer[_head] = default;
+                _head = (_head + 1) % _capacity;
                 _count--;
                 return true;
             }
@@ -147,13 +279,25 @@ namespace NativeCollections
             return false;
         }
 
-        public bool TryPopLast(out T value)
+        /// <summary>
+        /// Attemps to get and remove the element at the end of the deque.
+        /// </summary>
+        /// <param name="value">The value at the end of the deque.</param>
+        /// <returns><c>true</c> if the value was removed.</returns>
+        public bool TryRemoveLast(out T value)
         {
+            if(_count == 1)
+            {
+                value = _buffer[_tail];
+                _count--;
+                return true;
+            }
+
             if (_count > 0)
             {
-                int next = _tail - 1 < 0 ? _capacity : _tail - 1; 
-                value = _buffer[next];
-                _tail = next;
+                value = _buffer[_tail];
+                _buffer[_tail] = default;
+                _tail = _tail - 1 < 0 ? _capacity - 1 : _tail - 1;
                 _count--;
                 return true;
             }
@@ -162,12 +306,16 @@ namespace NativeCollections
             return false;
         }
 
+        /// <summary>
+        /// Attemps to get the element at the start of the deque.
+        /// </summary>
+        /// <param name="value">The value at the start of the deque.</param>
+        /// <returns><c>true</c> if the value exists.</returns>
         public bool TryPeekFirst(out T value)
         {
             if (_count > 0)
             {
-                int next = (_head + 1) % _capacity;
-                value = _buffer[next];
+                value = _buffer[_head];
                 return true;
             }
 
@@ -175,12 +323,16 @@ namespace NativeCollections
             return false;
         }
 
+        /// <summary>
+        /// Attemps to get the element at the end of the deque.
+        /// </summary>
+        /// <param name="value">The value at the end of the deque.</param>
+        /// <returns><c>true</c> if the value exists.</returns>
         public bool TryPeekLast(out T value)
         {
             if (_count > 0)
             {
-                int next = _tail - 1 < 0 ? _capacity : _tail - 1;
-                value = _buffer[next];
+                value = _buffer[_tail];
                 return true;
             }
 
@@ -188,18 +340,99 @@ namespace NativeCollections
             return false;
         }
 
-        public void Reverse()
+        /// <summary>
+        /// Removes the contents of this deque.
+        /// </summary>
+        public void Clear()
         {
-            var temp = _head;
-            _head = _tail;
-            _tail = temp;
+            if(_count == 0)
+            {
+                return;
+            }
+
+            Unsafe.InitBlockUnaligned(_buffer, 0, (uint)(sizeof(T) * _capacity));
+            _count = 0;
+            _head = 0;
+            _tail = 0;
         }
 
+        /// <summary>
+        /// Determines whether this deque contains the value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>
+        ///   <c>true</c> if the deque contains the value; otherwise, <c>false</c>.
+        /// </returns>
+        public bool Contains(T value)
+        {
+            if(_count == 0)
+            {
+                return false;
+            }
+
+            var comparer = EqualityComparer<T>.Default;
+
+            for(int i = 0; i < _count; i++)
+            {
+                int next = (_head + i) % _capacity;
+                if(comparer.Equals(_buffer[next], value))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Reverses the order of the elements of this instance.
+        /// </summary>
+        public void Reverse()
+        {
+            if (_count == 0)
+                return;
+
+            int head = _head;
+            int tail = _tail;
+
+            while(head != tail)
+            {
+                T value = _buffer[head];
+                _buffer[head] = _buffer[tail];
+                _buffer[tail] = value;
+
+                head = (head + 1) % _capacity;
+                tail = (tail - 1) < 0 ? _capacity - 1 : tail - 1;
+
+                if (_head > _tail)
+                {
+                    if (head < tail)
+                    {
+                        break;
+                    }
+                }
+                else if (_tail > _head)
+                {
+                    if (tail < head)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Removes the excess space in this deque.
+        /// </summary>
         public void TrimExcess()
         {
             TrimExcess(_count);
         }
 
+        /// <summary>
+        /// Removes the excess space in this deque.
+        /// </summary>
+        /// <param name="capacity">The min capacity.</param>
         public void TrimExcess(int capacity)
         {
             if (capacity < _count)
@@ -233,30 +466,24 @@ namespace NativeCollections
             if (count < 0 || count > _count || count > (span.Length - destinationIndex))
                 throw new ArgumentOutOfRangeException(nameof(count), count.ToString());
 
-            int i = destinationIndex;
-            int next = _head;
-
+            int i = 0;
+            int pos = destinationIndex;
             do
             {
-                span[i] = _buffer[next];
+                int next = (_head + i) % _capacity;
+                span[pos] = _buffer[next];
+                ++pos;
                 ++i;
-
-                next = (next + 1) % _capacity;
-                if (--count == 0)
-                {
-                    break;
-                }
             }
-            while (true);
+            while (i < count);
         }
 
+        /// <summary>
+        /// Ensures this deque can hold the specified amount of values before resize.
+        /// </summary>
+        /// <param name="capacity">The min capacity.</param>
         public void EnsureCapcity(int capacity)
         {
-            if(capacity <= 0)
-            {
-                throw new ArgumentException($"capacity should be greater than 0: {capacity}", nameof(capacity));
-            }
-
             if(capacity > _capacity)
             {
                 Resize(capacity);
@@ -289,9 +516,14 @@ namespace NativeCollections
                 return default;
 
             NativeArray<T> array = new NativeArray<T>(_count);
-            void* src = _buffer;
-            void* dst = array._buffer;
-            Unsafe.CopyBlockUnaligned(dst, src, (uint)(sizeof(T) * _count));
+            int i = 0;
+            do
+            {
+                int next = (_head + i) % _capacity;
+                array[i] = _buffer[next];
+                ++i;
+            }
+            while (i < _count);
             return array;
         }
 
@@ -325,40 +557,9 @@ namespace NativeCollections
             }
         }
 
-        private void Resize()
-        {
-            Resize(_capacity * 2);
-        }
-
-        private void Resize(int capacity)
-        {
-            if (_buffer == null)
-                return;
-
-            T* newBuffer = GetAllocator()!.Allocate<T>(capacity);
-
-            int next = _head;
-            int i = 0;
-            do
-            {
-                newBuffer[i] = _buffer[next];
-                ++i;
-
-                next = (next + 1) % _capacity;
-                if (next == _tail)
-                {
-                    break;
-                }
-            }
-            while (true);
-
-            GetAllocator()!.Free(_buffer);
-            _buffer = newBuffer;
-            _capacity = capacity;
-            _head = _count;
-            _tail = 0;
-        }
-
+        /// <summary>
+        /// Releases the allocated resources of this deque.
+        /// </summary>
         public void Dispose()
         {
             if (_buffer == null)
@@ -415,6 +616,34 @@ namespace NativeCollections
             return StringBuilderCache.ToStringAndRelease(ref sb!);
         }
 
+        private void Resize()
+        {
+            Resize(_capacity * 2);
+        }
+
+        private void Resize(int capacity)
+        {
+            if (_buffer == null)
+                return;
+
+            T* newBuffer = GetAllocator()!.Allocate<T>(capacity);
+
+            int i = 0;
+            do
+            {
+                int next = (_head + i) % _capacity;
+                newBuffer[i] = _buffer[next];
+                ++i;
+            }
+            while (i < _count);
+
+            GetAllocator()!.Free(_buffer);
+            _buffer = newBuffer;
+            _capacity = capacity;
+            _head = 0;
+            _tail = _count - 1;
+        }
+
         /// <summary>
         /// Gets an enumerator over the elements of the deque.
         /// </summary>
@@ -424,26 +653,24 @@ namespace NativeCollections
             return new Enumerator(ref this);
         }
 
-        public Span<T> Span => new Span<T>(_buffer, _capacity);
-
         /// <summary>
         /// An enumerator over the elements of a <see cref="NativeDeque{T}"/>.
         /// </summary>
         public ref struct Enumerator
         {
             private readonly void* _data;
-            private readonly int _length;
+            private readonly int _count;
+            private readonly int _capacity;
             private readonly int _head;
-            private readonly int _tail;
             private int _index;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal Enumerator(ref NativeDeque<T> queue)
             {
                 _data = queue._buffer;
-                _length = queue._capacity;
+                _capacity = queue._capacity;
+                _count = queue._count;
                 _head = queue._head;
-                _tail = queue._tail;
                 _index = -1;
             }
 
@@ -454,11 +681,12 @@ namespace NativeCollections
             {
                 get
                 {
-                    if (_index < 0 || _index > _length)
+                    if (_index < 0 || _index > _count)
                         throw new ArgumentOutOfRangeException("index", _index.ToString());
 
                     ref T startAddress = ref Unsafe.AsRef<T>(_data);
-                    return ref Unsafe.Add(ref startAddress, _index);
+                    int next = (_index + _head) % _capacity;
+                    return ref Unsafe.Add(ref startAddress, next);
                 }
             }
 
@@ -476,17 +704,12 @@ namespace NativeCollections
             /// <returns><c>true</c> if moved.</returns>
             public bool MoveNext()
             {
-                if (_length == 0)
+                if (_count == 0)
                     return false;
 
-                if (_index == -1)
-                {
-                    _index = _head;
-                    return true;
-                }
+                int i = _index + 1;
 
-                int i = (_index + 1) % _length;
-                if (i != _tail)
+                if (i < _count)
                 {
                     _index = i;
                     return true;

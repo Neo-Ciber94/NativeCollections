@@ -21,7 +21,7 @@ namespace NativeCollections.Allocators
 
             AppDomain.CurrentDomain.ProcessExit += (o, e) =>
             {
-                Requires.IsTrue(BytesAllocated == 0, $"Memory leak detected, bytes allocted: {BytesAllocated}");
+                Requires.Argument(BytesAllocated == 0, $"Memory leak detected, bytes allocted: {BytesAllocated}");
             };
         }
 
@@ -29,8 +29,8 @@ namespace NativeCollections.Allocators
 
         public override unsafe void* Allocate(int elementCount, int elementSize = 1, bool initMemory = true)
         {
-            Requires.IsTrue(elementCount > 0, "Invalid elementCount");
-            Requires.IsTrue(elementSize > 0, "Invalid elementSize");
+            Requires.Argument(elementCount > 0, "Invalid elementCount");
+            Requires.Argument(elementSize > 0, "Invalid elementSize");
 
             BytesAllocated += (elementCount * elementSize);
             return _allocator.Allocate(elementCount, elementSize, initMemory);
@@ -38,9 +38,9 @@ namespace NativeCollections.Allocators
 
         public override unsafe void* Reallocate(void* pointer, int elementCount, int elementSize = 1, bool initMemory = true)
         {
-            Requires.IsTrue(pointer != null, "Pointer is null");
-            Requires.IsTrue(elementCount > 0, "Invalid elementCount");
-            Requires.IsTrue(elementSize > 0, "Invalid elementSize");
+            Requires.Argument(pointer != null, "Pointer is null");
+            Requires.Argument(elementCount > 0, "Invalid elementCount");
+            Requires.Argument(elementSize > 0, "Invalid elementSize");
 
             int size = _sizeOf(pointer);
             int newSize = elementCount * elementSize;
@@ -52,7 +52,7 @@ namespace NativeCollections.Allocators
 
         public override unsafe void Free(void* pointer)
         {
-            Requires.IsTrue(pointer != null, "Pointer is null");
+            Requires.Argument(pointer != null, "Pointer is null");
 
             int size = _sizeOf(pointer);
             _allocator.Free(pointer);
@@ -61,7 +61,7 @@ namespace NativeCollections.Allocators
 
         public void Dispose()
         {
-            Requires.IsTrue(BytesAllocated == 0, $"Memory leak detected, bytes allocted: {BytesAllocated}");
+            Requires.Argument(BytesAllocated == 0, $"Memory leak detected, bytes allocted: {BytesAllocated}");
 
             if(_allocator is IDisposable disposable)
             {

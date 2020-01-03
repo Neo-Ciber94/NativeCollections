@@ -42,7 +42,14 @@ namespace NativeCollections
         public NativeQueue(int initialCapacity, Allocator allocator)
         {
             if (initialCapacity <= 0)
+            {
                 throw new ArgumentException($"capacity must be greater than 0: {initialCapacity}");
+            }
+
+            if (allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
 
             _buffer = (T*)allocator.Allocate(initialCapacity, sizeof(T));
             _capacity = initialCapacity;
@@ -63,6 +70,11 @@ namespace NativeCollections
         /// <param name="allocator">The allocator.</param>
         public NativeQueue(Span<int> elements, Allocator allocator)
         {
+            if (allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
+
             if (elements.IsEmpty)
             {
                 this = default;
@@ -297,9 +309,21 @@ namespace NativeCollections
                 return default;
 
             NativeArray<T> array = new NativeArray<T>(_count);
-            void* src = _buffer;
-            void* dst = array._buffer;
-            Unsafe.CopyBlockUnaligned(dst, src, (uint)(sizeof(T) * _count));
+            int i = 0;
+            int next = _head;
+
+            do
+            {
+                array[i] = _buffer[next];
+                ++i;
+
+                next = (next + 1) % _capacity;
+                if (next == _tail)
+                {
+                    break;
+                }
+            }
+            while (true);
             return array;
         }
 
@@ -404,9 +428,6 @@ namespace NativeCollections
         {
             if (_buffer == null)
                 return;
-
-            Requires.IsTrue(newCapacity > 0);
-            //newCapacity = newCapacity < 4 ? 4 : newCapacity;
 
             T* newBuffer = (T*)GetAllocator()!.Allocate<T>(newCapacity);
             ref T destination = ref Unsafe.AsRef<T>(newBuffer);

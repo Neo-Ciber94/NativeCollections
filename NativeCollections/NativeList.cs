@@ -40,7 +40,14 @@ namespace NativeCollections
         public NativeList(int initialCapacity, Allocator allocator)
         {
             if (initialCapacity <= 0)
+            {
                 throw new ArgumentException($"initialCapacity should be greater than 0: {initialCapacity}");
+            }
+
+            if (allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
 
             _buffer = allocator.Allocate<T>(initialCapacity);
             _capacity = initialCapacity;
@@ -61,6 +68,11 @@ namespace NativeCollections
         /// <param name="allocator">The allocator used for this list.</param>
         public NativeList(Span<T> elements, Allocator allocator)
         {
+            if (allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
+
             if (elements.IsEmpty)
             {
                 this = default;
@@ -108,6 +120,11 @@ namespace NativeCollections
         /// </exception>
         public NativeList(void* pointer, int length, Allocator allocator)
         {
+            if (allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
+
             if (pointer == null)
                 throw new ArgumentException("Invalid pointer");
 

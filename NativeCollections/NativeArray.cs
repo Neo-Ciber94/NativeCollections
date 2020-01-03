@@ -36,10 +36,14 @@ namespace NativeCollections
         public NativeArray(int capacity, Allocator allocator)
         {
             if (capacity <= 0)
+            {
                 throw new ArgumentException($"capacity must be greater than 0: {capacity}");
+            }
 
-            if (!Allocator.IsCached(allocator))
-                throw new ArgumentException("The allocator is not in cache, calls 'base(true)' on the constructor to add the allocator to cache", nameof(allocator));
+            if(allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
 
             _buffer = allocator.Allocate(sizeof(T) * capacity);
             _capacity = capacity;
@@ -59,6 +63,11 @@ namespace NativeCollections
         /// <param name="allocator">The allocator used for this array.</param> 
         public NativeArray(Span<T> elements, Allocator allocator)
         {
+            if (allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
+
             if (elements.IsEmpty)
             {
                 this = default;
@@ -101,10 +110,19 @@ namespace NativeCollections
         public NativeArray(void* pointer, int length, Allocator allocator)
         {
             if (pointer == null)
+            {
                 throw new ArgumentException("Invalid pointer");
+            }
 
             if (length <= 0)
+            {
                 throw new ArgumentException($"Invalid length: {length}", nameof(length));
+            }
+
+            if (allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
 
             _buffer = pointer;
             _capacity = length;

@@ -1,4 +1,3 @@
-
 using NativeCollections;
 
 public static partial class NativeArray

@@ -293,7 +293,14 @@ namespace NativeCollections
         public NativeMap(int initialCapacity, Allocator allocator)
         {
             if (initialCapacity <= 0)
+            {
                 throw new ArgumentException($"initialCapacity should be greater than 0: {initialCapacity}");
+            }
+
+            if (allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
 
             _buffer = (Entry*)allocator.Allocate(initialCapacity, sizeof(Entry));
             _capacity = initialCapacity;
@@ -318,6 +325,11 @@ namespace NativeCollections
         /// <param name="allocator">The allocator.</param>
         public NativeMap(Span<(TKey, TValue)> elements, Allocator allocator)
         {
+            if (allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
+
             if (elements.IsEmpty)
             {
                 this = default;
