@@ -720,10 +720,7 @@ namespace NativeCollections
         /// <param name="capacity">The min capacity.</param>
         public void TrimExcess(int capacity)
         {
-            if (capacity <= 0)
-                throw new ArgumentException(nameof(capacity));
-
-            if (capacity <= Length)
+            if (capacity < Length)
             {
                 return;
             }
@@ -769,9 +766,6 @@ namespace NativeCollections
         /// <param name="capacity">The min capacity.</param>
         public void EnsureCapacity(int capacity)
         {
-            if (capacity <= 0)
-                throw new ArgumentException(nameof(capacity));
-
             if (capacity > _capacity)
             {
                 Resize(capacity);
