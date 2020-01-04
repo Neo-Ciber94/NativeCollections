@@ -234,6 +234,29 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
+        public void ClearTest()
+        {
+            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            map.Add(0, "zero");
+            map.Add(1, "one");
+            map.Add(2, "two");
+
+            map.Clear();
+
+            Assert.AreEqual(0, map.Length);
+            Assert.AreEqual(4, map.Capacity);
+
+            map.Add(0, "zero");
+            map.Add(1, "one");
+            map.Add(2, "two");
+
+            Assert.IsTrue(map.ContainsKey(0));
+            Assert.IsTrue(map.ContainsKey(1));
+            Assert.IsTrue(map.ContainsKey(2));
+            Assert.IsFalse(map.ContainsKey(3));
+        }
+
+        [Test()]
         public void TryGetValueTest()
         {
             using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
@@ -372,7 +395,7 @@ namespace NativeCollections.Tests
             map.Add(4, "four");
 
             Span<KeyValuePair<int, NativeString>> span = stackalloc KeyValuePair<int, NativeString>[3];
-            map.CopyTo(span, 3);
+            map.CopyTo(span, 0, 3);
 
             Assert.AreEqual(span[0].Key, 0);
             Assert.AreEqual(span[1].Key, 1);
@@ -434,7 +457,7 @@ namespace NativeCollections.Tests
             Assert.IsTrue(keys.Contains(2));
 
             Span<int> span = stackalloc int[3];
-            keys.CopyTo(span);
+            keys.CopyTo(span, 0, 3);
 
             Assert.AreEqual(span[0], 0);
             Assert.AreEqual(span[1], 1);
@@ -457,7 +480,7 @@ namespace NativeCollections.Tests
             Assert.IsTrue(values.Contains("two"));
 
             Span<NativeString> span = stackalloc NativeString[3];
-            values.CopyTo(span);
+            values.CopyTo(span, 0, 3);
 
             Assert.AreEqual(span[0], "zero");
             Assert.AreEqual(span[1], "one");
@@ -552,6 +575,38 @@ namespace NativeCollections.Tests
             Assert.IsFalse(map.ContainsKey(1));
             Assert.IsTrue(map.ContainsKey(3));
             Assert.IsTrue(map.ContainsKey(4));
+
+            DisposeNativeStrings(map);
+        }
+
+        [Test()]
+        public void TrimExcessTests1()
+        {
+            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(10);
+            map.Add(0, "zero");
+            map.Add(1, "one");
+            map.Add(2, "two");
+
+            map.TrimExcess();
+
+            Assert.AreEqual(3, map.Length);
+            Assert.AreEqual(3, map.Capacity);
+
+            DisposeNativeStrings(map);
+        }
+
+        [Test()]
+        public void TrimExcessTests2()
+        {
+            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(10);
+            map.Add(0, "zero");
+            map.Add(1, "one");
+            map.Add(2, "two");
+
+            map.TrimExcess(6);
+
+            Assert.AreEqual(3, map.Length);
+            Assert.AreEqual(6, map.Capacity);
 
             DisposeNativeStrings(map);
         }

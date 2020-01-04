@@ -228,6 +228,20 @@ namespace NativeCollections
         }
 
         /// <summary>
+        /// Clears the content of this queue.
+        /// </summary>
+        public void Clear()
+        {
+            if(_count == 0)
+                return;
+
+            Unsafe.InitBlockUnaligned(_buffer, 0, (uint)(sizeof(T) * _capacity));
+            _head = 0;
+            _tail = 0;
+            _count = 0;
+        }
+
+        /// <summary>
         /// Determines whether this queue contains the specified value.
         /// </summary>
         /// <param name="value">The value.</param>

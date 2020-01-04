@@ -139,6 +139,37 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
+        public void RemoveAtTest()
+        {
+            using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
+            map.Add(1, 'a');
+            map.Add(2, 'b');
+            map.Add(3, 'c');
+
+            map.RemoveAt(2);
+            Assert.AreEqual(2, map.Length);
+
+            map.RemoveAt(1);
+            Assert.AreEqual(1, map.Length);
+
+            map.RemoveAt(0);
+            Assert.AreEqual(0, map.Length);
+        }
+
+        [Test()]
+        public void ClearTest()
+        {
+            using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
+            map.Add(1, 'a');
+            map.Add(2, 'b');
+            map.Add(3, 'c');
+
+            map.Clear();
+            Assert.AreEqual(0, map.Length);
+            Assert.AreEqual(4, map.Capacity);
+        }
+
+        [Test()]
         public void TryGetValueTest()
         {
             using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
@@ -222,6 +253,38 @@ namespace NativeCollections.Tests
             Assert.AreEqual('c', map.GetValueReference(3));
 
             Assert.Throws<KeyNotFoundException>(() => map.GetValueReference(4));
+        }
+
+        [Test()]
+        public void LowerKeyTest()
+        {
+            using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
+            map.Add(1, 'a');
+            map.Add(2, 'b');
+            map.Add(3, 'c');
+
+            Assert.AreEqual(1, map.LowerKey(2));
+            Assert.AreEqual(2, map.LowerKey(3));
+            Assert.AreEqual(3, map.LowerKey(4));
+            Assert.AreEqual(3, map.LowerKey(5));
+
+            Assert.IsNull(map.LowerKey(1));
+        }
+
+        [Test()]
+        public void HigherKeyTest()
+        {
+            using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
+            map.Add(1, 'a');
+            map.Add(2, 'b');
+            map.Add(3, 'c');
+
+            Assert.AreEqual(2, map.HigherKey(1));
+            Assert.AreEqual(3, map.HigherKey(2));
+            Assert.AreEqual(1, map.HigherKey(0));
+            Assert.AreEqual(1, map.HigherKey(-1));
+
+            Assert.IsNull(map.HigherKey(3));
         }
 
         [Test()]
@@ -312,25 +375,59 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
-        public void MinTest()
+        public void FirstKeyTest()
         {
             using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
             map.Add(1, 'a');
             map.Add(2, 'b');
             map.Add(3, 'c');
 
-            Assert.AreEqual(1, map.Min);
+            Assert.AreEqual(1, map.FirstKey);
         }
 
         [Test()]
-        public void MaxTest()
+        public void LastKeyTest()
         {
             using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
             map.Add(1, 'a');
             map.Add(2, 'b');
             map.Add(3, 'c');
 
-            Assert.AreEqual(3, map.Max);
+            Assert.AreEqual(3, map.LastKey);
+        }
+
+        [Test()]
+        public void KeysTest()
+        {
+            using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
+            map.Add(1, 'a');
+            map.Add(2, 'b');
+            map.Add(3, 'c');
+
+            var keys = map.Keys;
+            int[] array = new int[3];
+            keys.CopyTo(array, 0, 3);
+
+            Assert.AreEqual(1, array[0]);
+            Assert.AreEqual(2, array[1]);
+            Assert.AreEqual(3, array[2]);
+        }
+
+        [Test()]
+        public void ValuesTest()
+        {
+            using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
+            map.Add(1, 'a');
+            map.Add(2, 'b');
+            map.Add(3, 'c');
+
+            var keys = map.Values ;
+            char[] array = new char[3];
+            keys.CopyTo(array, 0, 3);
+
+            Assert.AreEqual('a', array[0]);
+            Assert.AreEqual('b', array[1]);
+            Assert.AreEqual('c', array[2]);
         }
 
         [Test()]
@@ -474,6 +571,21 @@ namespace NativeCollections.Tests
             Assert.AreEqual(KeyValuePair.Create(3, 'c'), enumerator.Current);;
 
             Assert.IsFalse(enumerator.MoveNext());
+        }
+
+        [Test()]
+        public void ForEachTest()
+        {
+            using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
+            map.Add(1, 'a');
+            map.Add(2, 'b');
+            map.Add(3, 'c');
+
+            KeyValuePair<int, char>[] array = map.ToArray();
+            foreach(var e in map)
+            {
+                CollectionAssert.Contains(array, e);
+            }
         }
     }
 }

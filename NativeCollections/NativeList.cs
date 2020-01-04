@@ -499,9 +499,7 @@ namespace NativeCollections
             if (_count == 0)
                 return;
 
-            ref byte startAddress = ref Unsafe.As<T, byte>(ref Unsafe.AsRef<T>(_buffer));
-            uint length = (uint)(Unsafe.SizeOf<T>() * _count);
-            Unsafe.InitBlockUnaligned(ref startAddress, 0, length);
+            Unsafe.InitBlockUnaligned(_buffer, 0, (uint)(sizeof(T) * _count));
             _count = 0;
         }
 

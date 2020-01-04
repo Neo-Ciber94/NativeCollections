@@ -346,9 +346,7 @@ namespace NativeCollections
         public void Clear()
         {
             if(_count == 0)
-            {
                 return;
-            }
 
             Unsafe.InitBlockUnaligned(_buffer, 0, (uint)(sizeof(T) * _capacity));
             _count = 0;

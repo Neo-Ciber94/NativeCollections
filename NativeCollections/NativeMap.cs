@@ -40,6 +40,9 @@ namespace NativeCollections
             }
         }
 
+        /// <summary>
+        /// A collection of the keys of a <see cref="NativeMap{TKey, TValue}"/>.
+        /// </summary>
         public ref struct KeyCollection
         {
             private NativeMap<TKey, TValue> _map;
@@ -49,20 +52,31 @@ namespace NativeCollections
                 _map = map;
             }
 
+            /// <summary>
+            /// Gets the number of keys.
+            /// </summary>
+            /// <value>
+            /// The length.
+            /// </value>
             public readonly int Length => _map.Length;
 
+            /// <summary>
+            /// Determines whether the specified key exists in this collection.
+            /// </summary>
+            /// <param name="key">The key to locate.</param>
+            /// <returns>
+            ///   <c>true</c> if the key exists; otherwise, <c>false</c>.
+            /// </returns>
             public readonly bool Contains(TKey key) => _map.ContainsKey(key);
 
-            public readonly void CopyTo(in Span<TKey> span)
-            {
-                CopyTo(span, 0, Length);
-            }
-
-            public readonly void CopyTo(in Span<TKey> span, int count)
-            {
-                CopyTo(span, 0, count);
-            }
-
+            /// <summary>
+            /// Copies the keys to the specified span.
+            /// </summary>
+            /// <param name="span">The span.</param>
+            /// <param name="startIndex">The start index.</param>
+            /// <param name="count">The count.</param>
+            /// <exception cref="ArgumentException">If the span is empty.</exception>
+            /// <exception cref="ArgumentOutOfRangeException">If arguments <c>startIndex</c> or <c>count</c> are out of range.</exception>
             public readonly void CopyTo(in Span<TKey> span, int startIndex, int count)
             {
                 if (span.IsEmpty)
@@ -72,7 +86,7 @@ namespace NativeCollections
                     throw new ArgumentOutOfRangeException(nameof(startIndex), startIndex.ToString());
 
                 if (count < 0 || count > Length)
-                    throw new ArgumentException(nameof(count), count.ToString());
+                    throw new ArgumentOutOfRangeException(nameof(count), count.ToString());
 
                 int i = 0;
                 int j = 0;
@@ -90,45 +104,60 @@ namespace NativeCollections
                 while (i < count);
             }
 
+            /// <summary>
+            /// Gets an enumerator over the keys.
+            /// </summary>
+            /// <returns>An enumerator over the keys.</returns>
             public Enumerator GetEnumerator()
             {
                 return new Enumerator(ref _map);
             }
 
+            /// <summary>
+            /// An enumerator over the keys.
+            /// </summary>
             public ref struct Enumerator
             {
-                private Entry* _entries;
-                private int _count;
+                private readonly Entry* _entries;
+                private readonly int _count;
                 private int _index;
 
-                public Enumerator(ref NativeMap<TKey, TValue> map)
+                internal Enumerator(ref NativeMap<TKey, TValue> map)
                 {
                     _entries = map._buffer;
                     _count = map._count;
                     _index = -1;
                 }
 
-                public readonly ref TValue Current
+                /// <summary>
+                /// Gets a reference to the current key.
+                /// </summary>
+                public readonly ref TKey Current
                 {
                     get
                     {
                         if (_index < 0 || _index > _count)
                             throw new ArgumentOutOfRangeException("index", _index.ToString());
 
-                        return ref _entries[_index].value;
+                        return ref _entries[_index].key;
                     }
                 }
 
+                /// <summary>
+                /// Invalidates this enumerator.
+                /// </summary>
                 public void Dispose()
                 {
                     if (_entries == null)
                         return;
 
-                    _entries = null;
-                    _count = 0;
-                    _index = -1;
+                    this = default;
                 }
 
+                /// <summary>
+                /// Moves to the next key.
+                /// </summary>
+                /// <returns><c>true</c> if moved to the next key.</returns>
                 public bool MoveNext()
                 {
                     if (_count == 0)
@@ -149,6 +178,9 @@ namespace NativeCollections
                     return false;
                 }
 
+                /// <summary>
+                /// Resets this enumerator.
+                /// </summary>
                 public void Reset()
                 {
                     _index = -1;
@@ -156,6 +188,9 @@ namespace NativeCollections
             }
         }
 
+        /// <summary>
+        /// A collection of the values of a <see cref="NativeMap{TKey, TValue}"/>.
+        /// </summary>
         public ref struct ValueCollection
         {
             private NativeMap<TKey, TValue> _map;
@@ -165,20 +200,31 @@ namespace NativeCollections
                 _map = map;
             }
 
+            /// <summary>
+            /// Gets the number of values.
+            /// </summary>
+            /// <value>
+            /// The length.
+            /// </value>
             public readonly int Length => _map.Length;
 
+            /// <summary>
+            /// Determines whether the specified value exists in this collection.
+            /// </summary>
+            /// <param name="value">The value to locate.</param>
+            /// <returns>
+            ///   <c>true</c> if the value exists; otherwise, <c>false</c>.
+            /// </returns>
             public readonly bool Contains(TValue value) => _map.ContainsValue(value);
 
-            public readonly void CopyTo(in Span<TValue> span)
-            {
-                CopyTo(span, 0, Length);
-            }
-
-            public readonly void CopyTo(in Span<TValue> span, int count)
-            {
-                CopyTo(span, 0, count);
-            }
-
+            /// <summary>
+            /// Copies the values to the specified span.
+            /// </summary>
+            /// <param name="span">The span.</param>
+            /// <param name="startIndex">The start index.</param>
+            /// <param name="count">The count.</param>
+            /// <exception cref="ArgumentException">If the span is empty.</exception>
+            /// <exception cref="ArgumentOutOfRangeException">If arguments <c>startIndex</c> or <c>count</c> are out of range.</exception>
             public readonly void CopyTo(in Span<TValue> span, int startIndex, int count)
             {
                 if (span.IsEmpty)
@@ -206,45 +252,60 @@ namespace NativeCollections
                 while (i < count);
             }
 
+            /// <summary>
+            /// Gets an enumerator over the values.
+            /// </summary>
+            /// <returns>An enumerator over the values.</returns>
             public Enumerator GetEnumerator()
             {
                 return new Enumerator(ref _map);
             }
 
+            /// <summary>
+            /// An enumerator over the values.
+            /// </summary>
             public ref struct Enumerator
             {
-                private Entry* _entries;
-                private int _count;
+                private readonly Entry* _entries;
+                private readonly int _count;
                 private int _index;
 
-                public Enumerator(ref NativeMap<TKey, TValue> map)
+                internal Enumerator(ref NativeMap<TKey, TValue> map)
                 {
                     _entries = map._buffer;
                     _count = map._count;
                     _index = -1;
                 }
 
-                public readonly ref TKey Current
+                /// <summary>
+                /// Gets a reference to the current value.
+                /// </summary>
+                public ref TValue Current
                 {
                     get
                     {
                         if (_index < 0 || _index > _count)
                             throw new ArgumentOutOfRangeException("index", _index.ToString());
 
-                        return ref _entries[_index].key;
+                        return ref _entries[_index].value;
                     }
                 }
 
+                /// <summary>
+                /// Invalidates this enumerator.
+                /// </summary>
                 public void Dispose()
                 {
                     if (_entries == null)
                         return;
 
-                    _entries = null;
-                    _count = 0;
-                    _index = -1;
+                    this = default;
                 }
 
+                /// <summary>
+                /// Moves to the next value.
+                /// </summary>
+                /// <returns><c>true</c> if moved to the next value.</returns>
                 public bool MoveNext()
                 {
                     if (_count == 0)
@@ -265,6 +326,9 @@ namespace NativeCollections
                     return false;
                 }
 
+                /// <summary>
+                /// Resets this enumerator.
+                /// </summary>
                 public void Reset()
                 {
                     _index = -1;
@@ -503,6 +567,22 @@ namespace NativeCollections
         }
 
         /// <summary>
+        /// Clears the content of this map.
+        /// </summary>
+        public void Clear()
+        {
+            if (_count == 0)
+                return;
+
+            Unsafe.InitBlockUnaligned(_buffer, 0, (uint)(sizeof(Entry) * _count));
+            _count = 0;
+            _freeCount = 0;
+            _freeList = -1;
+
+            Initializate();
+        }
+
+        /// <summary>
         /// Attemps to get the value associated to the specifeid key.
         /// </summary>
         /// <param name="key">The key.</param>
@@ -622,28 +702,6 @@ namespace NativeCollections
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Copies the <see cref="KeyValuePair{TKey, TValue}"/> this map contains to the specified <see cref="Span{T}"/>.
-        /// </summary>
-        /// <param name="span">The destination span.</param>
-        /// <exception cref="ArgumentException">If the span is empty.</exception>
-        public readonly void CopyTo(in Span<KeyValuePair<TKey, TValue>> span)
-        {
-            CopyTo(span, 0, Length);
-        }
-
-        /// <summary>
-        /// Copies the <see cref="KeyValuePair{TKey, TValue}"/> this map contains to the specified <see cref="Span{T}"/>.
-        /// </summary>
-        /// <param name="span">The destination span.</param>
-        /// <param name="count">The count.</param>
-        /// <exception cref="ArgumentException">If the span is empty.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">If the count are out of range.</exception>
-        public readonly void CopyTo(in Span<KeyValuePair<TKey, TValue>> span, int count)
-        {
-            CopyTo(span, 0, count);
         }
 
         /// <summary>

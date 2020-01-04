@@ -212,6 +212,29 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
+        public void ClearTest()
+        {
+            using NativeDeque<int> deque = new NativeDeque<int>(4);
+            deque.AddLast(1);
+            deque.AddLast(2);
+            deque.AddLast(3);
+
+            deque.Clear();
+
+            Assert.AreEqual(0, deque.Length);
+            Assert.AreEqual(4, deque.Capacity);
+
+            deque.AddLast(1);
+            deque.AddLast(2);
+            deque.AddLast(3);
+
+            Assert.IsTrue(deque.Contains(1));
+            Assert.IsTrue(deque.Contains(2));
+            Assert.IsTrue(deque.Contains(3));
+            Assert.IsFalse(deque.Contains(0));
+        }
+
+        [Test()]
         public void PeekFirstTest()
         {
             using NativeDeque<int> deque = new NativeDeque<int>(4);

@@ -125,6 +125,31 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
+        public void ClearTest()
+        {
+            using NativeSet<int> set = new NativeSet<int>(4);
+            Assert.IsTrue(set.Add(1));
+            Assert.IsTrue(set.Add(2));
+            Assert.IsTrue(set.Add(3));
+
+            set.Clear();
+
+            Assert.AreEqual(0, set.Length);
+            Assert.AreEqual(4, set.Capacity);
+
+            Assert.IsTrue(set.Add(1));
+            Assert.IsTrue(set.Add(2));
+            Assert.IsTrue(set.Add(3));
+
+            Assert.IsTrue(set.Contains(1));
+            Assert.IsTrue(set.Contains(2));
+            Assert.IsTrue(set.Contains(3));
+
+            Assert.IsFalse(set.Contains(0));
+            Assert.IsFalse(set.Contains(5));
+        }
+
+        [Test()]
         public void ContainsTest()
         {
             using NativeSet<int> set = new NativeSet<int>(stackalloc int[] { 1, 2, 3 });

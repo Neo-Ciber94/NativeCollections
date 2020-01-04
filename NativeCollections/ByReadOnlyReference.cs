@@ -4,24 +4,24 @@ using System.Runtime.CompilerServices;
 namespace NativeCollections
 {
     /// <summary>
-    /// Represents a reference to a value.
+    /// Represents a read-only reference to a value.
     /// </summary>
     /// <typeparam name="T">Type of the value.</typeparam>
-    unsafe public readonly ref struct ByReference<T>
+    unsafe public readonly ref struct ByReadOnlyReference<T>
     {
         private readonly void* _pointer;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ByReference{T}" /> struct.
+        /// Initializes a new instance of the <see cref="ByReadOnlyReference{T}" /> struct.
         /// </summary>
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ByReference(ref T value)
+        public ByReadOnlyReference(ref T value)
         {
             _pointer = Unsafe.AsPointer(ref value);
         }
         
-        internal ByReference(void* pointer)
+        internal ByReadOnlyReference(void* pointer)
         {
             _pointer = pointer;
         }
@@ -29,7 +29,7 @@ namespace NativeCollections
         /// <summary>
         /// Gets a reference to the value.
         /// </summary>
-        public ref T Value
+        public readonly ref T Value
         {           
             get
             {
@@ -72,12 +72,12 @@ namespace NativeCollections
             throw new NotSupportedException();
         }
 
-        public static bool operator ==(ByReference<T> left, ByReference<T> right)
+        public static bool operator ==(ByReadOnlyReference<T> left, ByReadOnlyReference<T> right)
         {
             return left._pointer == right._pointer;
         }
 
-        public static bool operator !=(ByReference<T> left, ByReference<T> right)
+        public static bool operator !=(ByReadOnlyReference<T> left, ByReadOnlyReference<T> right)
         {
             return !(left == right);
         }

@@ -250,6 +250,22 @@ namespace NativeCollections
         }
 
         /// <summary>
+        /// Clears the content of this set.
+        /// </summary>
+        public void Clear()
+        {
+            if (_count == 0)
+                return;
+
+            Unsafe.InitBlockUnaligned(_buffer, 0, (uint)(sizeof(Entry) * _count));
+            _count = 0;
+            _freeCount = 0;
+            _freeList = -1;
+
+            Initializate();
+        }
+
+        /// <summary>
         /// Determines whether this set contains the value.
         /// </summary>
         /// <param name="value">The value to locate.</param>

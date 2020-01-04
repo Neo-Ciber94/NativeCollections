@@ -153,6 +153,31 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
+        public void ClearTest()
+        {
+            using NativeQueue<int> queue = new NativeQueue<int>(4);
+            queue.Enqueue(1);
+            queue.Enqueue(2);
+            queue.Enqueue(3);
+
+            queue.Clear();
+
+            Assert.AreEqual(0, queue.Length);
+            Assert.AreEqual(4, queue.Capacity);
+
+            queue.Enqueue(1);
+            queue.Enqueue(2);
+            queue.Enqueue(3);
+
+            Assert.IsTrue(queue.Contains(1));
+            Assert.IsTrue(queue.Contains(2));
+            Assert.IsTrue(queue.Contains(3));
+
+            Assert.IsFalse(queue.Contains(0));
+            Assert.IsFalse(queue.Contains(5));
+        }
+
+        [Test()]
         public void PeekTest()
         {
             using NativeQueue<int> queue = new NativeQueue<int>(4);
