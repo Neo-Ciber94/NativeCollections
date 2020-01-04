@@ -534,6 +534,13 @@ namespace NativeCollections
         /// <returns>An enumerator over this queue elements.</returns>
         public Enumerator GetEnumerator()
         {
+            Debug.Assert(_buffer != null);
+
+            if (_buffer == null)
+            {
+                return default;
+            }
+
             return new Enumerator(ref this);
         }
 

@@ -297,7 +297,7 @@ namespace NativeCollections.Utility
 
             ref T startAddress = ref Unsafe.AsRef<T>(pointer);
 
-            while(startElementOffset < endElementOffset)
+            while (startElementOffset <= endElementOffset)
             {
                 int mid = startElementOffset + (endElementOffset - startElementOffset) / 2;
                 ref T current = ref Unsafe.Add<T>(ref startAddress, mid);

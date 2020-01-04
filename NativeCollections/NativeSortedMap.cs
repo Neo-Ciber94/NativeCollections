@@ -373,6 +373,18 @@ namespace NativeCollections
             }
         }
 
+        internal NativeSortedMap(void* pointer, int length, Allocator allocator)
+        {
+            Debug.Assert(pointer != null);
+            Debug.Assert(length > 0);
+            Debug.Assert(allocator.ID > 0);
+
+            _buffer = (Entry*)pointer;
+            _count = length;
+            _capacity = length;
+            _allocatorID = allocator.ID;
+        }
+
         /// <summary>
         /// Gets the number of elements in this map.
         /// </summary>
@@ -711,6 +723,64 @@ namespace NativeCollections
             }
 
             return _buffer[0].key;
+        }
+
+        /// <summary>
+        /// Gets a range from this map.
+        /// </summary>
+        /// <param name="fromKey">Start key of the range (inclusive).</param>
+        /// <param name="toKey">End key of the range (inclusive).</param>
+        /// <returns>A range of this map within the given values.</returns>
+        public NativeSortedMap<TKey, TValue> SubMap(TKey fromKey, TKey toKey)
+        {
+            var comparer = Comparer<TKey>.Default;
+            int comp = comparer.Compare(fromKey, toKey);
+            if (comp > 0)
+            {
+                throw new ArgumentException($"fromKey is greater than toKey: {fromKey} > {toKey}");
+            }
+
+            if(comp == 0)
+            {
+                return default;
+            }
+
+            int startIndex = BinarySearch(fromKey);
+            int toIndex = BinarySearch(toKey);
+
+            if (startIndex < 0)
+            {
+                startIndex = ~startIndex;
+            }
+
+            if (toIndex < 0)
+            {
+                toIndex = ~toIndex;
+            }
+
+            int length = toIndex - startIndex + 1;
+            Entry* buffer = GetAllocator()!.Allocate<Entry>(length);
+            Unsafe.CopyBlockUnaligned(buffer, _buffer + startIndex, (uint)(sizeof(Entry) * length));
+            return new NativeSortedMap<TKey, TValue>(buffer, length, GetAllocator()!);
+        }
+
+        /// <summary>
+        /// Gets a sub map within the specified 0-index range.
+        /// </summary>
+        /// <param name="range">The range.</param>
+        /// <returns>A sub map within the given range.</returns>
+        public NativeSortedMap<TKey, TValue> SubMap(Range range)
+        {
+            var (startIndex, length) = range.GetOffsetAndLength(_count);
+
+            if (length == 0)
+            {
+                return default;
+            }
+
+            Entry* buffer = GetAllocator()!.Allocate<Entry>(length);
+            Unsafe.CopyBlockUnaligned(buffer, _buffer + startIndex, (uint)(sizeof(Entry) * length));
+            return new NativeSortedMap<TKey, TValue>(buffer, length, GetAllocator()!);
         }
 
         /// <summary>
@@ -1091,8 +1161,6 @@ namespace NativeCollections
             return ~start;
         }
 
-        internal Span<Entry> Span => new Span<Entry>(_buffer, _capacity);
-
         /// <summary>
         /// Releases the resouces used for this map.
         /// </summary>
@@ -1116,6 +1184,13 @@ namespace NativeCollections
         /// <returns>An enumerator over the elements of the map.</returns>
         public Enumerator GetEnumerator()
         {
+            Debug.Assert(_buffer != null);
+
+            if (_buffer == null)
+            {
+                return default;
+            }
+
             return new Enumerator(ref this);
         }
 

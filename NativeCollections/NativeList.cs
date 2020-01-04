@@ -201,8 +201,7 @@ namespace NativeCollections
                 if (index < 0 || index >= _count)
                     throw new ArgumentOutOfRangeException("index", $"{index}");
 
-                ref T startAddress = ref Unsafe.AsRef<T>(_buffer);
-                return ref Unsafe.Add(ref startAddress, index);
+                return ref _buffer[index];
             }
         }
 
@@ -223,10 +222,9 @@ namespace NativeCollections
                 int i = index.IsFromEnd ? _count - index.Value - 1 : index.Value;
 
                 if (i < 0 || i >= _count)
-                    throw new ArgumentOutOfRangeException("index", $"{index}");
+                    throw new ArgumentOutOfRangeException("index", $"{i}");
 
-                ref T pointer = ref Unsafe.AsRef<T>(_buffer);
-                return ref Unsafe.Add(ref pointer, i);
+                return ref _buffer[i];
             }
         }
 
@@ -910,92 +908,16 @@ namespace NativeCollections
         /// Gets an enumerator for iterate over the elements of this list.
         /// </summary>
         /// <returns>An enumerator over this list elements.</returns>
-        public Enumerator GetEnumerator()
+        public RefEnumerator<T> GetEnumerator()
         {
-            Debug.Assert(_buffer != null, "NativeList is invalid");
+            Debug.Assert(_buffer != null);
 
-            return new Enumerator(ref this);
-        }
-
-        /// <summary>
-        /// Exposes methods for iterate over the contents of a <see cref="NativeList{T}"/>.
-        /// </summary>
-        /// <seealso cref="NativeCollections.INativeContainer{T}" />
-        /// <seealso cref="System.IDisposable" />
-        public ref struct Enumerator
-        {
-            private void* _pointer;
-            private int _length;
-            private int _index;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="Enumerator"/> struct.
-            /// </summary>
-            /// <param name="list">The list.</param>
-            public Enumerator(ref NativeList<T> list)
+            if (_buffer == null)
             {
-                _pointer = list._buffer;
-                _length = list._count;
-                _index = -1;
+                return default;
             }
 
-            /// <summary>
-            /// Gets a reference to the current value.
-            /// </summary>
-            /// <value>
-            /// The current value.
-            /// </value>
-            /// <exception cref="ArgumentOutOfRangeException"></exception>
-            public ref T Current
-            {
-                get
-                {
-                    if (_index < 0 || _index > _length)
-                        throw new ArgumentOutOfRangeException("index", _index.ToString());
-
-                    ref T pointer = ref Unsafe.AsRef<T>(_pointer);
-                    return ref Unsafe.Add(ref pointer, _index);
-                }
-            }
-
-            /// <summary>
-            /// Disposes this enumerator.
-            /// </summary>
-            public void Dispose()
-            {
-                if (_pointer == null)
-                    return;
-
-                _pointer = null;
-                _length = 0;
-                _index = 0;
-            }
-
-            /// <summary>
-            /// Moves to the next value.
-            /// </summary>
-            /// <returns><c>true</c> if has a next value, otherwise <c>false</c></returns>
-            public bool MoveNext()
-            {
-                if (_pointer == null)
-                    return false;
-
-                int i = _index + 1;
-                if (i < _length)
-                {
-                    _index = i;
-                    return true;
-                }
-                return false;
-            }
-
-            /// <summary>
-            /// Resets this enumerator.
-            /// </summary>
-            public void Reset()
-            {
-                _index = -1;
-            }
+            return new RefEnumerator<T>(_buffer, _count);
         }
     }
 }

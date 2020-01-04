@@ -157,6 +157,187 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
+        public void SubMapTest()
+        {
+            using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
+            map.Add(1, 'a');
+            map.Add(2, 'b');
+            map.Add(3, 'c');
+            map.Add(4, 'c');
+            map.Add(5, 'c');
+            map.Add(6, 'c');
+
+            using NativeSortedMap<int, char> map2 = map.SubMap(2, 5);
+            Assert.IsTrue(map2.ContainsKey(2));
+            Assert.IsTrue(map2.ContainsKey(3));
+            Assert.IsTrue(map2.ContainsKey(4));
+            Assert.IsTrue(map2.ContainsKey(5));
+
+            Assert.IsFalse(map2.ContainsKey(1));
+            Assert.IsFalse(map2.ContainsKey(6));
+
+            Assert.AreEqual(4, map2.Length);
+            Assert.AreEqual(4, map2.Capacity);
+        }
+
+        [Test()]
+        public void SubMapTest1()
+        {
+            using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
+            map.Add(1, 'a');
+            map.Add(2, 'b');
+            map.Add(3, 'c');
+            map.Add(4, 'c');
+            map.Add(5, 'c');
+            map.Add(6, 'c');
+
+            using NativeSortedMap<int, char> map2 = map.SubMap(1, 6);
+            Assert.IsTrue(map2.ContainsKey(1));
+            Assert.IsTrue(map2.ContainsKey(2));
+            Assert.IsTrue(map2.ContainsKey(3));
+            Assert.IsTrue(map2.ContainsKey(4));
+            Assert.IsTrue(map2.ContainsKey(5));
+            Assert.IsTrue(map2.ContainsKey(6));
+
+            Assert.AreEqual(6, map2.Length);
+            Assert.AreEqual(6, map2.Capacity);
+        }
+
+        [Test()]
+        public void SubMapTest2()
+        {
+            using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
+            map.Add(1, 'a');
+            map.Add(2, 'b');
+            map.Add(3, 'c');
+            map.Add(4, 'c');
+            map.Add(5, 'c');
+            map.Add(6, 'c');
+
+            using NativeSortedMap<int, char> map2 = map.SubMap(2, 3);
+            Assert.IsTrue(map2.ContainsKey(2));
+            Assert.IsTrue(map2.ContainsKey(3));
+
+            Assert.IsFalse(map2.ContainsKey(1));
+            Assert.IsFalse(map2.ContainsKey(4));
+            Assert.IsFalse(map2.ContainsKey(5));
+            Assert.IsFalse(map2.ContainsKey(6));
+
+            Assert.AreEqual(2, map2.Length);
+            Assert.AreEqual(2, map2.Capacity);
+
+            using NativeSortedMap<int, char> map3 = map.SubMap(1, 2);
+            Assert.IsTrue(map3.ContainsKey(1));
+            Assert.IsTrue(map3.ContainsKey(2));
+
+            Assert.AreEqual(2, map3.Length);
+            Assert.AreEqual(2, map3.Capacity);
+
+            using NativeSortedMap<int, char> map4 = map.SubMap(5, 6);
+            Assert.IsTrue(map4.ContainsKey(5));
+            Assert.IsTrue(map4.ContainsKey(6));
+
+            Assert.AreEqual(2, map4.Length);
+            Assert.AreEqual(2, map4.Capacity);
+        }
+
+        [Test()]
+        public void SubMapRangeTest()
+        {
+            using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
+            map.Add(1, 'a');
+            map.Add(2, 'b');
+            map.Add(3, 'c');
+            map.Add(4, 'c');
+            map.Add(5, 'c');
+            map.Add(6, 'c');
+
+            using NativeSortedMap<int, char> map2 = map.SubMap(1..5);
+            Assert.IsTrue(map2.ContainsKey(2));
+            Assert.IsTrue(map2.ContainsKey(3));
+            Assert.IsTrue(map2.ContainsKey(4));
+            Assert.IsTrue(map2.ContainsKey(5));
+
+            Assert.IsFalse(map2.ContainsKey(1));
+            Assert.IsFalse(map2.ContainsKey(6));
+
+            Assert.AreEqual(4, map2.Length);
+            Assert.AreEqual(4, map2.Capacity);
+        }
+
+        [Test()]
+        public void SubMapRangeTest1()
+        {
+            using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
+            map.Add(1, 'a');
+            map.Add(2, 'b');
+            map.Add(3, 'c');
+            map.Add(4, 'c');
+            map.Add(5, 'c');
+            map.Add(6, 'c');
+
+            using NativeSortedMap<int, char> map2 = map.SubMap(0..6);
+            Assert.IsTrue(map2.ContainsKey(1));
+            Assert.IsTrue(map2.ContainsKey(2));
+            Assert.IsTrue(map2.ContainsKey(3));
+            Assert.IsTrue(map2.ContainsKey(4));
+            Assert.IsTrue(map2.ContainsKey(5));
+            Assert.IsTrue(map2.ContainsKey(6));
+
+            Assert.AreEqual(6, map2.Length);
+            Assert.AreEqual(6, map2.Capacity);
+
+            using NativeSortedMap<int, char> map3 = map.SubMap(..);
+            Assert.IsTrue(map3.ContainsKey(1));
+            Assert.IsTrue(map3.ContainsKey(2));
+            Assert.IsTrue(map3.ContainsKey(3));
+            Assert.IsTrue(map3.ContainsKey(4));
+            Assert.IsTrue(map3.ContainsKey(5));
+            Assert.IsTrue(map2.ContainsKey(6));
+
+            Assert.AreEqual(6, map3.Length);
+            Assert.AreEqual(6, map3.Capacity);
+        }
+
+        [Test()]
+        public void SubMapRangeTest2()
+        {
+            using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
+            map.Add(1, 'a');
+            map.Add(2, 'b');
+            map.Add(3, 'c');
+            map.Add(4, 'c');
+            map.Add(5, 'c');
+            map.Add(6, 'c');
+
+            using NativeSortedMap<int, char> map2 = map.SubMap(1..3);
+            Assert.IsTrue(map2.ContainsKey(2));
+            Assert.IsTrue(map2.ContainsKey(3));
+
+            Assert.IsFalse(map2.ContainsKey(1));
+            Assert.IsFalse(map2.ContainsKey(4));
+            Assert.IsFalse(map2.ContainsKey(5));
+            Assert.IsFalse(map2.ContainsKey(6));
+
+            Assert.AreEqual(2, map2.Length);
+            Assert.AreEqual(2, map2.Capacity);
+
+            using NativeSortedMap<int, char> map3 = map.SubMap(..2);
+            Assert.IsTrue(map3.ContainsKey(1));
+            Assert.IsTrue(map3.ContainsKey(2));
+
+            Assert.AreEqual(2, map3.Length);
+            Assert.AreEqual(2, map3.Capacity);
+
+            using NativeSortedMap<int, char> map4 = map.SubMap(4..);
+            Assert.IsTrue(map4.ContainsKey(5));
+            Assert.IsTrue(map4.ContainsKey(6));
+
+            Assert.AreEqual(2, map4.Length);
+            Assert.AreEqual(2, map4.Capacity);
+        }
+
+        [Test()]
         public void ClearTest()
         {
             using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);

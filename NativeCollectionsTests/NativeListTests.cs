@@ -886,11 +886,21 @@ namespace NativeCollections.Tests
         {
             using NativeList<int> list = new NativeList<int>(stackalloc int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
 
+            Assert.AreEqual(0, list.BinarySearch(1));
+            Assert.AreEqual(1, list.BinarySearch(2));
+            Assert.AreEqual(2, list.BinarySearch(3));
+            Assert.AreEqual(3, list.BinarySearch(4));
             Assert.AreEqual(4, list.BinarySearch(5));
+            Assert.AreEqual(5, list.BinarySearch(6));
+            Assert.AreEqual(6, list.BinarySearch(7));
+            Assert.AreEqual(7, list.BinarySearch(8));
             Assert.AreEqual(8, list.BinarySearch(9));
+            Assert.AreEqual(9, list.BinarySearch(10));
 
+            Assert.AreEqual(~0, list.BinarySearch(-1));
             Assert.AreEqual(~0, list.BinarySearch(0));
-            Assert.AreEqual(~9, list.BinarySearch(11));
+            Assert.AreEqual(~10, list.BinarySearch(11));
+            Assert.AreEqual(~10, list.BinarySearch(12));
         }
     }
 }

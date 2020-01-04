@@ -324,6 +324,41 @@ namespace NativeCollections.Tests
             Assert.IsFalse(enumerator.MoveNext());
         }
 
+        [Test()]
+        public void IndexerTest()
+        {
+            using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 1, 2, 3, 4 });
+            array[0]++;
+            array[1]++;
+            array[2]++;
+            array[3]++;
+
+            Assert.AreEqual(2, array[0]);
+            Assert.AreEqual(3, array[1]);
+            Assert.AreEqual(4, array[2]);
+            Assert.AreEqual(5, array[3]);
+        }
+
+        [Test()]
+        public void IndexerTest2()
+        {
+            using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 1, 2, 3, 4 });
+            array[^0]++;
+            array[^1]++;
+            array[^2]++;
+            array[^3]++;
+
+            Assert.AreEqual(5, array[^0]);
+            Assert.AreEqual(4, array[^1]);
+            Assert.AreEqual(3, array[^2]);
+            Assert.AreEqual(2, array[^3]);
+
+            Assert.AreEqual(2, array[new Index(0)]);
+            Assert.AreEqual(3, array[new Index(1)]);
+            Assert.AreEqual(4, array[new Index(2)]);
+            Assert.AreEqual(5, array[new Index(3)]);
+        }
+
         // Extensions
 
         [Test()]
@@ -409,11 +444,21 @@ namespace NativeCollections.Tests
         {
             using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
 
+            Assert.AreEqual(0, array.BinarySearch(1));
+            Assert.AreEqual(1, array.BinarySearch(2));
+            Assert.AreEqual(2, array.BinarySearch(3));
+            Assert.AreEqual(3, array.BinarySearch(4));
             Assert.AreEqual(4, array.BinarySearch(5));
+            Assert.AreEqual(5, array.BinarySearch(6));
+            Assert.AreEqual(6, array.BinarySearch(7));
+            Assert.AreEqual(7, array.BinarySearch(8));
             Assert.AreEqual(8, array.BinarySearch(9));
+            Assert.AreEqual(9, array.BinarySearch(10));
 
+            Assert.AreEqual(~0, array.BinarySearch(-1));
             Assert.AreEqual(~0, array.BinarySearch(0));
-            Assert.AreEqual(~9, array.BinarySearch(11));
+            Assert.AreEqual(~10, array.BinarySearch(11));
+            Assert.AreEqual(~10, array.BinarySearch(12));
         }
     }
 }

@@ -900,6 +900,13 @@ namespace NativeCollections
         /// <returns>An enumerator over this map key-values.</returns>
         public Enumerator GetEnumerator()
         {
+            Debug.Assert(_buffer != null);
+
+            if (_buffer == null)
+            {
+                return default;
+            }
+
             return new Enumerator(ref this);
         }
 

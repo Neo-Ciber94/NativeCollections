@@ -635,10 +635,15 @@ namespace NativeCollections
         /// <returns>An enumerator over this deque elements.</returns>
         public Enumerator GetEnumerator()
         {
+            Debug.Assert(_buffer != null);
+
+            if(_buffer == null)
+            {
+                return default;
+            }
+
             return new Enumerator(ref this);
         }
-
-        public Span<T> Span => new Span<T>(_buffer, _capacity);
 
         /// <summary>
         /// An enumerator over the elements of a <see cref="NativeDeque{T}"/>.
