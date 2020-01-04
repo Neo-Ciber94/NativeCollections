@@ -1,12 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using NativeCollections.Allocators;
+using NativeCollections.Utility;
 
 namespace NativeCollections
 {
-    unsafe public struct NativeSet<T> : IDisposable where T: unmanaged
+    /// <summary>
+    /// Represents a collection of differents elements, and offer operations as union, difference, intersection and symmetric difference.
+    /// </summary>
+    /// <typeparam name="T">Type of elements.</typeparam>
+    /// <seealso cref="NativeCollections.INativeContainer{T}" />
+    /// <seealso cref="System.IDisposable" />
+    [DebuggerDisplay("Length = {Length}")]
+    [DebuggerTypeProxy(typeof(NativeSetDebugView<>))]
+    unsafe public struct NativeSet<T> : INativeContainer<T>, IDisposable where T: unmanaged
     {
         internal struct Entry
         {
@@ -16,79 +26,37 @@ namespace NativeCollections
             public int bucket;
         }
 
-        public ref struct Enumerator
-        {
-            private Entry* _entries;
-            private int _count;
-            private int _index;
-
-            public Enumerator(ref NativeSet<T> set)
-            {
-                _entries = set._buffer;
-                _count = set._count;
-                _index = -1;
-            }
-
-            public readonly ref T Current
-            {
-                get
-                {
-                    if (_index < 0 || _index > _count)
-                        throw new ArgumentOutOfRangeException("index", _index.ToString());
-
-                    return ref _entries[_index].value;
-                }
-            }
-
-            public void Dispose()
-            {
-                if (_entries == null)
-                    return;
-
-                _entries = null;
-                _count = 0;
-                _index = -1;
-            }
-
-            public bool MoveNext()
-            {
-                if (_count == 0)
-                    return false;
-
-                int i = _index + 1;
-                while (i < _count)
-                {
-                    if (_entries[i].hashCode >= 0)
-                    {
-                        _index = i;
-                        return true;
-                    }
-
-                    i++;
-                }
-
-                return false;
-            }
-
-            public void Reset()
-            {
-                _index = -1;
-            }
-        }
-
         private Entry* _buffer;
         private int _capacity;
         private int _count;
         private int _freeCount;
         private int _freeList;
-        private int _allocatorID;
 
+        private readonly int _allocatorID;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeSet{T}"/> struct.
+        /// </summary>
+        /// <param name="initialCapacity">The initial capacity.</param>
         public NativeSet(int initialCapacity) : this(initialCapacity, Allocator.Default) { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeSet{T}"/> struct.
+        /// </summary>
+        /// <param name="initialCapacity">The initial capacity.</param>
+        /// <param name="allocator">The allocator.</param>
+        /// <exception cref="ArgumentException">If the capacity is negative or 0, or if the allocator is not in cache.</exception>
         public NativeSet(int initialCapacity, Allocator allocator)
         {
             if (initialCapacity <= 0)
+            {
                 throw new ArgumentException("initialCapacity should be greater than 0.", nameof(initialCapacity));
+            }
+
+            if (allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
 
             _buffer = (Entry*)allocator.Allocate(initialCapacity, sizeof(Entry));
             _capacity = initialCapacity;
@@ -100,10 +68,25 @@ namespace NativeCollections
             Initializate();
         }
 
-        public NativeSet(Span<T> elements) : this(elements, Allocator.Default) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeSet{T}"/> struct.
+        /// </summary>
+        /// <param name="elements">The initial elements.</param>
+        public NativeSet(in Span<T> elements) : this(elements, Allocator.Default) { }
 
-        public NativeSet(Span<T> elements, Allocator allocator)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeSet{T}"/> struct.
+        /// </summary>
+        /// <param name="elements">The elements.</param>
+        /// <param name="allocator">The allocator.</param>
+        /// <exception cref="ArgumentException">If the capacity is negative or 0, or if the allocator is not in cache.</exception>
+        public NativeSet(in Span<T> elements, Allocator allocator)
         {
+            if (allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
+
             if (elements.IsEmpty)
             {
                 this = default;
@@ -126,25 +109,63 @@ namespace NativeCollections
             }
         }
 
+        /// <summary>
+        /// Gets the number of elements in this set.
+        /// </summary>
+        /// <value>
+        /// The length.
+        /// </value>
         public int Length => _count - _freeCount;
 
+        /// <summary>
+        /// Gets the number of elements this set can hold before resize.
+        /// </summary>
+        /// <value>
+        /// The capacity.
+        /// </value>
         public int Capacity => _capacity;
 
+        /// <summary>
+        /// Gets a value indicating whether this set have elements.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this set is empty; otherwise, <c>false</c>.
+        /// </value>
         public bool IsEmpty => _count == 0;
 
+        /// <summary>
+        /// Checks if this set is allocated.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this set is valid; otherwise, <c>false</c>.
+        /// </value>
         public bool IsValid => _buffer != null;
 
+        /// <summary>
+        /// Gets the allocator.
+        /// </summary>
+        /// <returns></returns>
         public Allocator? GetAllocator()
         {
             return Allocator.GetAllocatorByID(_allocatorID);
         }
 
+        /// <summary>
+        /// Adds the specified value to the set.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns><c>true</c> if the value is not duplicated and was added, otherwise <c>false</c></returns>
         public bool Add(T value)
         {
             return AddIfAbsent(value);
         }
 
-        public int AddRange(Span<T> elements)
+        /// <summary>
+        /// Adds all the specified elements to the set.
+        /// </summary>
+        /// <param name="elements">The elements to add.</param>
+        /// <returns>The number of elements added to the set.</returns>
+        public int AddRange(in Span<T> elements)
         {
             if (elements.IsEmpty)
                 return 0;
@@ -154,13 +175,18 @@ namespace NativeCollections
             {
                 if(AddIfAbsent(e))
                 {
-                    count++;
+                    ++count;
                 }
             }
 
             return count;
         }
 
+        /// <summary>
+        /// Removes the specified value from the set.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns><c>true</c> if the value was removed.</returns>
         public bool Remove(T value)
         {
             if (_count == 0)
@@ -169,7 +195,7 @@ namespace NativeCollections
             var comparer = EqualityComparer<T>.Default;
             int hashCode = GetHash(value);
             int bucket = GetBucket(hashCode, _capacity);
-            int index = _buffer[bucket].next;
+            int index = _buffer[bucket].bucket;
             int last = -1;
 
             while(index >= 0)
@@ -200,6 +226,36 @@ namespace NativeCollections
             return false;
         }
 
+        /// <summary>
+        /// Removes all the elements that meet the specified predicate.
+        /// </summary>
+        /// <param name="predicate">The predicate.</param>
+        /// <returns>The number of elements removed.</returns>
+        public int RemoveIf(Predicate<T> predicate)
+        {
+            if (_buffer == null)
+                return 0;
+
+            int count = 0;
+            foreach (ref var e in this)
+            {
+                if (predicate(e))
+                {
+                    Remove(e);
+                    ++count;
+                }
+            }
+
+            return count;
+        }
+
+        /// <summary>
+        /// Determines whether this set contains the value.
+        /// </summary>
+        /// <param name="value">The value to locate.</param>
+        /// <returns>
+        ///   <c>true</c> if the set contains the value; otherwise, <c>false</c>.
+        /// </returns>
         public bool Contains(T value)
         {
             if (_count == 0)
@@ -208,7 +264,7 @@ namespace NativeCollections
             var comparer = EqualityComparer<T>.Default;
             int hashCode = GetHash(value);
             int bucket = GetBucket(hashCode, _capacity);
-            int index = _buffer[bucket].next;
+            int index = _buffer[bucket].bucket;
 
             while (index >= 0)
             {
@@ -224,24 +280,109 @@ namespace NativeCollections
             return false;
         }
 
-        public Enumerator GetEnumerator()
+        /// <summary>
+        /// Determines whether this set elements contains all the values.
+        /// </summary>
+        /// <param name="elements">The elements to locate.</param>
+        /// <returns>
+        ///   <c>true</c> if the set contains all the values; otherwise, <c>false</c>.
+        /// </returns>
+        public bool ContainsAll(in Span<T> elements)
         {
-            return new Enumerator(ref this);
+            foreach (ref var e in elements)
+            {
+                if (!Contains(e))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
+        /// <summary>
+        /// Performs an union with this set and the specified elements.
+        /// </summary>
+        /// <param name="elements">The elements to perform the union with.</param>
+        public void UnionWith(in Span<T> elements)
+        {
+            if (_buffer == null)
+                return;
+
+            foreach (ref var e in elements)
+            {
+                Add(e);
+            }
+        }
+
+        /// <summary>
+        /// Performs an intersection with this set and the specified elements.
+        /// </summary>
+        /// <param name="elements">The elements to perform the intersection with.</param>
+        public void IntersectionWith(in Span<T> elements)
+        {
+            if (_buffer == null)
+                return;
+
+            using NativeArray<T> copy = ToNativeArray();
+
+            foreach (ref var e in copy)
+            {
+                if (!SpanHelper.Contains(elements, e))
+                {
+                    Remove(e);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Performs a difference with this set and the specified elements.
+        /// </summary>
+        /// <param name="elements">The elements to perform the difference with.</param>
+        public void DifferenceWith(in Span<T> elements)
+        {
+            if (_buffer == null)
+                return;
+
+            foreach (ref var e in elements)
+            {
+                Remove(e);
+            }
+        }
+
+        /// <summary>
+        /// Performs a symmetric difference with this set and the specified elements.
+        /// </summary>
+        /// <param name="elements">The elements to perform the symmetric difference.</param>
+        public void SymmetricDifferenceWith(in Span<T> elements)
+        {
+            if (_buffer == null)
+                return;
+
+            foreach (ref var e in elements)
+            {
+                if (Contains(e))
+                {
+                    Remove(e);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Removes the excess spaces from this set.
+        /// </summary>
         public void TrimExcess()
         {
             TrimExcess(Length);
         }
 
+        /// <summary>
+        /// Removes the excess spaces from this set.
+        /// </summary>
+        /// <param name="capacity">The min capacity.</param>
         public void TrimExcess(int capacity)
         {
-            if (capacity <= 0)
-            {
-                throw new ArgumentException($"capacity must be greater than 0: {capacity}", nameof(capacity));
-            }
-
-            if(capacity <= Length)
+            if (capacity < Length)
             {
                 return;
             }
@@ -275,42 +416,199 @@ namespace NativeCollections
                 }
             }
 
+            _buffer = newBuffer;
             _freeCount = 0;
             _freeList = -1;
             _count = count;
             _capacity = capacity;
         }
 
+        /// <summary>
+        /// Ensures this set can hold the specified amount of elements before resize.
+        /// </summary>
+        /// <param name="capacity">The min capacity.</param>
         public void EnsureCapacity(int capacity)
         {
-            if (capacity <= 0)
-            {
-                throw new ArgumentException($"capacity must be greater than 0: {capacity}", nameof(capacity));
-            }
-
-            if(capacity > _capacity)
+            if (capacity > _capacity)
             {
                 Resize(capacity);
             }
         }
 
+        /// <summary>
+        /// Copies the content of this set to a <see cref="Span{T}" />.
+        /// </summary>
+        /// <param name="span">The destination span to copy the data.</param>
+        /// <param name="destinationIndex">Start index of the destination where start to copy.</param>
+        /// <param name="count">The number of elements to copy.</param>
+        /// <exception cref="ArgumentException">Span is empty</exception>
+        /// <exception cref="InvalidOperationException">Set is invalid</exception>
+        /// <exception cref="ArgumentOutOfRangeException">If the range provided by the destination index and count is invalid.</exception>
+        public void CopyTo(in Span<T> span, int destinationIndex, int count)
+        {
+            if (span.IsEmpty)
+                throw new ArgumentException("Span is empty");
+
+            if (_buffer == null)
+                throw new InvalidOperationException("NativeSet is invalid");
+
+            if (destinationIndex < 0 || destinationIndex > span.Length)
+                throw new ArgumentOutOfRangeException(nameof(destinationIndex), destinationIndex.ToString());
+
+            if (count < 0 || count > _count || count > (span.Length - destinationIndex))
+                throw new ArgumentOutOfRangeException(nameof(count), count.ToString());
+
+            Enumerator enumerator = GetEnumerator();
+
+            while (count > 0 && enumerator.MoveNext())
+            {
+                span[destinationIndex] = enumerator.Current;
+                ++destinationIndex;
+                --count;
+            }
+        }
+
+        /// <summary>
+        /// Allocates an array with the elements of this set.
+        /// </summary>
+        /// <returns>An newly allocated array with the elements of this instance.</returns>
+        public T[] ToArray()
+        {
+            if (_count == 0)
+            {
+                return Array.Empty<T>();
+            }
+
+            T[] array = new T[_count];
+            CopyTo(array, 0, _count);
+            return array;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="NativeArray{T}"/> with the elements of this set.
+        /// </summary>
+        /// <returns>A new array with the elements of this instance.</returns>
+        public NativeArray<T> ToNativeArray()
+        {
+            if (_count == 0)
+                return default;
+
+            NativeArray<T> array = new NativeArray<T>(_count);
+            int i = 0;
+            foreach(ref var e in this)
+            {
+                array[i] = e;
+                ++i;
+            }
+            return array;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="NativeArray{T}"/> with the elements of this set and dispose this set.
+        /// </summary>
+        /// <param name="createNewArrayIfNeeded">If <c>true</c> a new array will be created if the capacity of this
+        /// queue is different than its length; otherwise is guaranteed the new array will use this stack memory.</param>
+        /// <returns>A newly created array with this list elements.</returns>
+        public NativeArray<T> ToNativeArrayAndDispose(bool createNewArrayIfNeeded = true)
+        {
+            if (_buffer == null)
+            {
+                return default;
+            }
+
+            if (_count == _capacity || !createNewArrayIfNeeded)
+            {
+                // NativeArray will owns this instance memory
+                NativeArray<T> array = new NativeArray<T>(_buffer, _capacity, GetAllocator()!);
+
+                // Not actual dispose, just invalidate this instance
+                this = default;
+                return array;
+            }
+            else
+            {
+                NativeArray<T> array = ToNativeArray();
+                Dispose();
+                return array;
+            }
+        }
+
+        /// <summary>
+        /// Gets a string representation of the elements of this set.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this set.
+        /// </returns>
+        public override string ToString()
+        {
+            if (_buffer == null)
+            {
+                return "[Invalid]";
+            }
+
+            if (_count == 0)
+            {
+                return "[]";
+            }
+
+            StringBuilder sb = StringBuilderCache.Acquire();
+            Enumerator enumerator = GetEnumerator();
+            sb.Append('[');
+
+            if (enumerator.MoveNext())
+            {
+                while (true)
+                {
+                    sb.Append(enumerator.Current.ToString());
+                    if (enumerator.MoveNext())
+                    {
+                        sb.Append(", ");
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+
+            sb.Append(']');
+            return StringBuilderCache.ToStringAndRelease(ref sb!);
+        }
+
+        /// <summary>
+        /// Releases the resources used for this set.
+        /// </summary>
+        public void Dispose()
+        {
+            if (_buffer == null)
+                return;
+
+            if (Allocator.IsCached(_allocatorID))
+            {
+                GetAllocator()!.Free(_buffer);
+                this = default;
+            }
+        }
+
         private void Initializate()
         {
-            for(int i = 0; i < _capacity; i++)
+            for(int i = 0; i < _capacity; ++i)
             {
                 _buffer[i].bucket = -1;
             }
         }
 
+        internal Span<Entry> Span => new Span<Entry>(_buffer, _capacity);
+
         private bool AddIfAbsent(T value)
         {
-            if (_count == 0)
+            if (_buffer == null)
                 return false; 
 
             var comparer = EqualityComparer<T>.Default;
             int hashCode = GetHash(value);
             int bucket = GetBucket(hashCode, _capacity);
-            int index = _buffer[bucket].next;
+            int index = _buffer[bucket].bucket;
 
             while(index >= 0)
             {
@@ -319,6 +617,8 @@ namespace NativeCollections
                 {
                     return false;
                 }
+
+                index = entry.next;
             }
 
             if (_freeCount > 0)
@@ -342,7 +642,7 @@ namespace NativeCollections
             _buffer[index].value = value;
             _buffer[index].hashCode = hashCode;
             _buffer[index].next = _buffer[bucket].bucket;
-            _buffer[bucket].bucket = _count;
+            _buffer[bucket].bucket = index;
             return true;
         }
 
@@ -391,19 +691,90 @@ namespace NativeCollections
             return hashCode % capacity;
         }
 
-        public void Dispose()
+        /// <summary>
+        /// Gets an enumerator over the elements of this set.
+        /// </summary>
+        /// <returns>An enumerator over the elements of this set.</returns>
+        public Enumerator GetEnumerator()
         {
-            if (_buffer == null)
-                return;
+            return new Enumerator(ref this);
+        }
 
-            if (Allocator.IsCached(_allocatorID))
+        /// <summary>
+        /// An enumerator over the elements of a <see cref="NativeSet{T}"/>.
+        /// </summary>
+        public ref struct Enumerator
+        {
+            private Entry* _entries;
+            private int _count;
+            private int _index;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="NativeSet{T}.Enumerator" /> struct.
+            /// </summary>
+            /// <param name="set">The set.</param>
+            public Enumerator(ref NativeSet<T> set)
             {
-                GetAllocator()!.Free(_buffer);
-                _buffer = null;
-                _count = 0;
-                _capacity = 0;
-                _freeCount = 0;
-                _freeList = 0;
+                _entries = set._buffer;
+                _count = set._count;
+                _index = -1;
+            }
+
+            /// <summary>
+            /// Gets a reference to the current element.
+            /// </summary>
+            public readonly ref T Current
+            {
+                get
+                {
+                    if (_index < 0 || _index > _count)
+                        throw new ArgumentOutOfRangeException("index", _index.ToString());
+
+                    return ref _entries[_index].value;
+                }
+            }
+
+            /// <summary>
+            /// Invalidates this enumerator.
+            /// </summary>
+            public void Dispose()
+            {
+                if (_entries == null)
+                    return;
+
+                this = default;
+            }
+
+            /// <summary>
+            /// Moves to the next element.
+            /// </summary>
+            /// <returns><c>true</c> if moved to the next element.</returns>
+            public bool MoveNext()
+            {
+                if (_count == 0)
+                    return false;
+
+                int i = _index + 1;
+                while (i < _count)
+                {
+                    if (_entries[i].hashCode >= 0)
+                    {
+                        _index = i;
+                        return true;
+                    }
+
+                    i++;
+                }
+
+                return false;
+            }
+
+            /// <summary>
+            /// Resets this enumerator.
+            /// </summary>
+            public void Reset()
+            {
+                _index = -1;
             }
         }
     }

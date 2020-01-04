@@ -273,11 +273,12 @@ namespace NativeCollections
         }
 
         internal Entry* _buffer;
-        private int _count;
         private int _capacity;
+        private int _count;
         private int _freeList;
         private int _freeCount;
-        private int _allocatorID;
+
+        private readonly int _allocatorID;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NativeMap{TKey, TValue}" /> struct.

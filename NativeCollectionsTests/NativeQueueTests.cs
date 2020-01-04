@@ -345,7 +345,6 @@ namespace NativeCollections.Tests
             Assert.AreEqual(0, queue.Length);
             Assert.AreEqual(0, queue.Capacity);
 
-
             Assert.AreEqual(1, array[0]);
             Assert.AreEqual(2, array[1]);
             Assert.AreEqual(3, array[2]);

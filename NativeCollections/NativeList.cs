@@ -22,7 +22,8 @@ namespace NativeCollections
         internal T* _buffer;
         private int _capacity;
         private int _count;
-        private int _allocatorID;
+
+        private readonly int _allocatorID;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NativeList{T}"/> struct.
@@ -59,14 +60,14 @@ namespace NativeCollections
         /// Initializes a new instance of the <see cref="NativeList{T}"/> struct using the given elements.
         /// </summary>
         /// <param name="elements">The initial elements of the list.</param>
-        public NativeList(Span<T> elements) : this(elements, Allocator.Default) { }
+        public NativeList(in Span<T> elements) : this(elements, Allocator.Default) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NativeList{T}"/> struct using the given elements.
         /// </summary>
         /// <param name="elements">The initial elements of the list.</param>
         /// <param name="allocator">The allocator used for this list.</param>
-        public NativeList(Span<T> elements, Allocator allocator)
+        public NativeList(in Span<T> elements, Allocator allocator)
         {
             if (allocator.ID <= 0)
             {
@@ -250,7 +251,7 @@ namespace NativeCollections
         /// Adds all the elements in the span at the end of the list.
         /// </summary>
         /// <param name="elements">The span that holds the elements to add.</param>
-        public void AddRange(Span<T> elements)
+        public void AddRange(in Span<T> elements)
         {
             if (elements.IsEmpty)
                 throw new ArgumentException("Empty span");

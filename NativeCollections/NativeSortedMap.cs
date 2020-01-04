@@ -9,12 +9,12 @@ namespace NativeCollections
 {
     unsafe public struct NativeSortedMap<TKey, TValue> : IDisposable where TKey : unmanaged where TValue : unmanaged
     {
-        internal struct Pair
+        internal struct Entry
         {
             public TKey key;
             public TValue value;
 
-            public Pair(TKey key, TValue value)
+            public Entry(TKey key, TValue value)
             {
                 this.key = key;
                 this.value = value;
@@ -23,7 +23,7 @@ namespace NativeCollections
 
         public ref struct Enumerator
         {
-            private Pair* _entries;
+            private Entry* _entries;
             private int _length;
             private int _index;
 
@@ -41,7 +41,7 @@ namespace NativeCollections
                     if (_index < 0 || _index > _length)
                         throw new ArgumentOutOfRangeException("index", _index.ToString());
 
-                    return ref Unsafe.As<Pair, KeyValuePair<TKey, TValue>>(ref _entries[_index]);
+                    return ref Unsafe.As<Entry, KeyValuePair<TKey, TValue>>(ref _entries[_index]);
                 }
             }
 
@@ -72,10 +72,11 @@ namespace NativeCollections
             }
         }
 
-        private Pair* _buffer;
+        private Entry* _buffer;
         private int _capacity;
         private int _count;
-        private int _allocatorID;
+
+        private readonly int _allocatorID;
 
         public NativeSortedMap(int initialCapacity) : this(initialCapacity, Allocator.Default) { }
 
@@ -84,7 +85,7 @@ namespace NativeCollections
             if (initialCapacity <= 0)
                 throw new ArgumentException("initialCapacity should be greater than 0.", nameof(initialCapacity));
 
-            _buffer = (Pair*)allocator.Allocate(initialCapacity, sizeof(Pair));
+            _buffer = (Entry*)allocator.Allocate(initialCapacity, sizeof(Entry));
             _capacity = initialCapacity;
             _count = 0;
             _allocatorID = allocator.ID;
@@ -153,7 +154,7 @@ namespace NativeCollections
                     throw new ArgumentOutOfRangeException(nameof(index), index.ToString());
                 }
 
-                return ref Unsafe.As<Pair, KeyValuePair<TKey, TValue>>(ref _buffer[index]);
+                return ref Unsafe.As<Entry, KeyValuePair<TKey, TValue>>(ref _buffer[index]);
             }
         }
 
@@ -203,9 +204,9 @@ namespace NativeCollections
                 if(_count < index)
                 {
                     int length = _capacity - index;
-                    Pair* src = _buffer + index + 1;
-                    Pair* dst = src + index;
-                    Unsafe.CopyBlock(dst, src, (uint)(sizeof(Pair) * length));
+                    Entry* src = _buffer + index + 1;
+                    Entry* dst = src + index;
+                    Unsafe.CopyBlock(dst, src, (uint)(sizeof(Entry) * length));
                 }
 
                 _buffer[_count] = default;
@@ -345,7 +346,7 @@ namespace NativeCollections
             if (_buffer == null)
                 return;
 
-            _buffer = GetAllocator()!.Reallocate<Pair>(_buffer, newCapacity);
+            _buffer = GetAllocator()!.Reallocate<Entry>(_buffer, newCapacity);
             _capacity = newCapacity;
         }
 
@@ -358,7 +359,7 @@ namespace NativeCollections
 
             if(_count == 0 && ((mode == InsertMode.Add || mode == InsertMode.Any)))
             {
-                _buffer[_count++] = new Pair(key, value);
+                _buffer[_count++] = new Entry(key, value);
                 return true;
             }
 
@@ -383,10 +384,10 @@ namespace NativeCollections
             }
 
             int length = _capacity - index;
-            Pair* src = _buffer + index;
-            Pair* dst = src + 1;
-            Unsafe.CopyBlock(dst, src, (uint)(sizeof(Pair) * length));
-            _buffer[index] = new Pair(key, value);
+            Entry* src = _buffer + index;
+            Entry* dst = src + 1;
+            Unsafe.CopyBlock(dst, src, (uint)(sizeof(Entry) * length));
+            _buffer[index] = new Entry(key, value);
             _count++;
 
             return true;

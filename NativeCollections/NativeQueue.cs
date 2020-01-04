@@ -22,10 +22,10 @@ namespace NativeCollections
         internal T* _buffer;
         private int _capacity;
         private int _count;
-        private int _allocatorID;
-
         private int _head;
         private int _tail;
+
+        private readonly int _allocatorID;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NativeQueue{T}"/> struct.
@@ -364,7 +364,7 @@ namespace NativeCollections
         /// <param name="destinationIndex">Start index of the destination where start to copy.</param>
         /// <param name="count">The number of elements to copy.</param>
         /// <exception cref="ArgumentException">Span is empty</exception>
-        /// <exception cref="InvalidOperationException">Stack is invalid</exception>
+        /// <exception cref="InvalidOperationException">Queue is invalid</exception>
         /// <exception cref="ArgumentOutOfRangeException">If the range provided by the destination index and count is invalid.</exception>
         public void CopyTo(in Span<T> span, int destinationIndex, int count)
         {

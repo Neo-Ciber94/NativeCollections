@@ -400,15 +400,19 @@ namespace NativeCollections.Tests
         public void ReverseTest()
         {
             using NativeDeque<int> deque = new NativeDeque<int>(4);
-            deque.AddLast(1);
-            deque.AddLast(2);
-            deque.AddLast(3);
+            deque.AddFirst(1);
+            deque.AddFirst(2);
+            deque.AddFirst(3);
+            deque.AddFirst(4);
 
             deque.Reverse();
 
             Assert.IsTrue(deque.Contains(1));
             Assert.IsTrue(deque.Contains(2));
             Assert.IsTrue(deque.Contains(3));
+            Assert.IsTrue(deque.Contains(4));
+
+            CollectionAssert.AreEqual(new int[] { 1, 2, 3, 4 }, deque.ToArray());
         }
 
         [Test()]
@@ -426,6 +430,8 @@ namespace NativeCollections.Tests
             Assert.IsTrue(deque.Contains(2));
             Assert.IsTrue(deque.Contains(3));
             Assert.IsTrue(deque.Contains(4));
+
+            CollectionAssert.AreEqual(new int[] { 4, 3, 2, 1 }, deque.ToArray());
         }
 
         [Test()]

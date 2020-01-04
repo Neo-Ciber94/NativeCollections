@@ -21,7 +21,8 @@ namespace NativeCollections
         internal T* _buffer;
         private int _capacity;
         private int _count;
-        private int _allocatorID;
+
+        private readonly int _allocatorID;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NativeStack{T}"/> struct.

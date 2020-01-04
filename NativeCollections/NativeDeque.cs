@@ -21,10 +21,10 @@ namespace NativeCollections
         private T* _buffer;
         private int _capacity;
         private int _count;
-        private int _allocatorID;
-
         private int _head;
         private int _tail;
+
+        private readonly int _allocatorID;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NativeDeque{T}"/> struct.
@@ -395,7 +395,8 @@ namespace NativeCollections
             int head = _head;
             int tail = _tail;
 
-            while(head != tail)
+            int count = _count / 2;
+            while(count > 0)
             {
                 T value = _buffer[head];
                 _buffer[head] = _buffer[tail];
@@ -403,21 +404,7 @@ namespace NativeCollections
 
                 head = (head + 1) % _capacity;
                 tail = (tail - 1) < 0 ? _capacity - 1 : tail - 1;
-
-                if (_head > _tail)
-                {
-                    if (head < tail)
-                    {
-                        break;
-                    }
-                }
-                else if (_tail > _head)
-                {
-                    if (tail < head)
-                    {
-                        break;
-                    }
-                }
+                --count;
             }
         }
 
@@ -652,6 +639,8 @@ namespace NativeCollections
         {
             return new Enumerator(ref this);
         }
+
+        public Span<T> Span => new Span<T>(_buffer, _capacity);
 
         /// <summary>
         /// An enumerator over the elements of a <see cref="NativeDeque{T}"/>.

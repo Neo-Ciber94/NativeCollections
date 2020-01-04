@@ -18,9 +18,9 @@ namespace NativeCollections
     [DebuggerTypeProxy(typeof(NativeArrayDebugView<>))]
     unsafe public struct NativeArray<T> : INativeContainer<T>, IDisposable where T : unmanaged
     {
-        internal void* _buffer;
-        private int _capacity;
-        private int _allocatorID;
+        internal readonly void* _buffer;
+        private readonly int _capacity;
+        private readonly int _allocatorID;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NativeArray{T}" /> struct.
@@ -54,14 +54,14 @@ namespace NativeCollections
         /// Initializes a new instance of the <see cref="NativeArray{T}" /> struct by copying the specify elements.
         /// </summary>
         /// <param name="elements">The elements to initializate the array.</param>
-        public NativeArray(Span<T> elements) : this(elements, Allocator.Default) { }
+        public NativeArray(in Span<T> elements) : this(elements, Allocator.Default) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NativeArray{T}" /> struct by copying the specify elements.
         /// </summary>
         /// <param name="elements">The elements to initializate the array.</param>
         /// <param name="allocator">The allocator used for this array.</param> 
-        public NativeArray(Span<T> elements, Allocator allocator)
+        public NativeArray(in Span<T> elements, Allocator allocator)
         {
             if (allocator.ID <= 0)
             {
