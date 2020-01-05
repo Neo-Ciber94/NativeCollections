@@ -1,6 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Text;
 using NativeCollections.Utility;
 
@@ -70,9 +71,97 @@ namespace NativeCollections
 
     public static class IndexedValueExtensions
     {
+        /// <summary>
+        /// Gets an index-value representation of the elements of the enumerable.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="enumerable">The enumerable.</param>
+        /// <returns>An indexed enumerable of the specified enumerable.</returns>
         public static IEnumerable<IndexedValue<T>> WithIndex<T>(this IEnumerable<T> enumerable)
         {
-            return enumerable.Select((e, index) => new IndexedValue<T>(e, index));
+            if(enumerable is IndexedEnumerable<T>)
+            {
+                return (IndexedEnumerable<T>)enumerable;
+            }
+
+            return new IndexedEnumerable<T>(enumerable);
+        }
+
+        internal class IndexedEnumerable<T> : IEnumerable<IndexedValue<T>>, IEnumerator<IndexedValue<T>>
+        {
+            private const int Invalid = -2;
+            private const int Start = -1;
+
+            private readonly IEnumerable<T> _source;
+            private IEnumerator<T>? _enumerator;
+            private int _index = Start;
+
+            public IndexedEnumerable(IEnumerable<T> enumerable)
+            {
+                _source = enumerable;
+            }
+
+            public IndexedValue<T> Current
+            {
+                get
+                {
+                    if(_enumerator == null || _index == Invalid)
+                    {
+                        throw new InvalidOperationException("Invalid state");
+                    }
+
+                    checked
+                    {
+                        T current = _enumerator.Current;
+                        return new IndexedValue<T>(current, _index);
+                    }
+                }
+            }
+
+            object? IEnumerator.Current => Current;
+
+            public void Dispose()
+            {
+                _index = Invalid;
+            }
+
+            public bool MoveNext()
+            {
+                if(_index == Invalid)
+                {
+                    return false;
+                }
+
+                if(_index == Start)
+                {
+                    _enumerator = _source.GetEnumerator();
+                }
+
+                if (_enumerator!.MoveNext())
+                {
+                    ++_index;
+                    return true;
+                }
+
+                return false;
+            }
+
+            public void Reset()
+            {
+                _index = Start;
+            }
+
+            public IEnumerator<IndexedValue<T>> GetEnumerator()
+            {
+                _enumerator = _source.GetEnumerator();
+                _index = Start;
+                return this;
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
         }
     }
 }

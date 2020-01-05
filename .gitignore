@@ -217,6 +217,7 @@ _pkginfo.txt
 ConsoleApp/
 ClientBin/
 CodeGen/
+.editorconfig
 ~$*
 *~
 *.dbmdl

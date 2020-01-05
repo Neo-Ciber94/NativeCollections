@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using NativeCollections.Utility;
 
 namespace NativeCollections.Allocators
@@ -15,7 +16,6 @@ namespace NativeCollections.Allocators
 #if RELEASE
             throw new NotSupportedException("DebugAllocator must not run on release mode.");
 #endif
-
             _allocator = allocator;
             _sizeOf = sizeOfPointer;
 
@@ -43,8 +43,10 @@ namespace NativeCollections.Allocators
             Requires.Argument(elementSize > 0, "Invalid elementSize");
 
             int size = _sizeOf(pointer);
+            Requires.Argument(size > 0);
+
             int newSize = elementCount * elementSize;
-            int diff = size - newSize;
+            int diff = newSize - size;
 
             BytesAllocated += diff;
             return _allocator.Reallocate(pointer, elementCount, elementSize, initMemory);

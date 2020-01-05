@@ -884,7 +884,6 @@ namespace NativeCollections
             if (_buffer == null)
                 return;
 
-            // newCapacity = newCapacity < 4 ? 4 : newCapacity;
             _buffer = GetAllocator()!.Reallocate(_buffer, newCapacity);
             _capacity = newCapacity;
         }

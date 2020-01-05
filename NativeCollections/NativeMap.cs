@@ -765,6 +765,61 @@ namespace NativeCollections
         }
 
         /// <summary>
+        /// Creates a new array with the key-values of this map.
+        /// </summary>
+        /// <returns>An array with the key-values of this map.</returns>
+        public NativeArray<KeyValuePair<TKey, TValue>> ToNativeArray()
+        {
+            if (_count == 0)
+            {
+                return default;
+            }
+
+            NativeArray<KeyValuePair<TKey, TValue>> array = new NativeArray<KeyValuePair<TKey, TValue>>(Length, GetAllocator()!);
+
+            int j = 0;
+            for (int i = 0; i < _count; i++)
+            {
+                ref Entry entry = ref _buffer[i];
+                if (entry.hashCode >= 0)
+                {
+                    array[j++] = new KeyValuePair<TKey, TValue>(entry.key, entry.value);
+                }
+            }
+            return array;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="NativeArray{T}"/> with the elements of this map and dispose this map.
+        /// </summary>
+        /// <param name="createNewArrayIfNeeded">If <c>true</c> a new array will be created if the capacity of this
+        /// map is different than its length; otherwise is guaranteed the new array will use this map memory.</param>
+        /// <returns>A newly created array with this list elements.</returns>
+        public NativeArray<KeyValuePair<TKey, TValue>> ToNativeArrayAndDispose(bool createNewArrayIfNeeded = true)
+        {
+            if (_buffer == null)
+            {
+                return default;
+            }
+
+            if (_count == _capacity || !createNewArrayIfNeeded)
+            {
+                // NativeArray will owns this instance memory
+                NativeArray<KeyValuePair<TKey, TValue>> array = new NativeArray<KeyValuePair<TKey, TValue>>(_buffer, _capacity, GetAllocator()!);
+
+                // Not actual dispose, just invalidate this instance
+                this = default;
+                return array;
+            }
+            else
+            {
+                NativeArray<KeyValuePair<TKey, TValue>> array = ToNativeArray();
+                Dispose();
+                return array;
+            }
+        }
+
+        /// <summary>
         /// Removes the excess space from this map.
         /// </summary>
         public void TrimExcess()

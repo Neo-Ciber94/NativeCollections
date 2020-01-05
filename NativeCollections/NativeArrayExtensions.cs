@@ -190,8 +190,7 @@ namespace NativeCollections
                 throw new ArgumentOutOfRangeException($"Invalid range, start: {start}, end: {end}");
             }
 
-            void* pointer = array._buffer;
-            NativeSortUtilities.SortBy(pointer, start, end, false, comparer, selector);
+            NativeSortUtilities.SortBy(array._buffer, start, end, false, comparer, selector);
         }
 
         /// <summary>
@@ -261,8 +260,7 @@ namespace NativeCollections
                 throw new ArgumentOutOfRangeException($"Invalid range, start: {start}, end: {end}");
             }
 
-            void* pointer = array._buffer;
-            NativeSortUtilities.SortBy(pointer, start, end, true, comparer, selector);
+            NativeSortUtilities.SortBy(array._buffer, start, end, true, comparer, selector);
         }
 
         /// <summary>

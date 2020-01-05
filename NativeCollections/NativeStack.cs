@@ -355,7 +355,7 @@ namespace NativeCollections
             if (_count == 0)
                 return default;
 
-            NativeArray<T> array = new NativeArray<T>(_count);
+            NativeArray<T> array = new NativeArray<T>(_count, GetAllocator()!);
             void* src = _buffer;
             void* dst = array._buffer;
             Unsafe.CopyBlockUnaligned(dst, src, (uint)(sizeof(T) * _count));

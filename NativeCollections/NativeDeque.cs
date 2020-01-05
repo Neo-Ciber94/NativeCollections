@@ -500,7 +500,7 @@ namespace NativeCollections
             if (_count == 0)
                 return default;
 
-            NativeArray<T> array = new NativeArray<T>(_count);
+            NativeArray<T> array = new NativeArray<T>(_count, GetAllocator()!);
             int i = 0;
             do
             {

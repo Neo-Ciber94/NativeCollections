@@ -1018,7 +1018,7 @@ namespace NativeCollections
             if (_count == 0)
                 return default;
 
-            NativeArray<KeyValuePair<TKey, TValue>> array = new NativeArray<KeyValuePair<TKey, TValue>>(_count);
+            NativeArray<KeyValuePair<TKey, TValue>> array = new NativeArray<KeyValuePair<TKey, TValue>>(_count, GetAllocator()!);
             int i = 0;
             foreach (ref var e in this)
             {

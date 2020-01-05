@@ -509,7 +509,7 @@ namespace NativeCollections
             if (_count == 0)
                 return default;
 
-            NativeArray<T> array = new NativeArray<T>(_count);
+            NativeArray<T> array = new NativeArray<T>(_count, GetAllocator()!);
             int i = 0;
             foreach(ref var e in this)
             {
@@ -523,7 +523,7 @@ namespace NativeCollections
         /// Creates a new <see cref="NativeArray{T}"/> with the elements of this set and dispose this set.
         /// </summary>
         /// <param name="createNewArrayIfNeeded">If <c>true</c> a new array will be created if the capacity of this
-        /// set is different than its length; otherwise is guaranteed the new array will use this stack memory.</param>
+        /// set is different than its length; otherwise is guaranteed the new array will use this set memory.</param>
         /// <returns>A newly created array with this list elements.</returns>
         public NativeArray<T> ToNativeArrayAndDispose(bool createNewArrayIfNeeded = true)
         {

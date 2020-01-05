@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace NativeCollections.Allocators
 {
@@ -71,37 +69,6 @@ namespace NativeCollections.Allocators
             return block;
         }
 
-        public override unsafe void Free(void* pointer)
-        {
-            if(pointer == null)
-            {
-                throw new ArgumentException("pointer is null");
-            }
-
-            if (!IsOwner(pointer))
-            {
-                throw new ArgumentException("StackAllocator don't owns the given memory block.");
-            }
-
-            if(_buffer == null)
-            {
-                throw new InvalidOperationException("StackAllocator have been disposed");
-            }
-
-            byte* block = (byte*)pointer;
-            StackAllocatorHeader* header = (StackAllocatorHeader*)(block - sizeof(StackAllocatorHeader));
-            
-            if(header != _prevOffset)
-            {
-                throw new InvalidOperationException($"Invalid memory block position.\n" +
-                    $"Expected memory address: {ToHex(_prevOffset)} but {ToHex(header)} was get.\n" +
-                    $"Any memory allocated within the StackAllocator must be free in a LIFO (Last-In First-Out) order.");
-            }
-
-            _offset -= header->size;
-            _prevOffset -= header->offset;
-        }
-
         public override unsafe void* Reallocate(void* pointer, int elementCount, int elementSize = 1, bool initMemory = true)
         {
             if (_buffer == null)
@@ -162,6 +129,37 @@ namespace NativeCollections.Allocators
                 throw new InvalidOperationException("Only the last allocated memory block can be reallocated.\n" +
                     $"Last memory block was {ToHex(_prevOffset)} but {ToHex(header)} was get.");
             }
+        }
+
+        public override unsafe void Free(void* pointer)
+        {
+            if (pointer == null)
+            {
+                throw new ArgumentException("pointer is null");
+            }
+
+            if (!IsOwner(pointer))
+            {
+                throw new ArgumentException("StackAllocator don't owns the given memory block.");
+            }
+
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("StackAllocator have been disposed");
+            }
+
+            byte* block = (byte*)pointer;
+            StackAllocatorHeader* header = (StackAllocatorHeader*)(block - sizeof(StackAllocatorHeader));
+
+            if (header != _prevOffset)
+            {
+                throw new InvalidOperationException($"Invalid memory block position.\n" +
+                    $"Expected memory address: {ToHex(_prevOffset)} but {ToHex(header)} was get.\n" +
+                    $"Any memory allocated within the StackAllocator must be free in a LIFO (Last-In First-Out) order.");
+            }
+
+            _offset -= header->size;
+            _prevOffset -= header->offset;
         }
 
         public int SizeOf(void* block)
