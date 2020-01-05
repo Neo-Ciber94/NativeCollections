@@ -952,44 +952,6 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Gets a string representation of the elements of this map.
-        /// </summary>
-        /// <returns>
-        /// A <see cref="System.String" /> that represents this map.
-        /// </returns>
-        public override string ToString()
-        {
-            if (_buffer == null)
-            {
-                return "[Invalid]";
-            }
-
-            if (_count == 0)
-            {
-                return "[]";
-            }
-
-            StringBuilder sb = StringBuilderCache.Acquire();
-            sb.Append('[');
-            for (int i = 0; i < _count; ++i)
-            {
-                ref Entry entry = ref _buffer[i];
-                sb.Append('{');
-                sb.Append(entry.key.ToString());
-                sb.Append(", ");
-                sb.Append(entry.value.ToString());
-                sb.Append('}');
-
-                if (i != _count - 1)
-                {
-                    sb.Append(", ");
-                }
-            }
-            sb.Append(']');
-            return StringBuilderCache.ToStringAndRelease(ref sb!);
-        }
-
-        /// <summary>
         /// Allocates an array with the elements of this map.
         /// </summary>
         /// <returns>An newly allocated array with the elements of this instance.</returns>
@@ -1160,6 +1122,40 @@ namespace NativeCollections
 
             return ~start;
         }
+
+        /// <summary>
+        /// Gets a string representation of the elements of this map.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents this map.
+        /// </returns>
+        public override string ToString()
+        {
+            if (_count == 0)
+            {
+                return "[]";
+            }
+
+            StringBuilder sb = StringBuilderCache.Acquire();
+            sb.Append('[');
+            for (int i = 0; i < _count; ++i)
+            {
+                ref Entry entry = ref _buffer[i];
+                sb.Append('{');
+                sb.Append(entry.key.ToString());
+                sb.Append(", ");
+                sb.Append(entry.value.ToString());
+                sb.Append('}');
+
+                if (i != _count - 1)
+                {
+                    sb.Append(", ");
+                }
+            }
+            sb.Append(']');
+            return StringBuilderCache.ToStringAndRelease(ref sb!);
+        }
+
 
         /// <summary>
         /// Releases the resouces used for this map.

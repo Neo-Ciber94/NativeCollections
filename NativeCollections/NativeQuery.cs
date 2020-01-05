@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -8,14 +7,18 @@ using NativeCollections.Utility;
 
 namespace NativeCollections
 {
+    /// <summary>
+    /// Provides methods for filter, reduce and convert elements of a collection.
+    /// </summary>
+    /// <typeparam name="T">Type of the elements.</typeparam>
     [DebuggerDisplay("Length = {Length}")]
     [DebuggerTypeProxy(typeof(NativeQueryDebugView<>))]
-    unsafe public ref partial struct NativeQuery<T> where T: unmanaged
+    unsafe public ref partial struct NativeQuery<T> where T : unmanaged
     {
         internal readonly T* _buffer;
         private readonly int _length;
         private readonly int _allocatorID;
-
+        
         public int Length => _length;
 
         public bool IsEmpty => _length == 0;
@@ -37,7 +40,7 @@ namespace NativeCollections
         internal Allocator? GetAllocator()
         {
             return Allocator.GetAllocatorByID(_allocatorID);
-        }       
+        }
 
         public void ForEach(Action<T> action)
         {
@@ -56,7 +59,7 @@ namespace NativeCollections
 
         public override string ToString()
         {
-            if(_length == 0)
+            if (_length == 0)
             {
                 return "[]";
             }
@@ -84,30 +87,6 @@ namespace NativeCollections
 
             sb.Append(']');
             return StringBuilderCache.ToStringAndRelease(ref sb!);
-        }
-
-        public NativeArray<T> ToNativeArray()
-        {
-            if (_buffer == null)
-            {
-                return default;
-            }
-
-            NativeArray<T> array = new NativeArray<T>(_buffer, _length, GetAllocator()!);
-            this = default;
-            return array;
-        }
-
-        public NativeList<T> ToNativeList()
-        {
-            if (_buffer == null)
-            {
-                return default;
-            }
-
-            NativeList<T> array = new NativeList<T>(_buffer, _length, GetAllocator()!);
-            this = default;
-            return array;
         }
 
         public void Dispose()

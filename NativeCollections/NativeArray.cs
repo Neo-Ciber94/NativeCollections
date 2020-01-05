@@ -546,11 +546,6 @@ namespace NativeCollections
         /// </returns>
         public override string ToString()
         {
-            if (_buffer == null)
-            {
-                return "[Invalid]";
-            }
-
             if (_capacity == 0)
             {
                 return "[]";

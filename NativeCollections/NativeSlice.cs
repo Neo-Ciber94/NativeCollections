@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using NativeCollections.Utility;
 
 namespace NativeCollections
@@ -250,6 +251,45 @@ namespace NativeCollections
 
             byte* p = (byte*)_pointer + (Unsafe.SizeOf<T>() * index);
             return new NativeSlice<T>(p, length);
+        }
+
+        /// <summary>
+        /// Gets a string representation of the elements of this array.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.String" /> that represents the elements of this array.
+        /// </returns>
+        public override string ToString()
+        {
+            if (_length == 0)
+            {
+                return "[]";
+            }
+
+            StringBuilder sb = StringBuilderCache.Acquire();
+            sb.Append('[');
+            var enumerator = GetEnumerator();
+
+            if (enumerator.MoveNext())
+            {
+                while (true)
+                {
+                    ref T value = ref enumerator.Current;
+                    sb.Append(value?.ToString()?? string.Empty);
+
+                    if (enumerator.MoveNext())
+                    {
+                        sb.Append(", ");
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+
+            sb.Append(']');
+            return StringBuilderCache.ToStringAndRelease(ref sb!);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

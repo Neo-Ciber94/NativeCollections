@@ -89,6 +89,54 @@ namespace NativeCollections
             }
         }
 
+        internal NativeStack(void* pointer, int length)
+        {
+            if (pointer == null)
+            {
+                throw new ArgumentException("pointer is null");
+            }
+
+            if (length <= 0)
+            {
+                throw new ArgumentException($"length must be greater than 0: {length}");
+            }
+
+            _buffer = (T*)pointer;
+            _capacity = length;
+            _count = length;
+            _allocatorID = -1;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeStack{T}"/> struct.
+        /// </summary>
+        /// <param name="pointer">The pointer.</param>
+        /// <param name="length">The length.</param>
+        /// <param name="allocator">The allocator.</param>
+        /// <exception cref="ArgumentException">If the pointer is null, length is 0 or negative, or the allocator is not in cache.</exception>
+        public NativeStack(void* pointer, int length, Allocator allocator)
+        {
+            if (pointer == null)
+            {
+                throw new ArgumentException("pointer is null");
+            }
+
+            if (length <= 0)
+            {
+                throw new ArgumentException($"length must be greater than 0: {length}");
+            }
+
+            if (allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
+
+            _buffer = (T*)pointer;
+            _capacity = length;
+            _count = length;
+            _allocatorID = allocator.ID;
+        }
+
         /// <summary>
         /// Gets the number of elements in the stack.
         /// </summary>
@@ -400,11 +448,6 @@ namespace NativeCollections
         /// </returns>
         public override string ToString()
         {
-            if (_buffer == null)
-            {
-                return "[Invalid]";
-            }
-
             if (_count == 0)
             {
                 return "[]";
