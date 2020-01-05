@@ -50,12 +50,12 @@ namespace NativeCollections.Allocators.Internal
                 throw new ArgumentException(elementSize.ToString(), nameof(elementSize));
             }
 
-            LocalMemoryFlags flags = initMemory ? LocalMemoryFlags.LMEM_ZEROINIT : LocalMemoryFlags.LMEM_MOVEABLE;
-            Marshal.ReAllocHGlobal(default, default);
-            void* newPointer = Kernel32LocalMemory.LocalAlloc(flags, (uint)elementCount);
+            LocalMemoryFlags flags = initMemory ? LocalMemoryFlags.LMEM_MOVEABLE | LocalMemoryFlags.LMEM_ZEROINIT : LocalMemoryFlags.LMEM_MOVEABLE;
+            void* newPointer = Kernel32LocalMemory.LocalReAlloc(pointer, (uint)(elementCount * elementSize), flags);
 
             if (newPointer == null)
             {
+                Console.WriteLine(Marshal.GetLastWin32Error());
                 throw new OutOfMemoryException();
             }
 
@@ -64,10 +64,6 @@ namespace NativeCollections.Allocators.Internal
 
         public override unsafe void Free(void* pointer)
         {
-            if (pointer == null)
-            {
-                throw new ArgumentException("Invalid pointer");
-            }
 
             if (Kernel32LocalMemory.LocalFree(pointer) != null)
             {

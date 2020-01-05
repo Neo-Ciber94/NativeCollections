@@ -229,6 +229,35 @@ namespace NativeCollections
         }
 
         /// <summary>
+        /// Gets a slice from the specified range.
+        /// </summary>
+        /// <value>
+        /// A <see cref="NativeSlice{T}" /> from this list.
+        /// </value>
+        /// <param name="range">The range.</param>
+        /// <returns>A slice from this list within the given range.</returns>
+        public NativeSlice<T> this[Range range]
+        {
+            get
+            {
+                var (index, length) = range.GetOffsetAndLength(_capacity);
+
+                if (index < 0 || index > _count)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index), index.ToString());
+                }
+
+                if (length < 0 || length > (_count - index))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(length), length.ToString());
+                }
+
+                byte* buffer = (byte*)_buffer + (sizeof(T) * index);
+                return new NativeSlice<T>(buffer, length);
+            }
+        }
+
+        /// <summary>
         /// Adds the specified value at the end of the list.
         /// </summary>
         /// <param name="value">The value.</param>
@@ -918,6 +947,45 @@ namespace NativeCollections
             }
 
             return new RefEnumerator<T>(_buffer, _count);
+        }
+    }
+
+    /// <summary>
+    /// Utilities for <see cref="NativeList{T}"/>.
+    /// </summary>
+    public static partial class NativeList
+    {
+        /// <summary>
+        /// Creates a new <see cref="NativeList{T}"/> with the specified elements.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements</typeparam>
+        /// <param name="args">The arguments.</param>
+        /// <returns>A new NativeList with the using args.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        unsafe public static NativeList<T> Create<T>(params T[] args) where T : unmanaged
+        {
+            return Create(Allocator.Default, args);
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="NativeList{T}"/> with the specified elements.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements</typeparam>
+        /// <param name="allocator">The allocator to use.</param>
+        /// <param name="args">The arguments.</param>
+        /// <returns>A new NativeList with the using args.</returns>
+        unsafe public static NativeList<T> Create<T>(Allocator allocator, params T[] args) where T : unmanaged
+        {
+            if (args.Length == 0)
+            {
+                return default;
+            }
+
+            int length = args.Length;
+            void* source = Unsafe.AsPointer(ref args[0]);
+            void* buffer = allocator.Allocate<T>(length);
+            Unsafe.CopyBlockUnaligned(buffer, source, (uint)(sizeof(T) * length));
+            return new NativeList<T>(buffer, length, allocator);
         }
     }
 }

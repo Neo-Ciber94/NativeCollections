@@ -719,6 +719,34 @@ namespace NativeCollections.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => { var e = list[6]; });
         }
 
+        [Test()]
+        public void RangeIndexerTest()
+        {
+            using NativeList<int> list = new NativeList<int>(stackalloc int[] { 1, 2, 3, 4, 5 });
+            NativeSlice<int> slice = list[1..4];
+
+            Assert.AreEqual(3, slice.Length);
+            Assert.AreEqual(2, slice[0]);
+            Assert.AreEqual(3, slice[1]);
+            Assert.AreEqual(4, slice[2]);
+
+            CollectionAssert.AreEqual(new int[] { 1, 2, 3, 4, 5 }, list[..].ToArray());
+            CollectionAssert.AreEqual(new int[] { 1, 2, 3 }, list[..3].ToArray());
+            CollectionAssert.AreEqual(new int[] { 3, 4, 5 }, list[2..].ToArray());
+
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                using NativeList<int> nativeArray = new NativeList<int>(stackalloc int[] { 1, 2, 3, 4, 5 });
+                NativeSlice<int> slice = list[3..6];
+            });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                using NativeList<int> nativeArray = new NativeList<int>(stackalloc int[] { 1, 2, 3, 4, 5 });
+                NativeSlice<int> slice = list[-1..];
+            });
+        }
+
         // Extensions
 
         [Test()]

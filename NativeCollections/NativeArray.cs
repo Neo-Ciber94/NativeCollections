@@ -207,6 +207,35 @@ namespace NativeCollections
         }
 
         /// <summary>
+        /// Gets a slice from the specified range.
+        /// </summary>
+        /// <value>
+        /// A <see cref="NativeSlice{T}" /> from this array.
+        /// </value>
+        /// <param name="range">The range.</param>
+        /// <returns>A slice from this array within the given range.</returns>
+        public NativeSlice<T> this[Range range]
+        {
+            get
+            {
+                var (index, length) = range.GetOffsetAndLength(_capacity);
+
+                if (index < 0 || index > _capacity)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index), index.ToString());
+                }
+
+                if (length < 0 || length > (_capacity - index))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(length), length.ToString());
+                }
+
+                byte* buffer = (byte*)_buffer + (sizeof(T) * index);
+                return new NativeSlice<T>(buffer, length);
+            }
+        }
+
+        /// <summary>
         /// Fills the content of this array with the given value.
         /// </summary>
         /// <param name="value">The value to use.</param>
@@ -573,7 +602,26 @@ namespace NativeCollections
     /// </summary>
     public static partial class NativeArray
     {
-        unsafe public static NativeArray<T> Create<T>(params T[] args) where T: unmanaged
+        /// <summary>
+        /// Creates a new <see cref="NativeArray{T}"/> with the specified elements.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements</typeparam>
+        /// <param name="args">The arguments.</param>
+        /// <returns>A new NativeArray with the using args.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        unsafe public static NativeArray<T> Create<T>(params T[] args) where T : unmanaged
+        {
+            return Create(Allocator.Default, args);
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="NativeArray{T}"/> with the specified elements.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements</typeparam>
+        /// <param name="allocator">The allocator to use.</param>
+        /// <param name="args">The arguments.</param>
+        /// <returns>A new NativeArray with the using args.</returns>
+        unsafe public static NativeArray<T> Create<T>(Allocator allocator, params T[] args) where T: unmanaged
         {
             if(args.Length == 0)
             {
@@ -581,10 +629,10 @@ namespace NativeCollections
             }
 
             int length = args.Length;
-            NativeArray<T> array = new NativeArray<T>(length);
-            ref T first = ref Unsafe.AsRef(args[0]);
-            Unsafe.CopyBlock(array.GetUnsafePointer(), Unsafe.AsPointer(ref first), (uint)(sizeof(T) * length));
-            return array;
+            void* source = Unsafe.AsPointer(ref args[0]);
+            void* buffer = allocator.Allocate<T>(length);
+            Unsafe.CopyBlock(buffer, source, (uint)(sizeof(T) * length));
+            return new NativeArray<T>(buffer, length);
         }
 
         /// <summary>

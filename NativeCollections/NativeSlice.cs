@@ -17,7 +17,7 @@ namespace NativeCollections
         private readonly int _length;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="NativeSlice{T}" /> struct using the given array.
+        /// Initializes a new instance of the <see cref="NativeSlice{T}"/> struct using the given array.
         /// </summary>
         /// <param name="array">The array.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

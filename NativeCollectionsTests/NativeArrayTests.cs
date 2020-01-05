@@ -340,6 +340,34 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
+        public void RangeIndexerTest()
+        {
+            using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 1, 2, 3, 4, 5 });
+            NativeSlice<int> slice = array[1..4];
+
+            Assert.AreEqual(3, slice.Length);
+            Assert.AreEqual(2, slice[0]);
+            Assert.AreEqual(3, slice[1]);
+            Assert.AreEqual(4, slice[2]);
+
+            CollectionAssert.AreEqual(new int[] { 1, 2, 3, 4, 5 }, array[..].ToArray());
+            CollectionAssert.AreEqual(new int[] { 1, 2, 3 }, array[..3].ToArray());
+            CollectionAssert.AreEqual(new int[] { 3, 4, 5 }, array[2..].ToArray());
+
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                using NativeArray<int> nativeArray = new NativeArray<int>(stackalloc int[] { 1, 2, 3, 4, 5 });
+                NativeSlice<int> slice = array[3..6];
+            });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                using NativeArray<int> nativeArray = new NativeArray<int>(stackalloc int[] { 1, 2, 3, 4, 5 });
+                NativeSlice<int> slice = array[-1..];
+            });
+        }
+
+        [Test()]
         public void IndexerTest2()
         {
             using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 1, 2, 3, 4 });
