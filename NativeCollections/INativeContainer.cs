@@ -36,8 +36,8 @@ namespace NativeCollections
         /// Copies the content of this container to a <see cref="Span{T}"/>.
         /// </summary>
         /// <param name="span">The destination span to copy the data.</param>
-        /// <param name="destinationIndex">Start index of the destination where start to copy.</param>
+        /// <param name="index">Start index of the destination where start to copy.</param>
         /// <param name="count">The number of elements to copy.</param>
-        public void CopyTo(in Span<T> span, int destinationIndex, int count);
+        public void CopyTo(in Span<T> span, int index, int count);
     }
 }
