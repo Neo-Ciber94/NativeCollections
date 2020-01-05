@@ -9,7 +9,7 @@ and must be ```Dispose``` after use.
 ------------------------
 
 ### This libray provides the follow containers:
-```csharp
+```c#
 NativeArray<T>
 NativeList<T>
 NativeSet<T>
@@ -22,7 +22,7 @@ NativeSortedMap<TKey, TValue>
 
 Each container inherite from ```INativeContainer``` and ```IDisposable```.
 
-```chsarp
+```c#
 public interface INativeContainer<T>
 {
 	public int Length { get; }
@@ -38,7 +38,7 @@ public interface INativeContainer<T>
 ### Examples:
 
 #### Example1
-```csharp
+```c#
 // Creates a new NativeArray<T>
 NativeArray<int> array = new NativeArray<int>(4);
 array[0] = 2;
@@ -51,7 +51,7 @@ array.Dispose();
 ```
 
 #### Example2
-```csharp
+```c#
 // Creates a new NativeArray<T>, by with 'using' of C#8
 // when 'array' goes out of scope 'Dispose' will be called.
 using NativeArray<int> array = new NativeArray<int>(4);
