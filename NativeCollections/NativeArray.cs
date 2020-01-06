@@ -18,7 +18,7 @@ namespace NativeCollections
     [DebuggerTypeProxy(typeof(NativeArrayDebugView<>))]
     unsafe public struct NativeArray<T> : INativeContainer<T>, IDisposable where T : unmanaged
     {
-        internal readonly void* _buffer;
+        internal readonly T* _buffer;
         private readonly int _capacity;
         private readonly int _allocatorID;
 
@@ -45,7 +45,7 @@ namespace NativeCollections
                 throw new ArgumentException("Allocator is not in cache.", "allocator");
             }
 
-            _buffer = allocator.Allocate(sizeof(T) * capacity);
+            _buffer = (T*)allocator.Allocate(sizeof(T) * capacity);
             _capacity = capacity;
             _allocatorID = allocator.ID;
         }
@@ -74,7 +74,7 @@ namespace NativeCollections
             }
             else
             {
-                _buffer = allocator.Allocate(sizeof(T) * elements.Length);
+                _buffer = (T*)allocator.Allocate(sizeof(T) * elements.Length);
                 _capacity = elements.Length;
                 _allocatorID = allocator.ID;
 
@@ -96,7 +96,7 @@ namespace NativeCollections
             if (length <= 0)
                 throw new ArgumentException($"Invalid length: {length}", nameof(length));
 
-            _buffer = pointer;
+            _buffer = (T*)pointer;
             _capacity = length;
             _allocatorID = -1;
         }
@@ -124,7 +124,7 @@ namespace NativeCollections
                 throw new ArgumentException("Allocator is not in cache.", "allocator");
             }
 
-            _buffer = pointer;
+            _buffer = (T*)pointer;
             _capacity = length;
             _allocatorID = allocator.ID;
         }
@@ -159,6 +159,7 @@ namespace NativeCollections
         /// <returns>
         /// The allocator.
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Allocator? GetAllocator()
         {
             return Allocator.GetAllocatorByID(_allocatorID);
@@ -179,8 +180,9 @@ namespace NativeCollections
                 if (index < 0 || index >= _capacity)
                     throw new ArgumentOutOfRangeException("index", $"{index}");
 
-                ref T pointer = ref Unsafe.AsRef<T>(_buffer);
-                return ref Unsafe.Add(ref pointer, index);
+                //ref T pointer = ref Unsafe.AsRef<T>(_buffer);
+                //return ref Unsafe.Add(ref pointer, index);
+                return ref _buffer[index];
             }
         }
 
@@ -197,12 +199,7 @@ namespace NativeCollections
             get
             {
                 int i = index.IsFromEnd ? _capacity - index.Value - 1: index.Value;
-
-                if (i < 0 || i >= _capacity)
-                    throw new ArgumentOutOfRangeException("index", $"{i}");
-
-                ref T pointer = ref Unsafe.AsRef<T>(_buffer);
-                return ref Unsafe.Add(ref pointer, i);
+                return ref this[i];
             }
         }
 

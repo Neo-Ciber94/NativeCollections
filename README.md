@@ -4,7 +4,7 @@ A library inspired in ```Unity.Collections``` that provides a set of containers 
 make use of unmanaged memory for hold their elements.
 
 The main purpose is to provide containers that produces <i>zero allocations</i>
-and must be ```Dispose``` after use.
+and call ```Dispose``` after use.
 
 ------------------------
 
@@ -52,12 +52,12 @@ array.Dispose();
 
 #### Example2
 ```c#
-// Creates a new NativeArray<T>, by with 'using' of C#8
-// when 'array' goes out of scope 'Dispose' will be called.
-using NativeArray<int> array = new NativeArray<int>(4);
-array[0] = 2;
-array[1] = 4;
-array[2] = 6;
-array[3] = 8;
+// Creates a new NativeList<T>, by with 'using' of C#8
+// when 'list' goes out of scope 'Dispose' will be called.
+using NativeList<int> list = new NativeList<int>(4);
+list.Add(2);
+list.Add(4);
+list.Add(6);
+list.Add(8);
 ```
 
