@@ -9,20 +9,53 @@ and call ```Dispose``` after use.
 ------------------------
 
 ### This libray provides the follow containers:
-```c#
-NativeArray<T>
-NativeList<T>
-NativeSet<T>
-NativeStack<T>
-NativeQueue<T>
-NativeDeque<T>
-NativeMap<TKey,TValue>
-NativeSortedMap<TKey, TValue>
+```csharp
+// A fixed length collection
+struct NativeArray<T> where T: unmanaged
+
+// A dynamic size collection
+struct NativeList<T> where T: unmanaged
+
+// A dynamic size collection of differents items
+struct NativeSet<T> where T: unmanaged
+
+// A dynamic size FILO (first-in last-out) collection
+struct NativeStack<T> where T: unmanaged
+
+// A dynamic size FIFO (first-in first-out) collection
+struct NativeQueue<T> where T: unmanaged
+
+// A dynamic size double-ended queue  collection
+struct NativeDeque<T> where T: unmanaged
+
+// A dynamic size key-value collection
+struct NativeMap<TKey,TValue> where TKey: unmanaged where TValue: unmanaged
+
+// A dynamic size ordered key-value collection
+struct NativeSortedMap<TKey, TValue>  where TKey: unmanaged where TValue: unmanaged
+
+// A fixed size collection of 'char'
+struct NativeString
 ```
 
-Each container inherite from ```INativeContainer``` and ```IDisposable```.
+### Others:
+```csharp
+// Provides LINQ utilities
+readonly ref struct NativeQuery<T>
 
-```c#
+// A view to unmanaged memory
+readonly ref struct NativeSlice<T>
+
+// A reference to a value
+ref struct ByReference<T>
+
+// A read-only reference to a value
+readonly ref struct ByReadOnlyReferene<T>
+```
+
+Each container inherit from ```INativeContainer``` and ```IDisposable```.
+
+```csharp
 public interface INativeContainer<T>
 {
 	public int Length { get; }
@@ -38,7 +71,7 @@ public interface INativeContainer<T>
 ### Examples:
 
 #### Example1
-```c#
+```csharp
 // Creates a new NativeArray<T>
 NativeArray<int> array = new NativeArray<int>(4);
 array[0] = 2;
@@ -51,8 +84,8 @@ array.Dispose();
 ```
 
 #### Example2
-```c#
-// Creates a new NativeList<T>, by with 'using' of C#8
+```csharp
+// Creates a new NativeList<T> with 'using' of C#8
 // when 'list' goes out of scope 'Dispose' will be called.
 using NativeList<int> list = new NativeList<int>(4);
 list.Add(2);
