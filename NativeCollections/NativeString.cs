@@ -389,7 +389,7 @@ namespace NativeCollections
         /// </returns>
         public override int GetHashCode()
         {
-            if(_buffer == null)
+            if (_buffer == null)
             {
                 return 0;
             }

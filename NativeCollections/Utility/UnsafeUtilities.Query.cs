@@ -135,7 +135,7 @@ namespace NativeCollections.Utility
 
             ref T ptr = ref Unsafe.AsRef<T>(pointer);
 
-            for (int i = startElementOffset; i > endElementOffset; --i)
+            for (int i = endElementOffset - 1; i >= startElementOffset; --i)
             {
                 ref T value = ref Unsafe.Add(ref ptr, i);
                 if (predicate(value))

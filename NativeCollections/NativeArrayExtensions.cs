@@ -11,30 +11,6 @@ namespace NativeCollections
     unsafe public static class NativeArrayExtensions
     {
         /// <summary>
-        /// Releases the resources used for this array and each of its elements.
-        /// </summary>
-        /// <typeparam name="T">Type of the elements</typeparam>
-        /// <param name="array">The array.</param>
-        /// <param name="disposing">if set to <c>true</c> will call dispose for each element in the array.</param>
-        public static void Dispose<T>(this ref NativeArray<T> array, bool disposing) where T : unmanaged, IDisposable
-        {
-            try
-            {
-                if (disposing)
-                {
-                    foreach (ref var e in array)
-                    {
-                        e.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                array.Dispose();
-            }
-        }
-
-        /// <summary>
         /// Sorts the content of this array.
         /// </summary>
         /// <typeparam name="T">Type of the elements</typeparam>

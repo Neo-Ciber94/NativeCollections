@@ -2,6 +2,8 @@
 using System.Diagnostics;
 using NativeCollections.Utility;
 
+// LOG_ALLOCATIONS
+
 namespace NativeCollections.Allocators
 {
     unsafe public delegate int SizeOfDelegate(void* pointer);
@@ -10,6 +12,10 @@ namespace NativeCollections.Allocators
     {
         private readonly Allocator _allocator;
         private readonly SizeOfDelegate _sizeOf;
+
+#if LOG_ALLOCATIONS
+        private const int deep = 3;
+#endif
 
         public DebugAllocator(Allocator allocator, SizeOfDelegate sizeOfPointer) : base(true)
         {
@@ -32,6 +38,10 @@ namespace NativeCollections.Allocators
             Requires.Argument(elementCount > 0, "Invalid elementCount");
             Requires.Argument(elementSize > 0, "Invalid elementSize");
 
+#if LOG_ALLOCATIONS
+            var stackFrame = new StackFrame(deep);
+            Console.WriteLine($"{elementCount * elementSize} bytes allocated from: {stackFrame.GetMethod()}");
+#endif
             BytesAllocated += (elementCount * elementSize);
             return _allocator.Allocate(elementCount, elementSize, initMemory);
         }
@@ -45,6 +55,10 @@ namespace NativeCollections.Allocators
             int size = _sizeOf(pointer);
             Requires.Argument(size > 0);
 
+#if LOG_ALLOCATIONS
+            var stackFrame = new StackFrame(deep);
+            Console.WriteLine($"{elementCount * elementSize} bytes reallocated from: {stackFrame.GetMethod()}");
+#endif
             int newSize = elementCount * elementSize;
             int diff = newSize - size;
 
@@ -57,6 +71,12 @@ namespace NativeCollections.Allocators
             Requires.Argument(pointer != null, "Pointer is null");
 
             int size = _sizeOf(pointer);
+
+#if LOG_ALLOCATIONS
+            var stackFrame = new StackFrame(deep);
+            Console.WriteLine($"{elementCount * elementSize} bytes free from: {stackFrame.GetMethod()}");
+#endif
+
             _allocator.Free(pointer);
             BytesAllocated -= size;
         }

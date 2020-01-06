@@ -2,6 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text;
 using NativeCollections.Utility;
 
@@ -11,7 +13,7 @@ namespace NativeCollections
     /// Represents a value with an index.
     /// </summary>
     /// <typeparam name="T">Type of the value.</typeparam>
-    public readonly struct IndexedValue<T>
+    public readonly struct IndexedValue<T> : IEquatable<IndexedValue<T>>
     {
         /// <summary>
         /// Gets the value.
@@ -67,10 +69,69 @@ namespace NativeCollections
             sb.Append(')');
             return StringBuilderCache.ToStringAndRelease(ref sb!);
         }
+
+        /// <summary>
+        /// Determines whether the specified <see cref="object" />, is equal to this instance.
+        /// </summary>
+        /// <param name="obj">The <see cref="object" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="object" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
+        public override bool Equals(object? obj)
+        {
+            return obj is IndexedValue<T> value && Equals(value);
+        }
+
+        /// <summary>
+        /// Indicates whether the current object is equal to another object of the same type.
+        /// </summary>
+        /// <param name="other">An object to compare with this object.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the current object is equal to the <paramref name="other" /> parameter; otherwise, <see langword="false" />.
+        /// </returns>
+        public bool Equals([AllowNull] IndexedValue<T> other)
+        {
+            return EqualityComparer<T>.Default.Equals(Value, other.Value) &&
+                   Index == other.Index;
+        }
+
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance.
+        /// </returns>
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Value, Index);
+        }
+
+        public static bool operator ==(IndexedValue<T> left, IndexedValue<T> right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(IndexedValue<T> left, IndexedValue<T> right)
+        {
+            return !(left == right);
+        }
     }
 
-    public static class IndexedValueExtensions
+    public static class IndexedValue
     {
+        /// <summary>
+        /// Creates a new <see cref="IndexedValue{T}"/>.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value">The value.</param>
+        /// <param name="index">The index.</param>
+        /// <returns>A value with its index.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IndexedValue<T> Create<T>(T value, int index)
+        {
+            return new IndexedValue<T>(value, index);
+        }
+
         /// <summary>
         /// Gets an index-value representation of the elements of the enumerable.
         /// </summary>

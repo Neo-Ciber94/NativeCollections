@@ -8,30 +8,6 @@ namespace NativeCollections
     unsafe public static class NativeListExtensions
     {
         /// <summary>
-        /// Releases the resources used for this list and each of its elements.
-        /// </summary>
-        /// <typeparam name="T">Type of the elements</typeparam>
-        /// <param name="list">The list.</param>
-        /// <param name="disposing">if set to <c>true</c> will call dispose for each element in the list.</param>
-        public static void Dispose<T>(this ref NativeList<T> list, bool disposing) where T: unmanaged, IDisposable
-        {
-            try
-            {
-                if (disposing)
-                {
-                    foreach (ref var e in list)
-                    {
-                        e.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                list.Dispose();
-            }
-        }
-
-        /// <summary>
         /// Sorts the content of this list.
         /// </summary>
         /// <typeparam name="T">Type of the elements</typeparam>

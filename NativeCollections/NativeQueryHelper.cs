@@ -24,7 +24,13 @@ namespace NativeCollections
             return destination;
         }
 
-        public static NativeQuery<T> AsQuery<T>(this NativeArray<T> array) where T: unmanaged
+        /// <summary>
+        /// Gets a <see cref="NativeQuery{T}"/> over the elements of this array.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="array">The array.</param>
+        /// <returns>A query over the elements.</returns>
+        public static NativeQuery<T> AsQuery<T>(this NativeArray<T> array) where T : unmanaged
         {
             if (array.IsEmpty)
             {
@@ -36,6 +42,12 @@ namespace NativeCollections
             return new NativeQuery<T>(buffer, array.Length, allocator);
         }
 
+        /// <summary>
+        /// Gets a <see cref="NativeList{T}"/> over the elements of this list.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="list">The list.</param>
+        /// <returns>A query over the elements.</returns>
         public static NativeQuery<T> AsQuery<T>(this NativeList<T> list) where T : unmanaged
         {
             if (list.IsEmpty)
@@ -48,6 +60,12 @@ namespace NativeCollections
             return new NativeQuery<T>(buffer, list.Length, allocator);
         }
 
+        /// <summary>
+        /// Gets a <see cref="NativeStack{T}"/> over the elements of this array.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="stack">The stack.</param>
+        /// <returns>A query over the elements.</returns>
         public static NativeQuery<T> AsQuery<T>(this NativeStack<T> stack) where T : unmanaged
         {
             if (stack.IsEmpty)
@@ -60,6 +78,12 @@ namespace NativeCollections
             return new NativeQuery<T>(buffer, stack.Length, allocator);
         }
 
+        /// <summary>
+        /// Gets a <see cref="NativeQueue{T}"/> over the elements of this queue.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="queue">The queue.</param>
+        /// <returns>A query over the elements.</returns>
         public static NativeQuery<T> AsQuery<T>(this NativeQueue<T> queue) where T : unmanaged
         {
             if (queue.IsEmpty)
@@ -72,6 +96,12 @@ namespace NativeCollections
             return new NativeQuery<T>(array.GetUnsafePointer(), queue.Length, allocator);
         }
 
+        /// <summary>
+        /// Gets a <see cref="NativeDeque{T}"/> over the elements of this deque.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="array">The deque.</param>
+        /// <returns>A query over the elements.</returns>
         public static NativeQuery<T> AsQuery<T>(this NativeDeque<T> deque) where T : unmanaged
         {
             if (deque.IsEmpty)
@@ -84,6 +114,12 @@ namespace NativeCollections
             return new NativeQuery<T>(array.GetUnsafePointer(), deque.Length, allocator);
         }
 
+        /// <summary>
+        /// Gets a <see cref="NativeSet{T}"/> over the elements of this set.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="set">The set.</param>
+        /// <returns>A query over the elements.</returns>
         public static NativeQuery<T> AsQuery<T>(this NativeSet<T> set) where T : unmanaged
         {
             if (set.IsEmpty)
@@ -96,6 +132,41 @@ namespace NativeCollections
             return new NativeQuery<T>(array.GetUnsafePointer(), set.Length, allocator);
         }
 
+        /// <summary>
+        /// Gets a <see cref="NativeSlice{T}"/> over the elements of this slice.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="slice">The slice.</param>
+        /// <returns>A query over the elements.</returns>
+        public static NativeQuery<T> AsQuery<T>(this NativeSlice<T> slice) where T: unmanaged
+        {
+            return AsQuery(slice, Allocator.Default);
+        }
+
+        /// <summary>
+        /// Gets a <see cref="NativeSlice{T}"/> over the elements of this array.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="slice">The slice.</param>
+        /// <param name="allocator">The allocator to use.</param>
+        /// <returns>A query over the elements.</returns>
+        public static NativeQuery<T> AsQuery<T>(this NativeSlice<T> slice, Allocator allocator) where T: unmanaged
+        {
+            if (slice.IsEmpty)
+            {
+                return default;
+            }
+
+            NativeArray<T> array = slice.ToNativeArray();
+            return new NativeQuery<T>(array.GetUnsafePointer(), slice.Length, allocator);
+        }
+
+        /// <summary>
+        /// Gets a <see cref="NativeMap{TKey, TValue}"/> over the elements of this map.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="map">The map.</param>
+        /// <returns>A query over the elements.</returns>
         public static NativeQuery<KeyValuePair<TKey, TValue>> AsQuery<TKey, TValue>(this NativeMap<TKey, TValue> map) where TKey : unmanaged where TValue : unmanaged
         {
             if (map.IsEmpty)
@@ -108,6 +179,12 @@ namespace NativeCollections
             return new NativeQuery<KeyValuePair<TKey, TValue>>(array.GetUnsafePointer(), array.Length, allocator);
         }
 
+        /// <summary>
+        /// Gets a <see cref="NativeSortedMap{TKey, TValue}"/> over the elements of this map.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="map">The map.</param>
+        /// <returns>A query over the elements.</returns>
         public static NativeQuery<KeyValuePair<TKey, TValue>> AsQuery<TKey, TValue>(this NativeSortedMap<TKey, TValue> map) where TKey : unmanaged where TValue : unmanaged
         {
             if (map.IsEmpty)

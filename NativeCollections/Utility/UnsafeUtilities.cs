@@ -8,6 +8,18 @@ namespace NativeCollections.Utility
     unsafe public static partial class UnsafeUtilities
     {
         /// <summary>
+        /// Forward the value to a reference.
+        /// </summary>
+        /// <typeparam name="T">Type of the value.</typeparam>
+        /// <param name="value">The value.</param>
+        /// <returns>A reference to the value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T AsRef<T>(in T value)
+        {
+            return ref Unsafe.AsRef(value);
+        }
+
+        /// <summary>
         /// Gets the address of the given value.
         /// </summary>
         /// <typeparam name="T">Type of the value</typeparam>

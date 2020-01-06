@@ -210,6 +210,61 @@ namespace NativeCollections.Allocators.Tests
         }
 
         [Test()]
+        public void FixedMemoryPoolAllocatorTest()
+        {
+            using FixedMemoryPoolAllocator allocator = new FixedMemoryPoolAllocator(10, 400);
+
+            unsafe
+            {
+                int* p = allocator.Allocate<int>(4);
+                Assert.AreEqual(0, p[0]);
+                Assert.AreEqual(0, p[1]);
+                Assert.AreEqual(0, p[2]);
+                Assert.AreEqual(0, p[3]);
+
+                for(int i = 0; i < 4; i++)
+                {
+                    p[i] = i + 1;
+                }
+
+                Assert.AreEqual(1, p[0]);
+                Assert.AreEqual(2, p[1]);
+                Assert.AreEqual(3, p[2]);
+                Assert.AreEqual(4, p[3]);
+
+                allocator.Free(p);
+
+                Assert.Throws<OutOfMemoryException>(() => allocator.Allocate(600));
+            }
+        }
+
+        [Test()]
+        public void FixedMemoryPoolAllocatorTest1()
+        {
+            using FixedMemoryPoolAllocator allocator = new FixedMemoryPoolAllocator(10, 400);
+
+            unsafe
+            {
+                IntPtr* ptrs = stackalloc IntPtr[10];
+
+                for(int i = 0; i < 10; i++)
+                {
+                    ptrs[i] = (IntPtr)allocator.Allocate(100);
+                }
+
+                Assert.Throws<OutOfMemoryException>(() =>
+                {
+                    var p = allocator.Allocate<IntPtr>(5);
+                });
+
+                for(int i = 0; i < 10; i++)
+                {
+                    allocator.Free(ptrs[i].ToPointer());
+                }
+            }
+        }
+
+        [Test()]
         public void GetAllocatorByIDTest()
         {
             ForwardAllocator allocator = new ForwardAllocator(Allocator.Default);
