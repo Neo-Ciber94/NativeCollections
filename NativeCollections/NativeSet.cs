@@ -18,7 +18,7 @@ namespace NativeCollections
     [DebuggerTypeProxy(typeof(NativeSetDebugView<>))]
     unsafe public struct NativeSet<T> : INativeContainer<T>, IDisposable where T: unmanaged
     {
-        internal struct Entry
+        internal struct Slot
         {
             public T value;
             public int hashCode;
@@ -26,7 +26,7 @@ namespace NativeCollections
             public int bucket;
         }
 
-        private Entry* _buffer;
+        private Slot* _buffer;
         private int _capacity;
         private int _count;
         private int _freeCount;
@@ -58,7 +58,7 @@ namespace NativeCollections
                 throw new ArgumentException("Allocator is not in cache.", "allocator");
             }
 
-            _buffer = (Entry*)allocator.Allocate(initialCapacity, sizeof(Entry));
+            _buffer = (Slot*)allocator.Allocate(initialCapacity, sizeof(Slot));
             _capacity = initialCapacity;
             _count = 0;
             _freeList = -1;
@@ -93,7 +93,7 @@ namespace NativeCollections
             }
             else
             {
-                _buffer = (Entry*)allocator.Allocate(elements.Length, sizeof(Entry));
+                _buffer = (Slot*)allocator.Allocate(elements.Length, sizeof(Slot));
                 _capacity = elements.Length;
                 _count = 0;
                 _freeList = -1;
@@ -107,6 +107,25 @@ namespace NativeCollections
                     Add(e);
                 }
             }
+        }
+
+        private NativeSet(ref NativeSet<T> set)
+        {
+            if (!set.IsValid)
+            {
+                throw new ArgumentException("set is invalid");
+            }
+
+            Allocator allocator = set.GetAllocator()!;
+            Slot* buffer = allocator.Allocate<Slot>(set._capacity);
+            Unsafe.CopyBlockUnaligned(buffer, set._buffer, (uint)(sizeof(Slot) * set._capacity));
+
+            _buffer = buffer;
+            _capacity = set._capacity;
+            _count = set._count;
+            _allocatorID = set._allocatorID;
+            _freeCount = set._freeCount;
+            _freeList = set._freeList;
         }
 
         /// <summary>
@@ -200,7 +219,7 @@ namespace NativeCollections
 
             while(index >= 0)
             {
-                ref Entry entry = ref _buffer[index];
+                ref Slot entry = ref _buffer[index];
                 if (comparer.Equals(entry.value, value) && hashCode == entry.hashCode)
                 {
                     if (last >= 0)
@@ -257,7 +276,7 @@ namespace NativeCollections
             if (_count == 0)
                 return;
 
-            Unsafe.InitBlockUnaligned(_buffer, 0, (uint)(sizeof(Entry) * _count));
+            Unsafe.InitBlockUnaligned(_buffer, 0, (uint)(sizeof(Slot) * _count));
             _count = 0;
             _freeCount = 0;
             _freeList = -1;
@@ -284,7 +303,7 @@ namespace NativeCollections
 
             while (index >= 0)
             {
-                ref Entry entry = ref _buffer[index];
+                ref Slot entry = ref _buffer[index];
                 if (comparer.Equals(entry.value, value) && hashCode == entry.hashCode)
                 {
                     return true;
@@ -403,8 +422,8 @@ namespace NativeCollections
                 return;
             }
 
-            Entry* newBuffer = (Entry*)GetAllocator()!.Allocate(capacity, sizeof(Entry));
-            Unsafe.CopyBlock(newBuffer, _buffer, (uint)(Unsafe.SizeOf<Entry>() * _count));
+            Slot* newBuffer = (Slot*)GetAllocator()!.Allocate(capacity, sizeof(Slot));
+            Unsafe.CopyBlock(newBuffer, _buffer, (uint)(Unsafe.SizeOf<Slot>() * _count));
 
             // Free old buffer
             Allocator.Default.Free(_buffer);
@@ -419,7 +438,7 @@ namespace NativeCollections
 
             for (int i = 0; i < count; i++)
             {
-                ref Entry entry = ref newBuffer[i];
+                ref Slot entry = ref newBuffer[i];
                 int hashCode = GetHash(entry.value);
 
                 if (hashCode >= 0)
@@ -587,6 +606,21 @@ namespace NativeCollections
         }
 
         /// <summary>
+        /// Gets a deep clone of this instance.
+        /// </summary>
+        /// <returns>A copy of this instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NativeSet<T> Clone()
+        {
+            if (_buffer == null)
+            {
+                return default;
+            }
+
+            return new NativeSet<T>(ref this);
+        }
+
+        /// <summary>
         /// Releases the resources used for this set.
         /// </summary>
         public void Dispose()
@@ -621,7 +655,7 @@ namespace NativeCollections
 
             while(index >= 0)
             {
-                ref Entry entry = ref _buffer[index];
+                ref Slot entry = ref _buffer[index];
                 if (comparer.Equals(entry.value, value) && hashCode == entry.hashCode)
                 {
                     return false;
@@ -665,8 +699,8 @@ namespace NativeCollections
             if (_buffer == null)
                 return;
 
-            Entry* newBuffer = GetAllocator()!.Allocate<Entry>(newCapacity);
-            Unsafe.CopyBlock(newBuffer, _buffer, (uint)(sizeof(Entry) * _count));
+            Slot* newBuffer = GetAllocator()!.Allocate<Slot>(newCapacity);
+            Unsafe.CopyBlock(newBuffer, _buffer, (uint)(sizeof(Slot) * _count));
             GetAllocator()!.Free(_buffer);
 
             for(int i = 0; i < newCapacity; i++)
@@ -676,7 +710,7 @@ namespace NativeCollections
 
             for(int i = 0; i < _count; i++)
             {
-                ref Entry entry = ref _buffer[i];
+                ref Slot entry = ref _buffer[i];
                 if(entry.hashCode >= 0)
                 {
                     int hashCode = GetHash(newBuffer[i].value);
@@ -721,7 +755,7 @@ namespace NativeCollections
         /// </summary>
         public ref struct Enumerator
         {
-            private Entry* _entries;
+            private Slot* _entries;
             private int _count;
             private int _index;
 

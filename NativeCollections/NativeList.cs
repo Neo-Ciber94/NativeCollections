@@ -90,36 +90,7 @@ namespace NativeCollections
             }
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="NativeList{T}"/> struct using the specified pointer.
-        /// </summary>
-        /// <param name="pointer">The pointer.</param>
-        /// <param name="length">The number of elements in the pointer.</param>
-        /// <exception cref="ArgumentException">If the pointer is null or length is lower or equals to zero.
-        /// </exception>
-        public NativeList(void* pointer, int length)
-        {
-            if (pointer == null)
-                throw new ArgumentException("Invalid pointer");
-
-            if (length <= 0)
-                throw new ArgumentException($"Invalid length: {length}", nameof(length));
-
-            _buffer = (T*)pointer;
-            _capacity = length;
-            _count = length;
-            _allocatorID = -1;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="NativeList{T}"/> struct using the specified pointer.
-        /// </summary>
-        /// <param name="pointer">The pointer.</param>
-        /// <param name="length">The number of elements in the pointer.</param>
-        /// <param name="allocator">The allocator used for this list.</param>
-        /// <exception cref="ArgumentException">If the pointer is null or length is lower or equals to zero.
-        /// </exception>
-        public NativeList(void* pointer, int length, Allocator allocator)
+        internal NativeList(void* pointer, int length, Allocator allocator)
         {
             if (allocator.ID <= 0)
             {
@@ -127,15 +98,36 @@ namespace NativeCollections
             }
 
             if (pointer == null)
+            {
                 throw new ArgumentException("Invalid pointer");
+            }
 
             if (length <= 0)
+            {
                 throw new ArgumentException($"Invalid length: {length}", nameof(length));
+            }
 
             _buffer = (T*)pointer;
             _capacity = length;
             _count = length;
             _allocatorID = allocator.ID;
+        }
+
+        private NativeList(ref NativeList<T> list)
+        {
+            if (!list.IsValid)
+            {
+                throw new ArgumentException("list is invalid");
+            }
+
+            Allocator allocator = list.GetAllocator()!;
+            T* buffer = allocator.Allocate<T>(list._capacity);
+            Unsafe.CopyBlockUnaligned(buffer, list._buffer, (uint)(sizeof(T) * list._capacity));
+
+            _buffer = buffer;
+            _count = list._count;
+            _capacity = list._capacity;
+            _allocatorID = list._allocatorID;
         }
 
         /// <summary>
@@ -179,6 +171,7 @@ namespace NativeCollections
         /// <returns>
         /// The allocator.
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Allocator? GetAllocator()
         {
             return Allocator.GetAllocatorByID(_allocatorID);
@@ -240,7 +233,7 @@ namespace NativeCollections
         {
             get
             {
-                var (index, length) = range.GetOffsetAndLength(_capacity);
+                var (index, length) = range.GetOffsetAndLength(_count);
 
                 if (index < 0 || index > _count)
                 {
@@ -925,6 +918,21 @@ namespace NativeCollections
 
             sb.Append(']');
             return StringBuilderCache.ToStringAndRelease(ref sb!);
+        }
+
+        /// <summary>
+        /// Gets a deep clone of this instance.
+        /// </summary>
+        /// <returns>A copy of this instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NativeList<T> Clone()
+        {
+            if (_buffer == null)
+            {
+                return default;
+            }
+
+            return new NativeList<T>(ref this);
         }
 
         /// <summary>

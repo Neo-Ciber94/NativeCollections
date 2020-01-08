@@ -142,6 +142,22 @@ namespace NativeCollections
             _length = length;
             _allocatorID = allocator.ID;
         }
+
+        private NativeString(ref NativeString str)
+        {
+            if (!str.IsValid)
+            {
+                throw new ArgumentException("string is invalid");
+            }
+
+            Allocator allocator = str.GetAllocator()!;
+            char* buffer = allocator.Allocate<char>(str._length);
+            Unsafe.CopyBlockUnaligned(buffer, str._buffer, (uint)(sizeof(char) * str._length));
+
+            _buffer = buffer;
+            _length = str._length;
+            _allocatorID = str._allocatorID;
+        }
         #endregion
 
         /// <summary>
@@ -427,6 +443,21 @@ namespace NativeCollections
         public int CompareTo([AllowNull] string other)
         {
             return AsSpan().CompareTo(other.AsSpan(), StringComparison.CurrentCulture);
+        }
+
+        /// <summary>
+        /// Gets a deep clone of this instance.
+        /// </summary>
+        /// <returns>A copy of this instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NativeString Clone()
+        {
+            if (_buffer == null)
+            {
+                return default;
+            }
+
+            return new NativeString(ref this);
         }
 
         #region Operators

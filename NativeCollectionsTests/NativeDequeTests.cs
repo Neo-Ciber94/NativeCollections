@@ -684,5 +684,31 @@ namespace NativeCollections.Tests
                 CollectionAssert.Contains(array, e);
             }
         }
+
+        [Test()]
+        public void CloneTest()
+        {
+            using NativeDeque<int> deque = new NativeDeque<int>(stackalloc int[] { 1, 2, 3 });
+            using NativeDeque<int> clone = deque.Clone();
+
+            Assert.AreEqual(3, clone.Length);
+            Assert.AreEqual(3, clone.Capacity);
+
+            Assert.IsTrue(clone.Contains(1));
+            Assert.IsTrue(clone.Contains(2));
+            Assert.IsTrue(clone.Contains(3));
+
+            clone.AddLast(4);
+
+            Assert.IsFalse(deque.Contains(4));
+
+            Assert.AreEqual(4, clone.Length);
+            Assert.AreEqual(6, clone.Capacity);
+
+            Assert.IsTrue(clone.Contains(1));
+            Assert.IsTrue(clone.Contains(2));
+            Assert.IsTrue(clone.Contains(3));
+            Assert.IsTrue(clone.Contains(4));
+        }
     }
 }

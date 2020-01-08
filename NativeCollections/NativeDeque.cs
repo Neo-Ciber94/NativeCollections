@@ -97,6 +97,50 @@ namespace NativeCollections
             }
         }
 
+        internal NativeDeque(void* pointer, int length, Allocator allocator)
+        {
+            if (allocator.ID <= 0)
+            {
+                throw new ArgumentException("Allocator is not in cache.", "allocator");
+            }
+
+            if (pointer == null)
+            {
+                throw new ArgumentException("Invalid pointer");
+            }
+
+            if (length <= 0)
+            {
+                throw new ArgumentException($"Invalid length: {length}", nameof(length));
+            }
+
+            _buffer = (T*)pointer;
+            _capacity = length;
+            _count = length;
+            _allocatorID = allocator.ID;
+            _head = 0;
+            _tail = length - 1;
+        }
+
+        private NativeDeque(ref NativeDeque<T> deque)
+        {
+            if (!deque.IsValid)
+            {
+                throw new ArgumentException("deque is invalid");
+            }
+
+            Allocator allocator = deque.GetAllocator()!;
+            T* buffer = allocator.Allocate<T>(deque._capacity);
+            Unsafe.CopyBlockUnaligned(buffer, deque._buffer, (uint)(sizeof(T) * deque._capacity));
+
+            _buffer = buffer;
+            _count = deque._count;
+            _capacity = deque._capacity;
+            _allocatorID = deque._allocatorID;
+            _head = deque._head;
+            _tail = deque._tail;
+        }
+
         /// <summary>
         /// Gets the number of elements in the deque.
         /// </summary>
@@ -638,6 +682,21 @@ namespace NativeCollections
             }
 
             return new Enumerator(ref this);
+        }
+
+        /// <summary>
+        /// Gets a deep clone of this instance.
+        /// </summary>
+        /// <returns>A copy of this instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NativeDeque<T> Clone()
+        {
+            if (_buffer == null)
+            {
+                return default;
+            }
+
+            return new NativeDeque<T>(ref this);
         }
 
         /// <summary>

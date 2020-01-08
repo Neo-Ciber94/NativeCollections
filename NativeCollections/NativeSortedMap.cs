@@ -385,6 +385,23 @@ namespace NativeCollections
             _allocatorID = allocator.ID;
         }
 
+        private NativeSortedMap(ref NativeSortedMap<TKey, TValue> map)
+        {
+            if (!map.IsValid)
+            {
+                throw new ArgumentException("map is invalid");
+            }
+
+            Allocator allocator = map.GetAllocator()!;
+            Entry* buffer = allocator.Allocate<Entry>(map._capacity);
+            Unsafe.CopyBlockUnaligned(buffer, map._buffer, (uint)(sizeof(Entry) * map._capacity));
+
+            _buffer = buffer;
+            _capacity = map._capacity;
+            _count = map._count;
+            _allocatorID = map._allocatorID;
+        }
+
         /// <summary>
         /// Gets the number of elements in this map.
         /// </summary>
@@ -1155,8 +1172,7 @@ namespace NativeCollections
             sb.Append(']');
             return StringBuilderCache.ToStringAndRelease(ref sb!);
         }
-
-
+        
         /// <summary>
         /// Releases the resouces used for this map.
         /// </summary>
@@ -1172,6 +1188,21 @@ namespace NativeCollections
                 _capacity = 0;
                 _count = 0;
             }
+        }
+
+        /// <summary>
+        /// Gets a deep clone of this instance.
+        /// </summary>
+        /// <returns>A copy of this instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NativeSortedMap<TKey, TValue> Clone()
+        {
+            if(_buffer == null)
+            {
+                return default;
+            }
+
+            return new NativeSortedMap<TKey, TValue>(ref this);
         }
 
         /// <summary>

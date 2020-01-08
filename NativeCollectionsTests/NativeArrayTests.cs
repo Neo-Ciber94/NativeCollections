@@ -387,6 +387,30 @@ namespace NativeCollections.Tests
             Assert.AreEqual(5, array[new Index(3)]);
         }
 
+        [Test()]
+        public void CloneTest()
+        {
+            using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 1, 2, 3, 4 });
+            using NativeArray<int> clone = array.Clone();
+
+            Assert.AreEqual(4, clone.Length);
+
+            Assert.AreEqual(1, clone[0]);
+            Assert.AreEqual(2, clone[1]);
+            Assert.AreEqual(3, clone[2]);
+            Assert.AreEqual(4, clone[3]);
+
+            clone[0] *= 2;
+            clone[1] *= 4;
+            clone[2] *= 6;
+            clone[3] *= 8;
+
+            Assert.AreNotEqual(array[0], clone[0]);
+            Assert.AreNotEqual(array[1], clone[1]);
+            Assert.AreNotEqual(array[2], clone[2]);
+            Assert.AreNotEqual(array[3], clone[3]);
+        }
+
         // Extensions
 
         [Test()]

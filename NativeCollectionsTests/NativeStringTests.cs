@@ -222,5 +222,14 @@ namespace NativeCollections.Tests
 
             Assert.Zero(str.GetHashCode());
         }
+
+        [Test()]
+        public void CloneTest()
+        {
+            using NativeString str = new NativeString("Adios");
+            using NativeString clone = str.Clone();
+
+            Assert.AreEqual(str, clone);
+        }
     }
 }

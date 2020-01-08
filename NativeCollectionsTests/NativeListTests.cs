@@ -747,6 +747,33 @@ namespace NativeCollections.Tests
             });
         }
 
+        [Test()]
+        public void CloneTest()
+        {
+            using NativeList<int> list = new NativeList<int>(stackalloc int[] { 1, 2, 3, 4 });
+            using NativeList<int> clone = list.Clone();
+
+            Assert.AreEqual(4, clone.Length);
+            Assert.AreEqual(4, clone.Capacity);
+
+            Assert.AreEqual(1, clone[0]);
+            Assert.AreEqual(2, clone[1]);
+            Assert.AreEqual(3, clone[2]);
+            Assert.AreEqual(4, clone[3]);
+
+            clone.Add(5);
+            foreach(ref var e in clone)
+            {
+                e *= 2;
+            }
+
+            Assert.AreNotEqual(list.Length, clone.Length);
+            Assert.AreNotEqual(list[0], clone[0]);
+            Assert.AreNotEqual(list[1], clone[1]);
+            Assert.AreNotEqual(list[2], clone[2]);
+            Assert.AreNotEqual(list[3], clone[3]);
+        }
+
         // Extensions
 
         [Test()]

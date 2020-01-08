@@ -623,5 +623,41 @@ namespace NativeCollections.Tests
 
             DisposeNativeStrings(map);
         }
+
+        [Test()]
+        public void CloneTest()
+        {
+            using NativeMap<int, char> map = new NativeMap<int, char>(4);
+            map.Add(1, 'a');
+            map.Add(2, 'b');
+            map.Add(3, 'c');
+
+            using NativeMap<int, char> clone = map.Clone();
+
+            Assert.AreEqual(3, clone.Length);
+            Assert.AreEqual(4, clone.Capacity);
+
+            Assert.IsTrue(clone.ContainsKey(1));
+            Assert.IsTrue(clone.ContainsKey(2));
+            Assert.IsTrue(clone.ContainsKey(3));
+
+            Assert.IsTrue(clone.ContainsValue('a'));
+            Assert.IsTrue(clone.ContainsValue('b'));
+            Assert.IsTrue(clone.ContainsValue('c'));
+
+            clone.Add(4, 'd');
+            Assert.AreNotEqual(map.Length, clone.Length);
+            Assert.IsFalse(map.ContainsKey(4));
+
+            Assert.IsTrue(clone.ContainsKey(1));
+            Assert.IsTrue(clone.ContainsKey(2));
+            Assert.IsTrue(clone.ContainsKey(3));
+            Assert.IsTrue(clone.ContainsKey(4));
+
+            Assert.IsTrue(clone.ContainsValue('a'));
+            Assert.IsTrue(clone.ContainsValue('b'));
+            Assert.IsTrue(clone.ContainsValue('c'));
+            Assert.IsTrue(clone.ContainsValue('d'));
+        }
     }
 }

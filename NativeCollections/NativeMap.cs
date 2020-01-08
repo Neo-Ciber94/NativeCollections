@@ -417,6 +417,25 @@ namespace NativeCollections
             }
         }
 
+        private NativeMap(ref NativeMap<TKey, TValue> map)
+        {
+            if (!map.IsValid)
+            {
+                throw new ArgumentException("map is invalid");
+            }
+
+            Allocator allocator = map.GetAllocator()!;
+            Entry* buffer = allocator.Allocate<Entry>(map._capacity);
+            Unsafe.CopyBlockUnaligned(buffer, map._buffer, (uint)(sizeof(Entry) * map._capacity));
+
+            _buffer = buffer;
+            _count = map._count;
+            _capacity = map._capacity;
+            _allocatorID = map._allocatorID;
+            _freeCount = map._freeCount;
+            _freeList = map._freeList;
+        }
+
         /// <summary>
         /// Gets the number of elements on this map.
         /// </summary>
@@ -942,6 +961,21 @@ namespace NativeCollections
 
             sb.Append(']');
             return StringBuilderCache.ToStringAndRelease(ref sb!);
+        }
+
+        /// <summary>
+        /// Gets a deep clone of this instance.
+        /// </summary>
+        /// <returns>A copy of this instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NativeMap<TKey, TValue> Clone()
+        {
+            if (_buffer == null)
+            {
+                return default;
+            }
+
+            return new NativeMap<TKey, TValue>(ref this);
         }
 
         /// <summary>

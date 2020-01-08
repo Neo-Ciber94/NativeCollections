@@ -406,5 +406,27 @@ namespace NativeCollections.Tests
 
             Assert.IsFalse(enumerator.MoveNext());
         }
+
+        [Test()]
+        public void CloneTest()
+        {
+            using NativeSet<int> set = new NativeSet<int>(stackalloc int[] { 1, 2, 3 });
+            using NativeSet<int> clone = set.Clone();
+
+            Assert.AreEqual(3, clone.Length);
+            Assert.AreEqual(3, clone.Capacity);
+
+            Assert.IsTrue(clone.Add(4));
+
+            Assert.AreNotEqual(set.Length, clone.Length);
+            Assert.AreNotEqual(set.Capacity, clone.Capacity);
+
+            Assert.IsFalse(set.Contains(4));
+
+            Assert.IsTrue(clone.Contains(1));
+            Assert.IsTrue(clone.Contains(2));
+            Assert.IsTrue(clone.Contains(3));
+            Assert.IsTrue(clone.Contains(4));
+        }
     }
 }

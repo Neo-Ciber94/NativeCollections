@@ -83,31 +83,7 @@ namespace NativeCollections
             }
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="NativeArray{T}" /> struct by using the given pointer.
-        /// </summary>
-        /// <param name="pointer">The pointer to the elements.</param>
-        /// <param name="length">The number of elements in the pointer.</param>
-        public NativeArray(void* pointer, int length)
-        {
-            if (pointer == null)
-                throw new ArgumentException("Invalid pointer");
-
-            if (length <= 0)
-                throw new ArgumentException($"Invalid length: {length}", nameof(length));
-
-            _buffer = (T*)pointer;
-            _capacity = length;
-            _allocatorID = -1;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="NativeArray{T}" /> struct by using the given pointer.
-        /// </summary>
-        /// <param name="pointer">The pointer to the elements.</param>
-        /// <param name="length">The number of elements in the pointer.</param>
-        /// <param name="allocator">The allocator where reallocate or free the memory of the given pointer.</param>
-        public NativeArray(void* pointer, int length, Allocator allocator)
+        internal NativeArray(void* pointer, int length, Allocator allocator)
         {
             if (pointer == null)
             {
@@ -587,6 +563,23 @@ namespace NativeCollections
 
             return new RefEnumerator<T>(_buffer, _capacity);
         }
+
+        /// <summary>
+        /// Gets a deep clone of this instance.
+        /// </summary>
+        /// <returns>A copy of this instance.</returns>
+        public NativeArray<T> Clone()
+        {
+            if (_buffer == null)
+            {
+                return default;
+            }
+
+            void* dst = GetAllocator()!.Allocate<T>(_capacity);
+            void* src = _buffer;
+            Unsafe.CopyBlockUnaligned(dst, src, (uint)(sizeof(T) * _capacity));
+            return new NativeArray<T>(dst, _capacity, GetAllocator()!);
+        }
     }
 
     /// <summary>
@@ -624,7 +617,7 @@ namespace NativeCollections
             void* source = Unsafe.AsPointer(ref args[0]);
             void* buffer = allocator.Allocate<T>(length);
             Unsafe.CopyBlock(buffer, source, (uint)(sizeof(T) * length));
-            return new NativeArray<T>(buffer, length);
+            return new NativeArray<T>(buffer, length, allocator);
         }
 
         /// <summary>

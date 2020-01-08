@@ -93,6 +93,25 @@ namespace NativeCollections
             }
         }
 
+        private NativeQueue(ref NativeQueue<T> queue)
+        {
+            if (!queue.IsValid)
+            {
+                throw new ArgumentException("queue is invalid");
+            }
+
+            Allocator allocator = queue.GetAllocator()!;
+            T* buffer = allocator.Allocate<T>(queue._capacity);
+            Unsafe.CopyBlockUnaligned(buffer, queue._buffer, (uint)(sizeof(T) * queue._capacity));
+
+            _buffer = buffer;
+            _capacity = queue._capacity;
+            _count = queue._count;
+            _allocatorID = queue._allocatorID;
+            _head = queue._head;
+            _tail = queue._tail;
+        }
+
         /// <summary>
         /// Gets the number of elements in the queue.
         /// </summary>
@@ -521,6 +540,21 @@ namespace NativeCollections
 
             sb.Append(']');
             return StringBuilderCache.ToStringAndRelease(ref sb!);
+        }
+
+        /// <summary>
+        /// Gets a deep clone of this instance.
+        /// </summary>
+        /// <returns>A copy of this instance.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NativeQueue<T> Clone()
+        {
+            if (_buffer == null)
+            {
+                return default;
+            }
+
+            return new NativeQueue<T>(ref this);
         }
 
         /// <summary>
