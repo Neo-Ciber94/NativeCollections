@@ -417,6 +417,21 @@ namespace NativeCollections
             }
         }
 
+        internal NativeMap(ref NativeMap<TKey, TValue> map, Entry* buffer)
+        {
+            if (!map.IsValid)
+            {
+                throw new ArgumentException("map is invalid");
+            }
+
+            _buffer = buffer;
+            _count = map._count;
+            _capacity = map._capacity;
+            _allocatorID = map._allocatorID;
+            _freeCount = map._freeCount;
+            _freeList = map._freeList;
+        }
+
         private NativeMap(ref NativeMap<TKey, TValue> map)
         {
             if (!map.IsValid)
@@ -572,7 +587,6 @@ namespace NativeCollections
 
                     entry.next = _freeList;
                     entry.hashCode = -1;
-
                     _freeList = index;
                     _freeCount++;
                     return true;
