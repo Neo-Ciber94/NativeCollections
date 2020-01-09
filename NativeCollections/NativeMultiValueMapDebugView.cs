@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace NativeCollections
 {
-    internal sealed class MultiValueNativeMapDebugView<TKey, TValue> where TKey: unmanaged where TValue: unmanaged
+    internal sealed class NativeMultiValueMapDebugView<TKey, TValue> where TKey: unmanaged where TValue: unmanaged
     {
         private readonly NativeMap<TKey, NativeList<TValue>> _map;
 
@@ -20,7 +20,7 @@ namespace NativeCollections
             }
         }
 
-        public MultiValueNativeMapDebugView(MultiValueNativeMap<TKey, TValue> map)
+        public NativeMultiValueMapDebugView(NativeMultiValueMap<TKey, TValue> map)
         {
             _map = map._map;
         }

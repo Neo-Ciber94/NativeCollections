@@ -293,7 +293,7 @@ namespace NativeCollections
         /// <typeparam name="TValue">The type of the values.</typeparam>
         /// <param name="multiValueMap">The map.</param>
         /// <param name="disposing">if <c>true</c> disposes all the keys and values.</param>
-        public static void Dispose<TKey, TValue>(this ref MultiValueNativeMap<TKey, TValue> multiValueMap, bool disposing) where TKey : unmanaged, IDisposable where TValue : unmanaged, IDisposable
+        public static void Dispose<TKey, TValue>(this ref NativeMultiValueMap<TKey, TValue> multiValueMap, bool disposing) where TKey : unmanaged, IDisposable where TValue : unmanaged, IDisposable
         {
             try
             {
@@ -322,7 +322,7 @@ namespace NativeCollections
         /// <typeparam name="TKey">The type of the keys.</typeparam>
         /// <typeparam name="TValue">The type of the values.</typeparam>
         /// <param name="multiValueMap">The map.</param>
-        public static void DisposeMapAndKeys<TKey, TValue>(this ref MultiValueNativeMap<TKey, TValue> multiValueMap) where TKey : unmanaged, IDisposable where TValue : unmanaged
+        public static void DisposeMapAndKeys<TKey, TValue>(this ref NativeMultiValueMap<TKey, TValue> multiValueMap) where TKey : unmanaged, IDisposable where TValue : unmanaged
         {
             try
             {
@@ -343,7 +343,7 @@ namespace NativeCollections
         /// <typeparam name="TKey">The type of the keys.</typeparam>
         /// <typeparam name="TValue">The type of the values.</typeparam>
         /// <param name="multiValueMap">The map.</param>
-        public static void DisposeMapAndValues<TKey, TValue>(this ref MultiValueNativeMap<TKey, TValue> multiValueMap) where TKey : unmanaged where TValue : unmanaged, IDisposable
+        public static void DisposeMapAndValues<TKey, TValue>(this ref NativeMultiValueMap<TKey, TValue> multiValueMap) where TKey : unmanaged where TValue : unmanaged, IDisposable
         {
             try
             {

@@ -12,7 +12,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void MultiValueNativeMapTest()
         {
-            using MultiValueNativeMap<char, int> map = new MultiValueNativeMap<char, int>(10);
+            using NativeMultiValueMap<char, int> map = new NativeMultiValueMap<char, int>(10);
             Assert.AreEqual(10, map.Slots);
             Assert.AreEqual(0, map.Length);
             Assert.IsTrue(map.IsValid);
@@ -22,7 +22,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void GetAllocatorTest()
         {
-            using MultiValueNativeMap<char, int> map = new MultiValueNativeMap<char, int>(10);
+            using NativeMultiValueMap<char, int> map = new NativeMultiValueMap<char, int>(10);
 
             unsafe
             {
@@ -45,7 +45,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void AddTest()
         {
-            MultiValueNativeMap<NativeString, int> map = new MultiValueNativeMap<NativeString, int>(3);
+            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(3);
             map.Add("Even", 2);
             map.Add("Even", 4);
             map.Add("Even", 6);
@@ -68,7 +68,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void AddTest1()
         {
-            MultiValueNativeMap<NativeString, int> map = new MultiValueNativeMap<NativeString, int>(3);
+            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(3);
             map.Add("Even", stackalloc int[] { 2, 4, 6 });
             map.Add("Odd", stackalloc int[] { 1, 3 });
 
@@ -86,7 +86,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void AddTest2()
         {
-            using MultiValueNativeMap<char, int> map = new MultiValueNativeMap<char, int>(3);
+            using NativeMultiValueMap<char, int> map = new NativeMultiValueMap<char, int>(3);
             map.Add('e', 2);
             map.Add('e', 4);
             map.Add('e', 6);
@@ -108,7 +108,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void ReplaceValuesTest()
         {
-            MultiValueNativeMap<NativeString, int> map = new MultiValueNativeMap<NativeString, int>(3);
+            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(3);
             map.Add("Even", stackalloc int[] { 2, 4, 6 });
             map.Add("Odd", stackalloc int[] { 1, 3 });
 
@@ -124,7 +124,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void RemoveTest()
         {
-            MultiValueNativeMap<NativeString, int> map = new MultiValueNativeMap<NativeString, int>(10);
+            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(10);
             map.Add("Even", stackalloc int[] { 2, 4, 6 });
             map.Add("Odd", stackalloc int[] { 1, 3 });
 
@@ -138,7 +138,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void RemoveValueTest()
         {
-            MultiValueNativeMap<NativeString, int> map = new MultiValueNativeMap<NativeString, int>(10);
+            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(10);
             map.Add("Even", stackalloc int[] { 2, 4, 6 });
             map.Add("Odd", stackalloc int[] { 1, 3 });
 
@@ -154,7 +154,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void ClearTest()
         {
-            MultiValueNativeMap<NativeString, int> map = new MultiValueNativeMap<NativeString, int>(10);
+            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(10);
             map.Add("Even", stackalloc int[] { 2, 4, 6 });
             map.Add("Odd", stackalloc int[] { 1, 3 });
 
@@ -171,7 +171,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void GetValuesTest()
         {
-            MultiValueNativeMap<NativeString, int> map = new MultiValueNativeMap<NativeString, int>(10);
+            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(10);
             map.Add("Even", stackalloc int[] { 2, 4, 6 });
             map.Add("Odd", stackalloc int[] { 1, 3 });
 
@@ -188,7 +188,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void TryGetValuesTest()
         {
-            MultiValueNativeMap<NativeString, int> map = new MultiValueNativeMap<NativeString, int>(10); 
+            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(10); 
             map.Add("Even", stackalloc int[] { 2, 4, 6 });
             map.Add("Odd", stackalloc int[] { 1, 3 });
 
@@ -206,7 +206,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void ContainsKeyTest()
         {
-            MultiValueNativeMap<NativeString, int> map = new MultiValueNativeMap<NativeString, int>(10);
+            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(10);
             map.Add("Even", stackalloc int[] { 2, 4, 6 });
             map.Add("Odd", stackalloc int[] { 1, 3 });
 
@@ -224,7 +224,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void ContainsValueTest()
         {
-            MultiValueNativeMap<NativeString, int> map = new MultiValueNativeMap<NativeString, int>(10);
+            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(10);
             map.Add("Even", stackalloc int[] { 2, 4, 6 });
             map.Add("Odd", stackalloc int[] { 1, 3 });
 
@@ -241,7 +241,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void ContainsValueTest1()
         {
-            MultiValueNativeMap<NativeString, int> map = new MultiValueNativeMap<NativeString, int>(10);
+            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(10);
             map.Add("Even", stackalloc int[] { 2, 4, 6 });
             map.Add("Odd", stackalloc int[] { 1, 3 });
 
@@ -260,7 +260,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void CopyToTest()
         {
-            MultiValueNativeMap<NativeString, int> map = new MultiValueNativeMap<NativeString, int>(10);
+            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(10);
             map.Add("Even", stackalloc int[] { 2, 4, 6 });
             map.Add("Odd", stackalloc int[] { 1, 3 });
 
@@ -279,7 +279,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void ToStringTest()
         {
-            MultiValueNativeMap<NativeString, int> map = new MultiValueNativeMap<NativeString, int>(10);
+            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(10);
             map.Add("Even", stackalloc int[] { 2, 4, 6 });
             map.Add("Odd", stackalloc int[] { 1, 3 });
 
@@ -291,11 +291,11 @@ namespace NativeCollections.Tests
         [Test()]
         public void CloneTest()
         {
-            MultiValueNativeMap<NativeString, int> map = new MultiValueNativeMap<NativeString, int>(10);
+            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(10);
             map.Add("Even", stackalloc int[] { 2, 4, 6 });
             map.Add("Odd", stackalloc int[] { 1, 3 });
 
-            MultiValueNativeMap<NativeString, int> clone = map.Clone();
+            NativeMultiValueMap<NativeString, int> clone = map.Clone();
             clone.Add("Even", 8);
             clone.Add("Odd", 5);
 
@@ -317,7 +317,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void DisposeTest()
         {
-            MultiValueNativeMap<NativeString, int> map = new MultiValueNativeMap<NativeString, int>(10);
+            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(10);
             map.Add("Even", stackalloc int[] { 2, 4, 6 });
             map.Add("Odd", stackalloc int[] { 1, 3 });
 
@@ -333,7 +333,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void IndexerTest()
         {
-            MultiValueNativeMap<NativeString, int> map = new MultiValueNativeMap<NativeString, int>(10);
+            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(10);
             map.Add("Even", stackalloc int[] { 2, 4, 6 });
             map.Add("Odd", stackalloc int[] { 1, 3 });
 
@@ -347,7 +347,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void GetEnumeratorTest()
         {
-            MultiValueNativeMap<NativeString, int> map = new MultiValueNativeMap<NativeString, int>(4);
+            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(4);
             map.Add("Even", stackalloc int[] { 2, 4, 6 });
             map.Add("Odd", stackalloc int[] { 1, 3 });
 

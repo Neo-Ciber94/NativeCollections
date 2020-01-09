@@ -17,8 +17,8 @@ namespace NativeCollections
     /// <seealso cref="INativeContainer{KeyValuePair{TKey, NativeArray{TValue}}}" />
     /// <seealso cref="IDisposable" />
     [DebuggerDisplay("Length = {Length}")]
-    [DebuggerTypeProxy(typeof(MultiValueNativeMapDebugView<,>))]
-    unsafe public struct MultiValueNativeMap<TKey, TValue> : INativeContainer<KeyValuePair<TKey, TValue>>, IDisposable where TKey: unmanaged where TValue: unmanaged
+    [DebuggerTypeProxy(typeof(NativeMultiValueMapDebugView<,>))]
+    unsafe public struct NativeMultiValueMap<TKey, TValue> : INativeContainer<KeyValuePair<TKey, TValue>>, IDisposable where TKey: unmanaged where TValue: unmanaged
     {
         private const int DefaultListCapacity = 10;
 
@@ -26,24 +26,24 @@ namespace NativeCollections
         private int _count;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MultiValueNativeMap{TKey, TValue}"/> struct.
+        /// Initializes a new instance of the <see cref="NativeMultiValueMap{TKey, TValue}"/> struct.
         /// </summary>
         /// <param name="initialSlots">The initial amount of slots for store values.</param>
-        public MultiValueNativeMap(int initialSlots) : this(initialSlots, Allocator.Default) { }
+        public NativeMultiValueMap(int initialSlots) : this(initialSlots, Allocator.Default) { }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MultiValueNativeMap{TKey, TValue}"/> struct.
+        /// Initializes a new instance of the <see cref="NativeMultiValueMap{TKey, TValue}"/> struct.
         /// </summary>
         /// <param name="initialSlots">The initial amount of slots for store values.</param>
         /// <param name="allocator">The allocator.</param>
         /// <exception cref="ArgumentException">If the initialCapacity is negative or zero, or the allocator is no in cache.</exception>
-        public MultiValueNativeMap(int initialSlots, Allocator allocator)
+        public NativeMultiValueMap(int initialSlots, Allocator allocator)
         {
             _map = new NativeMap<TKey, NativeList<TValue>>(initialSlots, allocator);
             _count = 0;
         }
 
-        private MultiValueNativeMap(ref MultiValueNativeMap<TKey, TValue> multiValueMap)
+        private NativeMultiValueMap(ref NativeMultiValueMap<TKey, TValue> multiValueMap)
         {
             if (!multiValueMap.IsValid)
             {
@@ -353,7 +353,7 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Copies the content of this map to a <see cref="Span{T}"/> where each <see cref="KeyValuePair{TKey, TValue}"/> in the span will have
+        /// Copies the content of this map to a <see cref="Span{T}"/>.
         /// an allocated <see cref="NativeArray{T}"/>.
         /// </summary>
         /// <param name="span">The destination span to copy the data.</param>
@@ -413,9 +413,9 @@ namespace NativeCollections
         /// </summary>
         /// <returns>A copy of this instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public MultiValueNativeMap<TKey, TValue> Clone()
+        public NativeMultiValueMap<TKey, TValue> Clone()
         {
-            return _map.IsValid is false? default : new MultiValueNativeMap<TKey, TValue>(ref this);
+            return _map.IsValid is false? default : new NativeMultiValueMap<TKey, TValue>(ref this);
         }
 
         /// <summary>
