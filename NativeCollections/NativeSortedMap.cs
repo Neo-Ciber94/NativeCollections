@@ -1197,28 +1197,17 @@ namespace NativeCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeSortedMap<TKey, TValue> Clone()
         {
-            if(_buffer == null)
-            {
-                return default;
-            }
-
-            return new NativeSortedMap<TKey, TValue>(ref this);
+            return _buffer == null? default : new NativeSortedMap<TKey, TValue>(ref this);
         }
 
         /// <summary>
         /// Gets an enumerator over the elements of this map.
         /// </summary>
         /// <returns>An enumerator over the elements of the map.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Enumerator GetEnumerator()
         {
-            Debug.Assert(_buffer != null);
-
-            if (_buffer == null)
-            {
-                return default;
-            }
-
-            return new Enumerator(ref this);
+            return _buffer == null ? default : new Enumerator(ref this);
         }
 
         /// <summary>

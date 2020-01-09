@@ -285,5 +285,80 @@ namespace NativeCollections
                 map.Dispose();
             }
         }
+
+        /// <summary>
+        /// Releases all the resources used for this multi-map and dispose all the keys and values.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the keys.</typeparam>
+        /// <typeparam name="TValue">The type of the values.</typeparam>
+        /// <param name="multiValueMap">The map.</param>
+        /// <param name="disposing">if <c>true</c> disposes all the keys and values.</param>
+        public static void Dispose<TKey, TValue>(this ref MultiValueNativeMap<TKey, TValue> multiValueMap, bool disposing) where TKey : unmanaged, IDisposable where TValue : unmanaged, IDisposable
+        {
+            try
+            {
+                if (disposing)
+                {
+                    foreach (var entry in multiValueMap)
+                    {
+                        entry.Key.Dispose();
+
+                        foreach(ref var value in entry.Values)
+                        {
+                            value.Dispose();
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                multiValueMap.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Releases all the resources used for this multi-map and dispose all the keys.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the keys.</typeparam>
+        /// <typeparam name="TValue">The type of the values.</typeparam>
+        /// <param name="multiValueMap">The map.</param>
+        public static void DisposeMapAndKeys<TKey, TValue>(this ref MultiValueNativeMap<TKey, TValue> multiValueMap) where TKey : unmanaged, IDisposable where TValue : unmanaged
+        {
+            try
+            {
+                foreach (var entry in multiValueMap)
+                {
+                    entry.Key.Dispose();
+                }
+            }
+            finally
+            {
+                multiValueMap.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Releases all the resources used for this multi-map and dispose all the values.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the keys.</typeparam>
+        /// <typeparam name="TValue">The type of the values.</typeparam>
+        /// <param name="multiValueMap">The map.</param>
+        public static void DisposeMapAndValues<TKey, TValue>(this ref MultiValueNativeMap<TKey, TValue> multiValueMap) where TKey : unmanaged where TValue : unmanaged, IDisposable
+        {
+            try
+            {
+                foreach (var entry in multiValueMap)
+                {
+                    foreach(ref var value in entry.Values)
+                    {
+                        value.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                multiValueMap.Dispose();
+            }
+        }
     }
 }

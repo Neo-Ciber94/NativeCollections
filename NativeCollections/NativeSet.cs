@@ -612,12 +612,7 @@ namespace NativeCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeSet<T> Clone()
         {
-            if (_buffer == null)
-            {
-                return default;
-            }
-
-            return new NativeSet<T>(ref this);
+            return _buffer == null ? default : new NativeSet<T>(ref this);
         }
 
         /// <summary>
@@ -738,16 +733,10 @@ namespace NativeCollections
         /// Gets an enumerator over the elements of this set.
         /// </summary>
         /// <returns>An enumerator over the elements of this set.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Enumerator GetEnumerator()
         {
-            Debug.Assert(_buffer != null);
-
-            if (_buffer == null)
-            {
-                return default;
-            }
-
-            return new Enumerator(ref this);
+            return _buffer == null? default : new Enumerator(ref this);
         }
 
         /// <summary>

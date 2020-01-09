@@ -18,7 +18,7 @@ namespace NativeCollections
     /// <seealso cref="IDisposable" />
     [DebuggerDisplay("Length = {Length}")]
     [DebuggerTypeProxy(typeof(MultiValueNativeMapDebugView<,>))]
-    unsafe public struct MultiValueNativeMap<TKey, TValue> : INativeContainer<KeyValuePair<TKey, NativeArray<TValue>>>, IDisposable where TKey: unmanaged where TValue: unmanaged
+    unsafe public struct MultiValueNativeMap<TKey, TValue> : INativeContainer<KeyValuePair<TKey, TValue>>, IDisposable where TKey: unmanaged where TValue: unmanaged
     {
         private const int DefaultListCapacity = 10;
 
@@ -51,13 +51,13 @@ namespace NativeCollections
             }
 
             Allocator allocator = multiValueMap.GetAllocator()!;
-            int length = multiValueMap.Length;
+            int slots = multiValueMap.Slots;
             int sizeOfEntry = sizeof(NativeMap<TKey, NativeList<TValue>>.Entry);
-            var buffer = allocator.Allocate<NativeMap<TKey, NativeList<TValue>>.Entry>(length);
+            var buffer = allocator.Allocate<NativeMap<TKey, NativeList<TValue>>.Entry>(slots);
             var source = multiValueMap._map._buffer;
-            Unsafe.CopyBlockUnaligned(buffer, source, (uint)(sizeOfEntry * length));
+            Unsafe.CopyBlockUnaligned(buffer, source, (uint)(sizeOfEntry * slots));
 
-            for(int i = 0; i < length; i++)
+            for(int i = 0; i < slots; i++)
             {
                 ref var entry = ref buffer[i];
                 if(entry.hashCode >= 0)
@@ -79,6 +79,11 @@ namespace NativeCollections
         public int Length => _count;
 
         /// <summary>
+        /// Gets the number of slots used for store the values in the map.
+        /// </summary>
+        public int Slots => _map.Capacity;
+
+        /// <summary>
         /// Checks if the map is allocated.
         /// </summary>
         /// <value>
@@ -93,6 +98,38 @@ namespace NativeCollections
         ///   <c>true</c> if this instance is empty; otherwise, <c>false</c>.
         /// </value>
         public bool IsEmpty => _map.IsEmpty;
+
+        /// <summary>
+        /// Gets the values associated to the given key, or sets the values for the specified key.
+        /// </summary>
+        /// <value>
+        /// The <see cref="NativeSlice{TValue}" />.
+        /// </value>
+        /// <param name="key">The key.</param>
+        /// <returns>The values associated to the key.</returns>
+        public NativeSlice<TValue> this[TKey key]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            readonly get
+            {
+                ref NativeList<TValue> list = ref _map.GetValueReference(key);
+                return list[..];
+            }
+
+            set
+            {
+                if(_map.TryGetValueReference(key, out var reference))
+                {
+                    ref NativeList<TValue> list = ref reference.Value;
+                    list.Clear();
+                    list.AddRange(value.Span);
+                }
+                else
+                {
+                    Add(key, value.Span);
+                }
+            }
+        }
 
         /// <summary>
         /// Gets the allocator.
@@ -132,6 +169,9 @@ namespace NativeCollections
         /// <param name="values">The values.</param>
         public void Add(TKey key, in Span<TValue> values)
         {
+            if (values.IsEmpty)
+                return;
+
             if(_map.TryGetValueReference(key, out ByReference<NativeList<TValue>> reference))
             {
                 reference.Value.AddRange(values);
@@ -144,6 +184,28 @@ namespace NativeCollections
             }
 
             _count += values.Length;
+        }
+
+        /// <summary>
+        /// Replace all the values of the specified key with the given.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="values">The values.</param>
+        /// <returns><c>true</c> if the key exists and its values can be replaced, otherwise <c>false</c>.</returns>
+        public bool ReplaceValues(TKey key, in Span<TValue> values)
+        {
+            if (values.IsEmpty)
+                return false;
+
+            if (_map.TryGetValueReference(key, out var reference))
+            {
+                ref NativeList<TValue> list = ref reference.Value;
+                list.Clear();
+                list.AddRange(values);
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -192,6 +254,34 @@ namespace NativeCollections
         }
 
         /// <summary>
+        /// Clears the contents of this map.
+        /// </summary>
+        public void Clear()
+        {
+            if (_map.IsValid is false)
+                return;
+
+            foreach (ref var entry in _map)
+            {
+                entry.Value.Dispose();
+            }
+
+            _map.Clear();
+            _count = 0;
+        }
+
+        /// <summary>
+        /// Gets the values associated to the specified key.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <returns>A view to the values associated to the key.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NativeSlice<TValue> GetValues(TKey key)
+        {
+            return _map.GetValue(key)[..];
+        }
+
+        /// <summary>
         /// Attemps to get the values associated to the given key.
         /// </summary>
         /// <param name="key">The key.</param>
@@ -216,6 +306,7 @@ namespace NativeCollections
         /// <returns>
         ///   <c>true</c> if the map contains the specified key; otherwise, <c>false</c>.
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ContainsKey(TKey key)
         {
             return _map.ContainsKey(key);
@@ -270,7 +361,7 @@ namespace NativeCollections
         /// <param name="count">The number of elements to copy.</param>
         /// <exception cref="ArgumentException">If the span is empty.</exception>
         /// <exception cref="ArgumentOutOfRangeException">If the index or count are out of range.</exception>
-        public void CopyTo(in Span<KeyValuePair<TKey, NativeArray<TValue>>> span, int index, int count)
+        public void CopyTo(in Span<KeyValuePair<TKey, TValue>> span, int index, int count)
         {
             if (span.IsEmpty)
                 throw new ArgumentException("Span is empty", nameof(span));
@@ -288,11 +379,21 @@ namespace NativeCollections
                     break;
                 }
 
-                TKey key = entry.Key;
-                NativeArray<TValue> array = entry.Value.ToNativeArray();
+                // TODO: Use KeyValueRef to avoid copy
 
-                span[index++] = KeyValuePair.Create(key, array);
-                count--;
+                TKey key = entry.Key;
+                NativeList<TValue> values = entry.Value;
+
+                foreach(ref TValue value in values)
+                {
+                    if (count == 0)
+                    {
+                        break;
+                    }
+
+                    span[index++] = KeyValuePair.Create(key, value);
+                    count--;
+                }
             }
         }
 
@@ -314,12 +415,7 @@ namespace NativeCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public MultiValueNativeMap<TKey, TValue> Clone()
         {
-            if (!_map.IsValid)
-            {
-                return default;
-            }
-
-            return new MultiValueNativeMap<TKey, TValue>(ref this);
+            return _map.IsValid is false? default : new MultiValueNativeMap<TKey, TValue>(ref this);
         }
 
         /// <summary>
@@ -340,7 +436,7 @@ namespace NativeCollections
                 }
 
                 _map.Dispose();
-                _map = default;
+                this = default;
             }
         }
 
@@ -348,43 +444,23 @@ namespace NativeCollections
         /// Gets an enumerator over the elements of this map.
         /// </summary>
         /// <returns>A enumerator over the elements of the map.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Enumerator GetEnumerator()
         {
             return new Enumerator(_map.GetEnumerator());
         }
 
-        public ref struct KeyAndValues
-        {
-            public TKey Key { get; }
-            public NativeSlice<TValue> Values { get; }
-
-            public KeyAndValues(TKey key, NativeSlice<TValue> values)
-            {
-                Key = key;
-                Values = values;
-            }
-
-            [EditorBrowsable(EditorBrowsableState.Never)]
-            public void Deconstruct(out TKey key, out NativeSlice<TValue> values)
-            {
-                key = Key;
-                values = Values;
-            }
-
-            public override string ToString()
-            {
-                StringBuilder sb = StringBuilderCache.Acquire();
-                sb.Append('(');
-                sb.Append(Key.ToString());
-                sb.Append(", ");
-                sb.Append(Values.ToString());
-                sb.Append(')');
-                return StringBuilderCache.ToStringAndRelease(ref sb!);
-            }
-        }
-
+        /// <summary>
+        /// An enumerator over the key and values of the map.
+        /// </summary>
         public ref struct Enumerator
         {
+            private struct KeyValueRef
+            {
+                public TKey key;
+                public NativeList<TValue> value;
+            }
+
             private NativeMap<TKey, NativeList<TValue>>.Enumerator _enumerator;
             private bool _hasNext;
 
@@ -394,50 +470,104 @@ namespace NativeCollections
                 _hasNext = false;
             }
 
-            public KeyAndValues Current
+            /// <summary>
+            /// Gets the current value.
+            /// </summary>
+            public KeyValueCollection Current
             {
                 get
                 {
                     if (!_hasNext)
+                    {
                         throw new InvalidOperationException("No more values");
+                    }
 
-                    ref KeyValuePair<TKey, NativeList<TValue>> pair = ref _enumerator.Current;
-                    return new KeyAndValues(pair.Key, pair.Value[..]);
+                    ref KeyValuePair<TKey, NativeList<TValue>> keyValuePair = ref _enumerator.Current;
+                    ref KeyValueRef keyValue = ref Unsafe.As<KeyValuePair<TKey, NativeList<TValue>>, KeyValueRef>(ref keyValuePair);
+                    return new KeyValueCollection(ref keyValue.key, keyValue.value[..]);
                 }
             }
 
+            /// <summary>
+            /// Move to the next value.
+            /// </summary>
             public bool MoveNext()
             {
                 _hasNext = _enumerator.MoveNext();
                 return _hasNext;
             }
 
+            /// <summary>
+            /// Dispose this enumerator.
+            /// </summary>
             public void Dispose()
             {
                 _enumerator.Dispose();
             }
-        }
-    }
 
-    unsafe public readonly ref struct KeyAndView<TKey, TValue> where TKey: unmanaged where TValue: unmanaged
-    {
-        private readonly TKey* _key;
-        private readonly NativeSlice<TValue> _slice;
-
-        internal KeyAndView(ref TKey key, NativeSlice<TValue> slice)
-        {
-            _key = (TKey*)Unsafe.AsPointer(ref key);
-            _slice = slice;
+            /// <summary>
+            /// Resets this enumerator.
+            /// </summary>
+            public void Reset()
+            {
+                _enumerator.Reset();
+            }
         }
 
-        public readonly ref TKey Key => ref * _key;
-        public NativeSlice<TValue> Values => _slice;
-
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public void Deconstruct(out TKey key, out NativeSlice<TValue> slice)
+        /// <summary>
+        /// Represents a key and a collection of the values associated to it.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <typeparam name="TValue">The type of the values.</typeparam>
+        unsafe public readonly ref struct KeyValueCollection
         {
-            key = *_key;
-            slice = _slice;
+            private readonly TKey* _key;
+            private readonly NativeSlice<TValue> _values;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="KeyValueCollection{TKey, TValue}" /> struct.
+            /// </summary>
+            /// <param name="key">The key.</param>
+            /// <param name="values">The values.</param>
+            public KeyValueCollection(ref TKey key, NativeSlice<TValue> values)
+            {
+                _key = (TKey*)Unsafe.AsPointer(ref key);
+                _values = values;
+            }
+
+            /// <summary>
+            /// Gets a readonly reference to the key.
+            /// </summary>
+            public readonly ref TKey Key => ref *_key;
+
+            /// <summary>
+            /// Gets the values associated to the key.
+            /// </summary>
+            public NativeSlice<TValue> Values => _values;
+
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            public void Deconstruct(out TKey key, out NativeSlice<TValue> slice)
+            {
+                key = *_key;
+                slice = _values;
+            }
+
+            /// <summary>
+            /// Gets a string representation of this instance.
+            /// </summary>
+            /// <returns>
+            /// A <see cref="System.String" /> that represents this instance.
+            /// </returns>
+            public override string ToString()
+            {
+                StringBuilder sb = StringBuilderCache.Acquire();
+                sb.Append('[');
+                sb.Append(_key->ToString());
+                sb.Append(", ");
+                sb.Append(Values.ToString());
+                sb.Append(']');
+                return StringBuilderCache.ToStringAndRelease(ref sb!);
+            }
         }
     }
 }

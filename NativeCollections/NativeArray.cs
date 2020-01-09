@@ -224,7 +224,7 @@ namespace NativeCollections
             }
             else
             {
-                T* pointer = (T*)_buffer;
+                T* pointer = _buffer;
                 int count = _capacity;
                 int pos = 0;
 
@@ -252,7 +252,7 @@ namespace NativeCollections
                     pos += 4;
                 }
 
-                for (; count > 0; count--)
+                for (; count > 0; --count)
                 {
                     pointer[pos++] = value;
                 }
@@ -303,6 +303,7 @@ namespace NativeCollections
         /// <returns>
         ///   <c>true</c> if the array contains the value; otherwise, <c>false</c>.
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Contains(T value)
         {
             return IndexOf(value) >= 0;
@@ -313,6 +314,7 @@ namespace NativeCollections
         /// </summary>
         /// <param name="value">The value to find.</param>
         /// <returns>The index of the element or -1 if not found.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int IndexOf(T value)
         {
             return IndexOf(value, 0, _capacity);
@@ -324,6 +326,7 @@ namespace NativeCollections
         /// <param name="value">The value to find.</param>
         /// <param name="start">The start index of the search.</param>
         /// <returns>The index of the element or -1 if not found.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int IndexOf(T value, int start)
         {
             return IndexOf(value, start, _capacity);
@@ -356,6 +359,7 @@ namespace NativeCollections
         /// </summary>
         /// <param name="value">The value to find.</param>
         /// <returns>The index of the element or -1 if not found.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int LastIndexOf(T value)
         {
             return LastIndexOf(value, 0, _capacity);
@@ -367,6 +371,7 @@ namespace NativeCollections
         /// <param name="value">The value to find.</param>
         /// <param name="start">The start index of the search.</param>
         /// <returns>The index of the element or -1 if not found.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int LastIndexOf(T value, int start)
         {
             return LastIndexOf(value, start, _capacity);
@@ -398,6 +403,7 @@ namespace NativeCollections
         /// Copies the content of this array into the specified array.
         /// </summary>
         /// <param name="span">The span to copy the elements.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(in Span<T> span)
         {
             CopyTo(span, 0, 0, _capacity);
@@ -408,6 +414,7 @@ namespace NativeCollections
         /// </summary>
         /// <param name="span">The span to copy the elements.</param>
         /// <param name="count">The number of elements to copy.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(in Span<T> span, int count)
         {
             CopyTo(span, 0, 0, count);
@@ -419,6 +426,7 @@ namespace NativeCollections
         /// <param name="span">The span to copy the elements.</param>
         /// <param name="destinationIndex">Index of where copy the elements in the span.</param>
         /// <param name="count">The number of elements to copy.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(in Span<T> span, int destinationIndex, int count)
         {
             CopyTo(span, 0, destinationIndex, count);
@@ -506,9 +514,10 @@ namespace NativeCollections
         /// Gets a pointer to the elements of this array.
         /// </summary>
         /// <returns>A pointer to the allocated memory</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T* GetUnsafePointer()
         {
-            return (T*)_buffer;
+            return _buffer;
         }
 
         /// <summary>
@@ -554,14 +563,10 @@ namespace NativeCollections
         /// Gets an enumerator for iterate over the elements of this array.
         /// </summary>
         /// <returns>An enumerator over this array elements.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RefEnumerator<T> GetEnumerator()
         {
-            if(_buffer == null)
-            {
-                return default;
-            }
-
-            return new RefEnumerator<T>(_buffer, _capacity);
+            return _buffer == null? default: new RefEnumerator<T>(_buffer, _capacity);
         }
 
         /// <summary>

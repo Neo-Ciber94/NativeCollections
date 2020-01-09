@@ -640,6 +640,7 @@ namespace NativeCollections
             return StringBuilderCache.ToStringAndRelease(ref sb!);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Resize()
         {
             Resize(_capacity * 2);
@@ -667,23 +668,7 @@ namespace NativeCollections
             _head = 0;
             _tail = _count - 1;
         }
-
-        /// <summary>
-        /// Gets an enumerator over the elements of the deque.
-        /// </summary>
-        /// <returns>An enumerator over this deque elements.</returns>
-        public Enumerator GetEnumerator()
-        {
-            Debug.Assert(_buffer != null);
-
-            if(_buffer == null)
-            {
-                return default;
-            }
-
-            return new Enumerator(ref this);
-        }
-
+        
         /// <summary>
         /// Gets a deep clone of this instance.
         /// </summary>
@@ -691,12 +676,17 @@ namespace NativeCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeDeque<T> Clone()
         {
-            if (_buffer == null)
-            {
-                return default;
-            }
+            return _buffer == null ? default : new NativeDeque<T>(ref this);
+        }
 
-            return new NativeDeque<T>(ref this);
+        /// <summary>
+        /// Gets an enumerator over the elements of the deque.
+        /// </summary>
+        /// <returns>An enumerator over this deque elements.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Enumerator GetEnumerator()
+        {
+            return _buffer == null? default : new Enumerator(ref this);
         }
 
         /// <summary>

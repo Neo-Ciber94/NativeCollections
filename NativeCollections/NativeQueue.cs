@@ -549,28 +549,17 @@ namespace NativeCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeQueue<T> Clone()
         {
-            if (_buffer == null)
-            {
-                return default;
-            }
-
-            return new NativeQueue<T>(ref this);
+            return _buffer == null ? default : new NativeQueue<T>(ref this);
         }
 
         /// <summary>
         /// Gets an enumerator over the elements of the queue.
         /// </summary>
         /// <returns>An enumerator over this queue elements.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Enumerator GetEnumerator()
         {
-            Debug.Assert(_buffer != null);
-
-            if (_buffer == null)
-            {
-                return default;
-            }
-
-            return new Enumerator(ref this);
+            return _buffer == null? default : new Enumerator(ref this);
         }
 
         /// <summary>

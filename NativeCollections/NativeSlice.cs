@@ -292,12 +292,6 @@ namespace NativeCollections
             return StringBuilderCache.ToStringAndRelease(ref sb!);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static implicit operator NativeSlice<T>(T[] array)
-        {
-            return new NativeSlice<T>(array);
-        }
-
         /// <summary>
         /// Gets an enumerator for iterate over the elements of this slice.
         /// </summary>
@@ -306,13 +300,19 @@ namespace NativeCollections
         public RefEnumerator<T> GetEnumerator()
         {
             Debug.Assert(_pointer != null);
+            return _pointer is null? default : new RefEnumerator<T>(_pointer, _length);
+        }
 
-            if(_pointer == null)
-            {
-                return default;
-            }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static implicit operator NativeSlice<T>(T[] array)
+        {
+            return new NativeSlice<T>(array);
+        }
 
-            return new RefEnumerator<T>(_pointer, _length);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static implicit operator NativeSlice<T>(in Span<T> span)
+        {
+            return new NativeSlice<T>(Unsafe.AsPointer(ref span.GetPinnableReference()), span.Length);
         }
     }
 }

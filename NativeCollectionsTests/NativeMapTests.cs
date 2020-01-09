@@ -14,18 +14,10 @@ namespace NativeCollections.Tests
     [TestFixture()]
     public class NativeMapTests
     {
-        static void DisposeNativeStrings(NativeMap<int, NativeString> map)
-        {
-            foreach (ref var e in map)
-            {
-                e.Value.Dispose();
-            }
-        }
-
         [Test()]
         public void NativeMapTest()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
             Assert.AreEqual(4, map.Capacity);
             Assert.AreEqual(0, map.Length);
             Assert.IsTrue(map.IsValid);
@@ -37,26 +29,49 @@ namespace NativeCollections.Tests
             Assert.IsFalse(map.IsValid);
             Assert.IsTrue(map.IsEmpty);
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
         }
 
         [Test()]
         public void NativeMapTest2()
         {
-            using var map = new NativeMap<int, NativeString>(stackalloc (int, NativeString)[] { (0, "cero"), (1, "uno"), (2, "dos") });
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(stackalloc (int, NativeString)[] { (0, "cero"), (1, "uno"), (2, "dos") });
 
             Assert.AreEqual(3, map.Capacity);
             Assert.AreEqual(3, map.Length);
             Assert.IsTrue(map.IsValid);
             Assert.IsFalse(map.IsEmpty);
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
+        }
+
+        [Test()]
+        public void GetAllocatorTest()
+        {
+            using NativeMap<int, char> map = new NativeMap<int, char>(4);
+
+            unsafe
+            {
+                var allocator = map.GetAllocator();
+                int* p = allocator.Allocate<int>(4);
+                for (int i = 0; i < 4; i++)
+                {
+                    p[i] = i;
+                }
+
+                Assert.AreEqual(0, p[0]);
+                Assert.AreEqual(1, p[1]);
+                Assert.AreEqual(2, p[2]);
+                Assert.AreEqual(3, p[3]);
+
+                allocator.Free(p);
+            }
         }
 
         [Test()]
         public void AddTest()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
             map.Add(0, "zero");
             map.Add(1, "one");
             map.Add(2, "two");
@@ -97,13 +112,13 @@ namespace NativeCollections.Tests
             Assert.IsTrue(map.ContainsValue("two"));
             Assert.IsTrue(map.ContainsValue("three"));
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
         }
 
         [Test()]
         public void AddOrUpdateTest()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
             map.AddOrUpdate(0, "zero");
             map.AddOrUpdate(1, "one");
             map.AddOrUpdate(2, "two");
@@ -139,13 +154,13 @@ namespace NativeCollections.Tests
             Assert.IsTrue(map.ContainsValue("uno"));
             Assert.IsTrue(map.ContainsValue("dos"));
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
         }
 
         [Test()]
         public void ReplaceTest()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
             map.Add(0, "zero");
             map.Add(1, "one");
             map.Add(2, "two");
@@ -171,13 +186,13 @@ namespace NativeCollections.Tests
             Assert.IsFalse(map.Replace(4, "four"));
             Assert.IsFalse(map.Replace(5, "five"));
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
         }
 
         [Test()]
         public void RemoveTest()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
             map.Add(0, "zero");
             map.Add(1, "one");
             map.Add(2, "two");
@@ -230,13 +245,13 @@ namespace NativeCollections.Tests
             Assert.IsTrue(map.ContainsValue("three"));
             Assert.IsFalse(map.ContainsValue("four"));
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
         }
 
         [Test()]
         public void ClearTest()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
             map.Add(0, "zero");
             map.Add(1, "one");
             map.Add(2, "two");
@@ -259,7 +274,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void TryGetValueTest()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
             map.Add(0, "zero");
             map.Add(1, "one");
             map.Add(2, "two");
@@ -274,13 +289,13 @@ namespace NativeCollections.Tests
                 Assert.AreEqual(default(NativeString), otherValue);
             }
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
         }
 
         [Test()]
         public void TryGetValueReferenceTest()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
 
             map.Add(0, "zero");
             map.Add(1, "one");
@@ -296,13 +311,13 @@ namespace NativeCollections.Tests
                 Assert.IsFalse(otherValue.IsNull);
             }
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
         }
 
         [Test()]
         public void GetValueOrDefaultTest()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
             map.Add(0, "zero");
             map.Add(1, "one");
             map.Add(2, "two");
@@ -316,13 +331,13 @@ namespace NativeCollections.Tests
             value0.Dispose();
             value3.Dispose();
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
         }
 
         [Test()]
         public void ContainsKeyTest()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
             // Looking for default values
             Assert.IsFalse(map.ContainsKey(0));
 
@@ -335,13 +350,39 @@ namespace NativeCollections.Tests
             Assert.IsTrue(map.ContainsKey(2));
             Assert.IsFalse(map.ContainsKey(3));
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
+        }
+
+        [Test()]
+        public void ContainsKeyTest1()
+        {
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+
+            map.Add(0, "zero");
+            map.Add(1, "one");
+            map.Add(2, "two");
+
+            Assert.IsTrue(map.ContainsKey(0));
+            Assert.IsTrue(map.ContainsKey(1));
+            Assert.IsTrue(map.ContainsKey(2));
+            Assert.IsFalse(map.ContainsKey(3));
+
+            Assert.IsTrue(map.Remove(0));
+            Assert.IsFalse(map.ContainsKey(0));
+
+            Assert.IsTrue(map.Remove(1));
+            Assert.IsFalse(map.ContainsKey(1));
+
+            Assert.IsTrue(map.Remove(2));
+            Assert.IsFalse(map.ContainsKey(2));
+
+            map.DisposeMapAndValues();
         }
 
         [Test()]
         public void ContainsValueTest()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
 
             // Looking for default values
             Assert.IsFalse(map.ContainsValue(string.Empty));
@@ -356,7 +397,33 @@ namespace NativeCollections.Tests
             Assert.IsTrue(map.ContainsValue("two"));
             Assert.IsFalse(map.ContainsValue("three"));
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
+        }
+
+        [Test()]
+        public void ContainsValueTest1()
+        {
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+
+            map.Add(0, "zero");
+            map.Add(1, "one");
+            map.Add(2, "two");
+
+            Assert.IsTrue(map.ContainsValue("zero"));
+            Assert.IsTrue(map.ContainsValue("one"));
+            Assert.IsTrue(map.ContainsValue("two"));
+            Assert.IsFalse(map.ContainsValue("three"));
+
+            Assert.IsTrue(map.Remove(0));
+            Assert.IsFalse(map.ContainsValue("zero"));
+
+            Assert.IsTrue(map.Remove(1));
+            Assert.IsFalse(map.ContainsValue("one"));
+
+            Assert.IsTrue(map.Remove(2));
+            Assert.IsFalse(map.ContainsValue("two"));
+
+            map.DisposeMapAndValues();
         }
 
         [Test()]
@@ -379,14 +446,14 @@ namespace NativeCollections.Tests
             Assert.AreEqual("uno", map[1]);
             Assert.AreEqual("dos", map[2]);
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
             map.Dispose();
         }
 
         [Test()]
         unsafe public void CopyToTest()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
 
             map.Add(0, "zero");
             map.Add(1, "one");
@@ -420,13 +487,13 @@ namespace NativeCollections.Tests
             Assert.AreEqual(array[3].Value, "three");
             Assert.AreEqual(array[4].Value, "four");
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
         }
 
         [Test()]
         public void GetEnumeratorTest()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
             map.Add(0, "zero");
             map.Add(1, "one");
             map.Add(2, "two");
@@ -440,13 +507,13 @@ namespace NativeCollections.Tests
 
             Assert.AreEqual(3, i);
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
         }
 
         [Test()]
         public void KeysTests()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
             map.Add(0, "zero");
             map.Add(1, "one");
             map.Add(2, "two");
@@ -463,13 +530,13 @@ namespace NativeCollections.Tests
             Assert.AreEqual(span[1], 1);
             Assert.AreEqual(span[2], 2);
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
         }
 
         [Test()]
         public void ValuesTests()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
             map.Add(0, "zero");
             map.Add(1, "one");
             map.Add(2, "two");
@@ -486,13 +553,13 @@ namespace NativeCollections.Tests
             Assert.AreEqual(span[1], "one");
             Assert.AreEqual(span[2], "two");
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
         }
 
         [Test()]
         public void EnsureCapacityTests()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(4);
             map.Add(0, "zero");
             map.Add(1, "one");
             map.Add(2, "two");
@@ -525,13 +592,13 @@ namespace NativeCollections.Tests
             Assert.IsTrue(map.ContainsValue("one"));
             Assert.IsTrue(map.ContainsValue("two"));
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
         }
 
         [Test()]
         public void TrimExcessTests()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(10);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(10);
             map.Add(0, "zero");
             map.Add(1, "one");
             map.Add(2, "two");
@@ -576,13 +643,13 @@ namespace NativeCollections.Tests
             Assert.IsTrue(map.ContainsKey(3));
             Assert.IsTrue(map.ContainsKey(4));
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
         }
 
         [Test()]
         public void TrimExcessTests1()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(10);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(10);
             map.Add(0, "zero");
             map.Add(1, "one");
             map.Add(2, "two");
@@ -592,13 +659,13 @@ namespace NativeCollections.Tests
             Assert.AreEqual(3, map.Length);
             Assert.AreEqual(3, map.Capacity);
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
         }
 
         [Test()]
         public void TrimExcessTests2()
         {
-            using NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(10);
+            NativeMap<int, NativeString> map = new NativeMap<int, NativeString>(10);
             map.Add(0, "zero");
             map.Add(1, "one");
             map.Add(2, "two");
@@ -608,7 +675,7 @@ namespace NativeCollections.Tests
             Assert.AreEqual(3, map.Length);
             Assert.AreEqual(6, map.Capacity);
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
         }
 
         [Test()]
@@ -621,7 +688,7 @@ namespace NativeCollections.Tests
             Assert.IsFalse(map.IsValid);
             Assert.DoesNotThrow(() => map.Dispose());
 
-            DisposeNativeStrings(map);
+            map.DisposeMapAndValues();
         }
 
         [Test()]

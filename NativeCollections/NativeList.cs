@@ -927,28 +927,17 @@ namespace NativeCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeList<T> Clone()
         {
-            if (_buffer == null)
-            {
-                return default;
-            }
-
-            return new NativeList<T>(ref this);
+            return _buffer == null? default : new NativeList<T>(ref this);
         }
 
         /// <summary>
         /// Gets an enumerator for iterate over the elements of this list.
         /// </summary>
         /// <returns>An enumerator over this list elements.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RefEnumerator<T> GetEnumerator()
         {
-            Debug.Assert(_buffer != null);
-
-            if (_buffer == null)
-            {
-                return default;
-            }
-
-            return new RefEnumerator<T>(_buffer, _count);
+            return _buffer == null? default : new RefEnumerator<T>(_buffer, _count);
         }
     }
 

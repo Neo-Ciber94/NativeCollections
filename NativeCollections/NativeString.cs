@@ -410,7 +410,13 @@ namespace NativeCollections
                 return 0;
             }
 
-            return (int)(((long)_buffer) >> 4);
+            int hash = 0;
+            for(int i = 0; i < _length; ++i)
+            {
+                hash = HashCode.Combine(hash, _buffer[i]);
+            }
+
+            return hash;
         }
 
         /// <summary>
@@ -464,6 +470,11 @@ namespace NativeCollections
         public static implicit operator NativeString(string value)
         {
             return new NativeString(value);
+        }
+
+        public static implicit operator string(NativeString str)
+        {
+            return str.ToString();
         }
 
         public static bool operator ==(NativeString left, NativeString right)

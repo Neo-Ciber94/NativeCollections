@@ -984,28 +984,17 @@ namespace NativeCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeMap<TKey, TValue> Clone()
         {
-            if (_buffer == null)
-            {
-                return default;
-            }
-
-            return new NativeMap<TKey, TValue>(ref this);
+            return _buffer == null? default : new NativeMap<TKey, TValue>(ref this);
         }
 
         /// <summary>
         /// Gets an enumerator over the key-values of this map.
         /// </summary>
         /// <returns>An enumerator over this map key-values.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Enumerator GetEnumerator()
         {
-            Debug.Assert(_buffer != null);
-
-            if (_buffer == null)
-            {
-                return default;
-            }
-
-            return new Enumerator(ref this);
+            return _buffer == null ? default : new Enumerator(ref this);
         }
 
         private bool TryInsert(TKey key, TValue value, InsertMode mode)
@@ -1067,6 +1056,8 @@ namespace NativeCollections
             _buffer[bucket].bucket = index;
             return true;
         }
+
+        internal Span<Entry> MemoryData => new Span<Entry>(_buffer, _capacity);
 
         private readonly int FindEntry(in TKey key)
         {
@@ -1164,7 +1155,7 @@ namespace NativeCollections
             /// <summary>
             /// Gets a reference to the current key-value.
             /// </summary>
-            public ref KeyValuePair<TKey, TValue> Current
+            public readonly ref KeyValuePair<TKey, TValue> Current
             {
                 get
                 {

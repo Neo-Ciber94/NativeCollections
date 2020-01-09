@@ -469,12 +469,7 @@ namespace NativeCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeStack<T> Clone()
         {
-            if (_buffer == null)
-            {
-                return default;
-            }
-
-            return new NativeStack<T>(ref this);
+            return _buffer == null? default : new NativeStack<T>(ref this);
         }
 
         private void RequireCapacity(int min)
@@ -506,16 +501,10 @@ namespace NativeCollections
         /// Gets an enumerator over the elements of the stack.
         /// </summary>
         /// <returns>An enumerator over the elements of the stack.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RefEnumerator<T> GetEnumerator()
         {
-            Debug.Assert(_buffer != null);
-
-            if(_buffer == null)
-            {
-                return default;
-            }
-
-            return new RefEnumerator<T>(_buffer, _count);
+            return _buffer == null? default : new RefEnumerator<T>(_buffer, _count);
         }
     }
 }
