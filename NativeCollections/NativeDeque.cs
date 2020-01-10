@@ -712,16 +712,6 @@ namespace NativeCollections
             _head = 0;
             _tail = _count - 1;
         }
-        
-        /// <summary>
-        /// Gets a deep clone of this instance.
-        /// </summary>
-        /// <returns>A copy of this instance.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NativeDeque<T> Clone()
-        {
-            return _buffer == null? throw new ArgumentException("NativeDeque is invalid"): new NativeDeque<T>(ref this);
-        }
 
         /// <summary>
         /// Gets an enumerator over the elements of the deque.

@@ -1014,4 +1014,15 @@ namespace NativeCollections
             return _buffer == null? default : new RefEnumerator<T>(_buffer, _count);
         }
     }
+
+    public static class NativeList
+    {
+        internal const int DefaultCapacity = 4;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static NativeList<T> Create<T>() where T: unmanaged
+        {
+            return new NativeList<T>(DefaultCapacity);
+        }
+    }
 }

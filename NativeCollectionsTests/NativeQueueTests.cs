@@ -568,33 +568,5 @@ namespace NativeCollections.Tests
                 CollectionAssert.Contains(arr, e);
             }
         }
-
-        [Test()]
-        public void CloneTest()
-        {
-            using NativeQueue<int> queue = new NativeQueue<int>(4);
-            queue.Enqueue(1);
-            queue.Enqueue(2);
-            queue.Enqueue(3);
-
-            using NativeQueue<int> clone = queue.Clone();
-
-            Assert.AreEqual(3, clone.Length);
-            Assert.AreEqual(4, clone.Capacity);
-            Assert.IsTrue(clone.Contains(1));
-            Assert.IsTrue(clone.Contains(2));
-            Assert.IsTrue(clone.Contains(3));
-
-            clone.Enqueue(4);
-            clone.Enqueue(5);
-
-            Assert.AreNotEqual(queue.Length, clone.Length);
-            Assert.AreNotEqual(queue.Length, clone.Length);
-            Assert.IsTrue(clone.Contains(1));
-            Assert.IsTrue(clone.Contains(2));
-            Assert.IsTrue(clone.Contains(3));
-            Assert.IsTrue(clone.Contains(4));
-            Assert.IsTrue(clone.Contains(5));
-        }
     }
 }

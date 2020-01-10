@@ -492,16 +492,6 @@ namespace NativeCollections
             return StringBuilderCache.ToStringAndRelease(ref sb!);
         }
 
-        /// <summary>
-        /// Gets a deep clone of this instance.
-        /// </summary>
-        /// <returns>A copy of this instance.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NativeStack<T> Clone()
-        {
-            return _buffer == null? throw new InvalidOperationException("NativeStack is invalid") : new NativeStack<T>(ref this);
-        }
-
         private void RequireCapacity(int min)
         {
             if (min > _capacity)

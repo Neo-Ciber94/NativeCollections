@@ -433,33 +433,5 @@ namespace NativeCollections.Tests
 
             Assert.IsFalse(enumerator.MoveNext());
         }
-
-        [Test()]
-        public void CloneTest()
-        {
-            using NativeStack<int> stack = new NativeStack<int>(4);
-            stack.Push(1);
-            stack.Push(2);
-            stack.Push(3);
-
-            using NativeStack<int> clone = stack.Clone();
-
-            Assert.AreEqual(3, clone.Length);
-            Assert.AreEqual(4, clone.Capacity);
-            Assert.IsTrue(clone.Contains(1));
-            Assert.IsTrue(clone.Contains(2));
-            Assert.IsTrue(clone.Contains(3));
-
-            clone.Push(4);
-            clone.Push(5);
-
-            Assert.AreNotEqual(stack.Length, clone.Length);
-            Assert.AreNotEqual(stack.Length, clone.Length);
-            Assert.IsTrue(clone.Contains(1));
-            Assert.IsTrue(clone.Contains(2));
-            Assert.IsTrue(clone.Contains(3));
-            Assert.IsTrue(clone.Contains(4));
-            Assert.IsTrue(clone.Contains(5));
-        }
     }
 }

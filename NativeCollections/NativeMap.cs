@@ -1064,16 +1064,6 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Gets a deep clone of this instance.
-        /// </summary>
-        /// <returns>A copy of this instance.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NativeMap<TKey, TValue> Clone()
-        {
-            return _buffer == null? throw new ArgumentException("NativeMap is invalid") : new NativeMap<TKey, TValue>(ref this);
-        }
-
-        /// <summary>
         /// Gets an enumerator over the key-values of this map.
         /// </summary>
         /// <returns>An enumerator over this map key-values.</returns>

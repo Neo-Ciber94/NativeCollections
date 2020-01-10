@@ -584,23 +584,6 @@ namespace NativeCollections
         {
             return _buffer == null? default: new RefEnumerator<T>(_buffer, _capacity);
         }
-
-        /// <summary>
-        /// Gets a deep clone of this instance.
-        /// </summary>
-        /// <returns>A copy of this instance.</returns>
-        public NativeArray<T> Clone()
-        {
-            if (_buffer == null)
-            {
-                throw new InvalidOperationException("NativeArray is invalid");
-            }
-
-            void* dst = GetAllocator()!.Allocate<T>(_capacity);
-            void* src = _buffer;
-            Unsafe.CopyBlockUnaligned(dst, src, (uint)(sizeof(T) * _capacity));
-            return new NativeArray<T>(dst, _capacity, GetAllocator()!);
-        }
     }
 
     /// <summary>

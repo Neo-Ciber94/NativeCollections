@@ -406,16 +406,6 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Gets a deep clone of this instance.
-        /// </summary>
-        /// <returns>A copy of this instance.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NativeMultiValueMap<TKey, TValue> Clone()
-        {
-            return _map.IsValid is false? throw new InvalidOperationException("NativeMultiValueMap is invalid") : new NativeMultiValueMap<TKey, TValue>(ref this);
-        }
-
-        /// <summary>
         /// Releases all the resources used for this map.
         /// </summary>
         public void Dispose()

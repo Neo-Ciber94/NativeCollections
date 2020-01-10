@@ -657,16 +657,6 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Gets a deep clone of this instance.
-        /// </summary>
-        /// <returns>A copy of this instance.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NativeSet<T> Clone()
-        {
-            return _buffer == null ? throw new InvalidOperationException("NativeSet is invalid") : new NativeSet<T>(ref this);
-        }
-
-        /// <summary>
         /// Releases the resources used for this set.
         /// </summary>
         public void Dispose()

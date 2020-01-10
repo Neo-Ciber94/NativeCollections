@@ -1328,16 +1328,6 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Gets a deep clone of this instance.
-        /// </summary>
-        /// <returns>A copy of this instance.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NativeSortedMap<TKey, TValue> Clone()
-        {
-            return _buffer == null? throw new InvalidOperationException("NativeSortedMap is invalid") : new NativeSortedMap<TKey, TValue>(ref this);
-        }
-
-        /// <summary>
         /// Gets an enumerator over the elements of this map.
         /// </summary>
         /// <returns>An enumerator over the elements of the map.</returns>

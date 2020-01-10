@@ -583,16 +583,6 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Gets a deep clone of this instance.
-        /// </summary>
-        /// <returns>A copy of this instance.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NativeQueue<T> Clone()
-        {
-            return _buffer == null ? throw new InvalidOperationException("NativeQueue is invalid") : new NativeQueue<T>(ref this);
-        }
-
-        /// <summary>
         /// Gets an enumerator over the elements of the queue.
         /// </summary>
         /// <returns>An enumerator over this queue elements.</returns>

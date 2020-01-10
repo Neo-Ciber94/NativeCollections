@@ -2,7 +2,7 @@
 
 namespace NativeCollections.Utility
 {
-    public class Cache<T> where T : class
+    public sealed class Cache<T> : ICache<T, int> where T : class
     {
         private readonly T?[] _cacheInstances;
         private int _nextID = 0;
@@ -17,7 +17,7 @@ namespace NativeCollections.Utility
             _cacheInstances = new T[cacheSize];
         }
 
-        public virtual int Add(T instance)
+        public int Add(T instance)
         {
             int index = _nextID;
             int length = _cacheInstances.Length;
@@ -33,7 +33,7 @@ namespace NativeCollections.Utility
             return -1;
         }
 
-        public virtual bool Remove(int id)
+        public bool Remove(int id)
         {
             int index = id - 1;
             if (index > 0 && index <= _cacheInstances.Length)
@@ -48,7 +48,7 @@ namespace NativeCollections.Utility
             return false;
         }
 
-        public virtual T? GetByID(int id)
+        public T? GetByID(int id)
         {
             int index = id - 1;
 
@@ -58,36 +58,6 @@ namespace NativeCollections.Utility
             }
 
             return null;
-        }
-    }
-
-    public class SyncCache<T> : Cache<T> where T: class
-    {
-        private readonly object _obj = new object();
-        public SyncCache(int cacheSize) : base(cacheSize) { }
-
-        public override int Add(T instance)
-        {
-            lock (_obj)
-            {
-                return base.Add(instance);
-            }
-        }
-
-        public override bool Remove(int id)
-        {
-            lock (_obj)
-            {
-                return base.Remove(id);
-            }
-        }
-
-        public override T? GetByID(int id)
-        {
-            lock (_obj)
-            {
-                return base.GetByID(id);
-            }
         }
     }
 }

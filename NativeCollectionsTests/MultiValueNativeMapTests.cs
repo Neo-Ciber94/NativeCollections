@@ -289,33 +289,6 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
-        public void CloneTest()
-        {
-            NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(10);
-            map.Add("Even", stackalloc int[] { 2, 4, 6 });
-            map.Add("Odd", stackalloc int[] { 1, 3 });
-
-            NativeMultiValueMap<NativeString, int> clone = map.Clone();
-            clone.Add("Even", 8);
-            clone.Add("Odd", 5);
-
-            Assert.AreEqual(7, clone.Length);
-            Assert.AreEqual(10, clone.Slots);
-
-            clone.Remove("Odd");
-            Assert.AreEqual(4, clone.Length);
-
-            Assert.IsTrue(map.ContainsKey("Odd"));
-            Assert.IsTrue(map.ContainsValue(1));
-            Assert.IsTrue(map.ContainsValue(3));
-            Assert.IsFalse(map.ContainsValue(5));
-
-            map.DisposeMapAndKeys();
-            // 'clone' is sharing the memory of the keys, so just call .Dispose() to avoid doble free
-            clone.Dispose();
-        }
-
-        [Test()]
         public void DisposeTest()
         {
             NativeMultiValueMap<NativeString, int> map = new NativeMultiValueMap<NativeString, int>(10);
