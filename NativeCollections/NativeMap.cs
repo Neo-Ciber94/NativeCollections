@@ -1169,6 +1169,7 @@ namespace NativeCollections
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Resize()
         {
             Resize(_capacity * 2);
@@ -1201,11 +1202,13 @@ namespace NativeCollections
             _buffer = newBuffer;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private readonly int GetHash(in TKey key)
         {
             return key.GetHashCode() & int.MaxValue;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int GetBucket(int hashCode, int capacity)
         {
             return hashCode % capacity;

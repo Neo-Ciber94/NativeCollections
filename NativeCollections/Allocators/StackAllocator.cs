@@ -21,7 +21,7 @@ namespace NativeCollections.Allocators
             if (totalBytes <= 0)
                 throw new ArgumentException(totalBytes.ToString(), nameof(totalBytes));
 
-            _buffer = (byte*)Default.Allocate(totalBytes); // + 4 * sizeof(StackAllocatorHeader)
+            _buffer = (byte*)Default.Allocate(totalBytes);
             _length = totalBytes;
             _offset = _buffer;
         }
@@ -50,7 +50,7 @@ namespace NativeCollections.Allocators
 
             if (nextOffset > end)
             {
-                throw new OutOfMemoryException();
+                ThrowOutOfMemory(blockSize);
             }
 
             StackAllocatorHeader* header = (StackAllocatorHeader*)_offset;
@@ -109,7 +109,7 @@ namespace NativeCollections.Allocators
 
                 if (nextOffset > end)
                 {
-                    throw new OutOfMemoryException();
+                    ThrowOutOfMemory(blockSize);
                 }
 
                 int requiredSize = blockSize - header->size;
@@ -194,6 +194,12 @@ namespace NativeCollections.Allocators
             _length = 0;
             _offset = null;
             _prevOffset = null;
+        }
+
+        private void ThrowOutOfMemory(int bytes)
+        {
+            int bytesAvailable = _length - (int)(_buffer - _offset);
+            throw new OutOfMemoryException($"Not enough memory for allocate {bytes} bytes, available: {bytesAvailable} bytes");
         }
 
         ~StackAllocator()

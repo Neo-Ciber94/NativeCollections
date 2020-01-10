@@ -126,7 +126,7 @@ namespace NativeCollections.Allocators
         /// <param name="action">The action to perform over the elements using a span.</param>
         public unsafe void Borrow<T>(int elementCount, bool stackAlloc, SpanAction<T, int> action) where T : unmanaged
         {
-#if X64
+#if BIT64
             const int bytesThreshold = 500000;
 #else
             const int bytesThreshold = 250000;

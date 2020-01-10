@@ -1321,9 +1321,7 @@ namespace NativeCollections
             if (Allocator.IsCached(_allocatorID))
             {
                 GetAllocator()!.Free(_buffer);
-                _buffer = null;
-                _capacity = 0;
-                _count = 0;
+                this = default;
             }
         }
 

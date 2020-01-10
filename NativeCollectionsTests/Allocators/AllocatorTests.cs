@@ -48,7 +48,7 @@ namespace NativeCollections.Allocators.Tests
         [Test()]
         public void DefaultCAllocatorTest()
         {
-            DefaultCAllocator allocator = DefaultCAllocator.Instance;
+            DefaultCppAllocator allocator = DefaultCppAllocator.Instance;
             Assert.AreSame(allocator, Allocator.GetAllocatorByID(allocator.ID));
             Assert.IsTrue(Allocator.IsCached(allocator));
 

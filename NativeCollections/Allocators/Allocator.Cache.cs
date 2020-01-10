@@ -15,7 +15,7 @@ namespace NativeCollections.Allocators
         /// <value>
         /// The default allocator.
         /// </value>
-        unsafe public static Allocator Default { get; }
+        unsafe public static Allocator Default { get; } = DefaultHeapAllocator.Instance;
 
         static Allocator()
         {

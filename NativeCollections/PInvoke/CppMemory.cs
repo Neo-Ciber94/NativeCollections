@@ -5,7 +5,7 @@ namespace NativeCollections.PInvoke
     /// <summary>
     /// Options for memory allocation.
     /// </summary>
-    public enum CMemoryFlags : uint
+    public enum CppMemoryFlags : uint
     {
         /// <summary>
         /// The memory will be unitializated
@@ -17,7 +17,7 @@ namespace NativeCollections.PInvoke
         ZERO_MEMORY
     }
 
-    unsafe public static class CMemory
+    unsafe public static class CppMemory
     {
         /// <summary>
         /// Allocates memory on the heap. Equlivalent to C++ <c>malloc(size_t)</c>.
@@ -25,7 +25,7 @@ namespace NativeCollections.PInvoke
         /// <param name="size">The number of bytes to allocate.</param>
         /// <param name="flags">The allocation options.</param>
         [DllImport("NativeCollectionsCpp.dll")]
-        public static extern void* Malloc(uint size, CMemoryFlags flags);
+        public static extern void* Malloc(uint size, CppMemoryFlags flags);
 
         /// <summary>
         /// Reallocates the memory of the specified memory block. Equivalent to C++ <c>realloc(void*, size_t)</c>.
@@ -34,7 +34,7 @@ namespace NativeCollections.PInvoke
         /// <param name="size">The new size in bytes.</param>
         /// <param name="flags">The allocation options.</param>
         [DllImport("NativeCollectionsCpp.dll")]
-        public static extern void* Realloc(void* pointer, uint size, CMemoryFlags flags);
+        public static extern void* Realloc(void* pointer, uint size, CppMemoryFlags flags);
 
         /// <summary>
         /// Releases the allocated resources. Equivalent to C++ <c>free(void*)</c>.

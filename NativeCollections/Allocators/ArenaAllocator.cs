@@ -44,7 +44,7 @@ namespace NativeCollections.Allocators
 
             if(next > end)
             {
-                throw new OutOfMemoryException();
+                ThrowOutOfMemory(totalBytes);
             }
 
             byte* ptr = _offset;
@@ -83,7 +83,7 @@ namespace NativeCollections.Allocators
 
                     if (next > end)
                     {
-                        throw new OutOfMemoryException();
+                        ThrowOutOfMemory(totalBytes);
                     }
 
                     _offset += totalBytes;
@@ -118,6 +118,12 @@ namespace NativeCollections.Allocators
             _length = 0;
             _offset = null;
             _prevOffset = null;
+        }
+
+        private void ThrowOutOfMemory(int bytes)
+        {
+            int bytesAvailable = _length - (int)(_buffer - _offset);
+            throw new OutOfMemoryException($"Not enough memory for allocate {bytes} bytes, available: {bytesAvailable} bytes");
         }
 
         ~ArenaAllocator()

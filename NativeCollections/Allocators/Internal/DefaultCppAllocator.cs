@@ -3,11 +3,11 @@ using NativeCollections.PInvoke;
 
 namespace NativeCollections.Allocators
 {
-    public sealed class DefaultCAllocator : Allocator
+    public sealed class DefaultCppAllocator : Allocator
     {
-        public static readonly DefaultCAllocator Instance = new DefaultCAllocator();
+        public static readonly DefaultCppAllocator Instance = new DefaultCppAllocator();
 
-        private DefaultCAllocator() : base(true) { }
+        private DefaultCppAllocator() : base(true) { }
 
         public override unsafe void* Allocate(int elementCount, int elementSize = 1, bool initMemory = true)
         {
@@ -18,8 +18,8 @@ namespace NativeCollections.Allocators
                 throw new ArgumentException(elementSize.ToString(), nameof(elementSize));
 
             int bytesCount = elementCount * elementSize;
-            CMemoryFlags flags = initMemory ? CMemoryFlags.ZERO_MEMORY : CMemoryFlags.UNITIALIZATED;
-            void* block = CMemory.Malloc((uint)bytesCount, flags);
+            CppMemoryFlags flags = initMemory ? CppMemoryFlags.ZERO_MEMORY : CppMemoryFlags.UNITIALIZATED;
+            void* block = CppMemory.Malloc((uint)bytesCount, flags);
 
             if(block == null)
             {
@@ -41,8 +41,8 @@ namespace NativeCollections.Allocators
                 throw new ArgumentException("Pointer is null");
 
             int bytesCount = elementCount * elementSize;
-            CMemoryFlags flags = initMemory ? CMemoryFlags.ZERO_MEMORY : CMemoryFlags.UNITIALIZATED;
-            void* block = CMemory.Realloc(pointer, (uint)bytesCount, flags);
+            CppMemoryFlags flags = initMemory ? CppMemoryFlags.ZERO_MEMORY : CppMemoryFlags.UNITIALIZATED;
+            void* block = CppMemory.Realloc(pointer, (uint)bytesCount, flags);
 
             if (block == null)
             {
@@ -57,7 +57,7 @@ namespace NativeCollections.Allocators
             if (pointer == null)
                 throw new ArgumentException("Pointer is null");
 
-            CMemory.Free(pointer);
+            CppMemory.Free(pointer);
         }
     }
 }

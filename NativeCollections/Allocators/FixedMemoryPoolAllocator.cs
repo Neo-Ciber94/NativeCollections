@@ -70,7 +70,7 @@ namespace NativeCollections.Allocators
             }
 
             int totalBytes = chunkCount * bytesPerChunk;
-            _bufferStart = (byte*)Default.Allocate(totalBytes);
+            _bufferStart = (byte*)Default.Allocate(totalBytes, initMemory: false);
             _bufferEnd = _bufferStart + (totalBytes);
             _chunkCount = chunkCount;
             _chunkSize = bytesPerChunk;

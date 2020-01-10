@@ -1019,7 +1019,10 @@ namespace NativeCollections.Tests
         public void CheckMemory()
         {
             DebugAllocator allocator = Allocator.Default as DebugAllocator;
-            Assert.IsTrue(allocator.BytesAllocated == 0, $"Memory Leak: {allocator.BytesAllocated}");
+            if(allocator != null)
+            {
+                Assert.IsTrue(allocator.BytesAllocated == 0, $"Memory Leak: {allocator.BytesAllocated}");
+            }
         }
 
         // Utils
