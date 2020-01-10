@@ -192,6 +192,11 @@ namespace NativeCollections
         {
             get
             {
+                if(_buffer == null)
+                {
+                    throw new InvalidOperationException("NativeString is invalid");
+                }
+
                 if (index < 0 || index > _length)
                     throw new ArgumentOutOfRangeException(nameof(index), index.ToString());
 
@@ -234,6 +239,11 @@ namespace NativeCollections
         /// <returns>An span to this string data.</returns>
         public ReadOnlySpan<char> AsSpan()
         {
+            if(_buffer == null)
+            {
+                return ReadOnlySpan<char>.Empty;
+            }
+
             return new ReadOnlySpan<char>(_buffer, _length);
         }
 
@@ -258,7 +268,9 @@ namespace NativeCollections
         public void Dispose()
         {
             if (_buffer == null)
+            {
                 return;
+            }
 
             Allocator.Default.Free(_buffer);
             this = default;
@@ -270,6 +282,11 @@ namespace NativeCollections
         /// <returns>A <see cref="char"/> array with this instance values.</returns>
         public char[] ToArray()
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeString is invalid");
+            }
+
             char[] array = new char[_length];
             CopyTo(array, 0, _length);
             return array;
@@ -445,7 +462,7 @@ namespace NativeCollections
         {
             if (_buffer == null)
             {
-                return default;
+                throw new InvalidOperationException("NativeString is invalid");
             }
 
             return new NativeString(ref this);
@@ -455,11 +472,6 @@ namespace NativeCollections
         public static implicit operator NativeString(string value)
         {
             return new NativeString(value);
-        }
-
-        public static implicit operator string(NativeString str)
-        {
-            return str.ToString();
         }
 
         public static bool operator ==(NativeString left, NativeString right)
