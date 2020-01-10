@@ -45,9 +45,9 @@ namespace NativeCollections
                 throw new ArgumentException($"initialCapacity should be greater than 0: {initialCapacity}");
             }
 
-            if (allocator.ID <= 0)
+            if (Allocator.IsCached(allocator) is false)
             {
-                throw new ArgumentException("Allocator is not in cache.", "allocator");
+                throw new ArgumentException("Allocator is not in cache.", nameof(allocator));
             }
 
             _buffer = allocator.Allocate<T>(initialCapacity);
@@ -69,9 +69,9 @@ namespace NativeCollections
         /// <param name="allocator">The allocator used for this list.</param>
         public NativeList(in Span<T> elements, Allocator allocator)
         {
-            if (allocator.ID <= 0)
+            if (Allocator.IsCached(allocator) is false)
             {
-                throw new ArgumentException("Allocator is not in cache.", "allocator");
+                throw new ArgumentException("Allocator is not in cache.", nameof(allocator));
             }
 
             if (elements.IsEmpty)
@@ -92,20 +92,9 @@ namespace NativeCollections
 
         internal NativeList(void* pointer, int length, Allocator allocator)
         {
-            if (allocator.ID <= 0)
-            {
-                throw new ArgumentException("Allocator is not in cache.", "allocator");
-            }
-
-            if (pointer == null)
-            {
-                throw new ArgumentException("Invalid pointer");
-            }
-
-            if (length <= 0)
-            {
-                throw new ArgumentException($"Invalid length: {length}", nameof(length));
-            }
+            Debug.Assert(pointer != null);
+            Debug.Assert(length > 0);
+            Debug.Assert(Allocator.IsCached(allocator));
 
             _buffer = (T*)pointer;
             _capacity = length;
@@ -115,10 +104,7 @@ namespace NativeCollections
 
         private NativeList(ref NativeList<T> list)
         {
-            if (!list.IsValid)
-            {
-                throw new ArgumentException("list is invalid");
-            }
+            Debug.Assert(list.IsValid);
 
             Allocator allocator = list.GetAllocator()!;
             T* buffer = allocator.Allocate<T>(list._capacity);
@@ -189,7 +175,10 @@ namespace NativeCollections
         {
             get
             {
-                Debug.Assert(_buffer != null, "NativeList is invalid");
+                if (_buffer == null)
+                {
+                    throw new InvalidOperationException("NativeList is invalid");
+                }
 
                 if (index < 0 || index >= _count)
                     throw new ArgumentOutOfRangeException("index", $"{index}");
@@ -208,15 +197,10 @@ namespace NativeCollections
         /// <returns>A reference to the value</returns>
         public ref T this[Index index]
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                Debug.Assert(_buffer != null, "NativeList is invalid");
-
                 int i = index.IsFromEnd ? _count - index.Value - 1 : index.Value;
-
-                if (i < 0 || i >= _count)
-                    throw new ArgumentOutOfRangeException("index", $"{i}");
-
                 return ref _buffer[i];
             }
         }
@@ -233,6 +217,11 @@ namespace NativeCollections
         {
             get
             {
+                if (_buffer == null)
+                {
+                    throw new InvalidOperationException("NativeList is invalid");
+                }
+
                 var (index, length) = range.GetOffsetAndLength(_count);
 
                 if (index < 0 || index > _count)
@@ -256,15 +245,17 @@ namespace NativeCollections
         /// <param name="value">The value.</param>
         public void Add(T value)
         {
-            Debug.Assert(_buffer != null, "NativeList is invalid");
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
 
             if (_count == _capacity)
             {
                 RequireCapacity(_count + 1);
             }
 
-            ref T startAddress = ref Unsafe.AsRef<T>(_buffer);
-            Unsafe.Add(ref startAddress, _count++) = value;
+            _buffer[_count++] = value;
         }
 
         /// <summary>
@@ -274,7 +265,9 @@ namespace NativeCollections
         public void AddRange(in Span<T> elements)
         {
             if (elements.IsEmpty)
+            {
                 throw new ArgumentException("Empty span");
+            }
 
             void* startAddress = Unsafe.AsPointer(ref MemoryMarshal.GetReference(elements));
             AddRange(startAddress, elements.Length);
@@ -286,21 +279,30 @@ namespace NativeCollections
         /// <param name="elements">The array that holds the elements to add.</param>
         public void AddRange(NativeArray<T> elements)
         {
-            if (elements.IsValid)
+            if (_buffer == null)
+            {
                 throw new ArgumentException("Invalid array");
+            }
 
             AddRange(elements._buffer, elements.Length);
         }
 
         private void AddRange(void* source, int length)
         {
-            Debug.Assert(_buffer != null, "NativeList is invalid");
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
 
             if (source == null)
+            {
                 throw new ArgumentException("Invalid startAddress");
+            }
 
             if (length <= 0)
+            {
                 throw new ArgumentException(nameof(length), length.ToString());
+            }
 
             RequireCapacity(_count + length);
 
@@ -315,9 +317,10 @@ namespace NativeCollections
         /// <param name="index">The index where insert the value.</param>
         /// <param name="value">The value.</param>
         /// <exception cref="ArgumentOutOfRangeException">If the index is lower than 0 or greater than Length.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Insert(int index, T value)
         {
-            InsertRange(index, Unsafe.AsPointer(ref value), 1);
+            InsertRange(index, &value, 1);
         }
 
         /// <summary>
@@ -329,10 +332,14 @@ namespace NativeCollections
         public void InsertRange(int index, Span<T> elements)
         {
             if (_buffer == null)
-                return;
+            {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
 
             if (elements.IsEmpty)
+            {
                 throw new ArgumentException("Empty span");
+            }
 
             void* pointer = Unsafe.AsPointer(ref MemoryMarshal.GetReference(elements));
             InsertRange(index, pointer, elements.Length);
@@ -347,11 +354,15 @@ namespace NativeCollections
         public void InsertRange(int index, NativeArray<T> elements)
         {
             if (_buffer == null)
-                return;
+            {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
 
             if (!elements.IsValid)
+            {
                 throw new ArgumentException("Invalid array");
-           
+            }
+
             InsertRange(index, elements._buffer, elements.Length);
         }
 
@@ -403,13 +414,20 @@ namespace NativeCollections
         /// <exception cref="ArgumentOutOfRangeException">If the range is invalid</exception>
         public void RemoveRange(int start, int end)
         {
-            Debug.Assert(_buffer != null, "NativeList is invalid");
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
 
             if (start < 0 || start > end || start > _count)
+            {
                 throw new ArgumentOutOfRangeException(nameof(start), $"start: {start}, end: {end}");
+            }
 
             if (end < 0 || end > _count)
+            {
                 throw new ArgumentOutOfRangeException(nameof(end), $"start: {start}, end: {end}");
+            }
 
             if (start == 0 && end == _count)
             {
@@ -433,10 +451,15 @@ namespace NativeCollections
         /// <exception cref="ArgumentOutOfRangeException">If the index is negative or greater than Length.</exception>
         public void RemoveAt(int index)
         {
-            Debug.Assert(_buffer != null, "NativeList is invalid");
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
 
             if (index < 0 || index > _count)
+            {
                 throw new ArgumentOutOfRangeException("index", $"{index}");
+            }
 
             _count--;
 
@@ -457,7 +480,10 @@ namespace NativeCollections
         /// <returns>The number of elements removed</returns>
         public int RemoveIf(Predicate<T> predicate)
         {
-            Debug.Assert(_buffer != null, "NativeList is invalid");
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
 
             int removedCount = 0;
             for (int i = 0; i < _count; i++)
@@ -482,7 +508,9 @@ namespace NativeCollections
         public int ReplaceAll(T value, T newValue)
         {
             if (_buffer == null)
-                return 0;
+            {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
 
             return UnsafeUtilities.ReplaceAll(_buffer, 0, _count, value, newValue);
         }
@@ -495,7 +523,10 @@ namespace NativeCollections
         /// <returns>The number of elements replaced.</returns>
         public int ReplaceIf(T newValue, Predicate<T> predicate)
         {
-            Debug.Assert(_buffer != null, "NativeList is invalid");
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
 
             int count = 0;
             for (int i = 0; i < _count; i++)
@@ -516,16 +547,21 @@ namespace NativeCollections
         /// </summary>
         public void Clear()
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
+
             if (_count == 0)
                 return;
 
-            Unsafe.InitBlockUnaligned(_buffer, 0, (uint)(sizeof(T) * _count));
             _count = 0;
         }
 
         /// <summary>
         /// Reverses the order of the content of this list.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Reverse()
         {
             Reverse(0, _count - 1);
@@ -536,6 +572,7 @@ namespace NativeCollections
         /// </summary>
         /// <param name="start">The start index.</param>
         /// <exception cref="ArgumentOutOfRangeException">If the range is invalid.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Reverse(int start)
         {
             Reverse(start, _count - 1);
@@ -549,13 +586,20 @@ namespace NativeCollections
         /// <exception cref="ArgumentOutOfRangeException">If the range is invalid.</exception>
         public void Reverse(int start, int end)
         {
-            Debug.Assert(_buffer != null, "NativeList is invalid");
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
 
             if (start < 0 || start > end || start > _count)
+            {
                 throw new ArgumentOutOfRangeException(nameof(start), $"start: {start}, end: {end}");
+            }
 
             if (end < 0 || end > _count)
+            {
                 throw new ArgumentOutOfRangeException(nameof(end), $"start: {start}, end: {end}");
+            }
 
             UnsafeUtilities.Reverse<T>(_buffer, start, end);
         }
@@ -565,6 +609,7 @@ namespace NativeCollections
         /// </summary>
         /// <param name="value">The value to locate.</param>
         /// <returns>The index of the first match value or -1 if not found.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int IndexOf(T value)
         {
             return IndexOf(value, 0, _count);
@@ -577,6 +622,7 @@ namespace NativeCollections
         /// <param name="start">The start index.</param>
         /// <returns>The index of the first match value or -1 if not found.</returns>
         /// <exception cref="ArgumentOutOfRangeException">If the range is invalid.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int IndexOf(T value, int start)
         {
             return IndexOf(value, start, _count);
@@ -592,16 +638,20 @@ namespace NativeCollections
         /// <exception cref="ArgumentOutOfRangeException">If the range is invalid.</exception>
         public int IndexOf(T value, int start, int end)
         {
-            Debug.Assert(_buffer != null, "NativeList is invalid");
-
-            if (_count == 0)
-                return -1;
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
 
             if (start < 0 || start > end || start > _count)
+            {
                 throw new ArgumentOutOfRangeException(nameof(start), $"start: {start}, end: {end}");
+            }
 
             if (end < 0 || end > _count)
+            {
                 throw new ArgumentOutOfRangeException(nameof(end), $"start: {start}, end: {end}");
+            }
 
             return UnsafeUtilities.IndexOf(_buffer, start, end, value);
         }
@@ -639,16 +689,25 @@ namespace NativeCollections
         /// <exception cref="ArgumentOutOfRangeException">If the range is invalid.</exception>
         public int LastIndexOf(T value, int start, int end)
         {
-            Debug.Assert(_buffer != null, "NativeList is invalid");
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
 
             if (_count == 0)
+            {
                 return -1;
+            }
 
             if (start < 0 || start > end || start > _count)
+            {
                 throw new ArgumentOutOfRangeException(nameof(start), $"start: {start}, end: {end}");
+            }
 
             if (end < 0 || end > _count)
+            {
                 throw new ArgumentOutOfRangeException(nameof(end), $"start: {start}, end: {end}");
+            }
 
             return UnsafeUtilities.LastIndexOf(_buffer, start, end, value);
         }
@@ -738,6 +797,11 @@ namespace NativeCollections
         {
             if (_buffer == null)
             {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
+
+            if (_count == 0)
+            {
                 return Array.Empty<T>();
             }
 
@@ -754,7 +818,7 @@ namespace NativeCollections
         {
             if (_buffer == null)
             {
-                return default;
+                throw new InvalidOperationException("NativeList is invalid");
             }
 
             NativeArray<T> array = new NativeArray<T>(_count, GetAllocator()!);
@@ -772,7 +836,7 @@ namespace NativeCollections
         {
             if (_buffer == null)
             {
-                return default;
+                throw new InvalidOperationException("NativeList is invalid");
             }
 
             if (_count == _capacity || !createNewArrayIfNeeded)
@@ -798,7 +862,7 @@ namespace NativeCollections
         /// <returns>A pointer to this list elements.</returns>
         public T* GetUnsafePointer()
         {
-            return (T*)_buffer;
+            return _buffer;
         }
 
         /// <summary>
@@ -807,7 +871,9 @@ namespace NativeCollections
         public void Dispose()
         {
             if (_buffer == null)
+            {
                 return;
+            }
 
             if (Allocator.IsCached(_allocatorID))
             {
@@ -851,6 +917,11 @@ namespace NativeCollections
         /// <param name="capacity">The expected min capacity.</param>
         public void EnsureCapacity(int capacity)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
+
             if (capacity > _capacity)
             {
                 Resize(capacity);
@@ -859,6 +930,11 @@ namespace NativeCollections
 
         private void RequireCapacity(int min)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
+
             if (min > _capacity)
             {
                 if (min < _capacity * 2)
@@ -874,9 +950,7 @@ namespace NativeCollections
 
         private void Resize(int newCapacity)
         {
-            if (_buffer == null)
-                return;
-
+            Debug.Assert(_buffer != null);
             _buffer = GetAllocator()!.Reallocate(_buffer, newCapacity);
             _capacity = newCapacity;
         }
@@ -927,7 +1001,7 @@ namespace NativeCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeList<T> Clone()
         {
-            return _buffer == null? default : new NativeList<T>(ref this);
+            return _buffer == null? throw new InvalidOperationException("NativeList is invalid") : new NativeList<T>(ref this);
         }
 
         /// <summary>
@@ -938,45 +1012,6 @@ namespace NativeCollections
         public RefEnumerator<T> GetEnumerator()
         {
             return _buffer == null? default : new RefEnumerator<T>(_buffer, _count);
-        }
-    }
-
-    /// <summary>
-    /// Utilities for <see cref="NativeList{T}"/>.
-    /// </summary>
-    public static partial class NativeList
-    {
-        /// <summary>
-        /// Creates a new <see cref="NativeList{T}"/> with the specified elements.
-        /// </summary>
-        /// <typeparam name="T">Type of the elements</typeparam>
-        /// <param name="args">The arguments.</param>
-        /// <returns>A new NativeList with the using args.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        unsafe public static NativeList<T> Create<T>(params T[] args) where T : unmanaged
-        {
-            return Create(Allocator.Default, args);
-        }
-
-        /// <summary>
-        /// Creates a new <see cref="NativeList{T}"/> with the specified elements.
-        /// </summary>
-        /// <typeparam name="T">Type of the elements</typeparam>
-        /// <param name="allocator">The allocator to use.</param>
-        /// <param name="args">The arguments.</param>
-        /// <returns>A new NativeList with the using args.</returns>
-        unsafe public static NativeList<T> Create<T>(Allocator allocator, params T[] args) where T : unmanaged
-        {
-            if (args.Length == 0)
-            {
-                return default;
-            }
-
-            int length = args.Length;
-            void* source = Unsafe.AsPointer(ref args[0]);
-            void* buffer = allocator.Allocate<T>(length);
-            Unsafe.CopyBlockUnaligned(buffer, source, (uint)(sizeof(T) * length));
-            return new NativeList<T>(buffer, length, allocator);
         }
     }
 }

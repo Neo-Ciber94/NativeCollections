@@ -46,9 +46,9 @@ namespace NativeCollections
                 throw new ArgumentException("initialCapacity should be greater than 0.", nameof(initialCapacity));
             }
 
-            if (allocator.ID <= 0)
+            if (Allocator.IsCached(allocator) is false)
             {
-                throw new ArgumentException("Allocator is not in cache.", "allocator");
+                throw new ArgumentException("Allocator is not in cache.", nameof(allocator));
             }
 
             _buffer = allocator.Allocate<T>(initialCapacity);
@@ -73,9 +73,9 @@ namespace NativeCollections
         /// <exception cref="ArgumentException">If the allocator is no in cache.
         public NativeDeque(Span<T> elements, Allocator allocator)
         {
-            if (allocator.ID <= 0)
+            if (Allocator.IsCached(allocator) is false)
             {
-                throw new ArgumentException("Allocator is not in cache.", "allocator");
+                throw new ArgumentException("Allocator is not in cache.", nameof(allocator));
             }
 
             if (elements.IsEmpty)
@@ -99,20 +99,9 @@ namespace NativeCollections
 
         internal NativeDeque(void* pointer, int length, Allocator allocator)
         {
-            if (allocator.ID <= 0)
-            {
-                throw new ArgumentException("Allocator is not in cache.", "allocator");
-            }
-
-            if (pointer == null)
-            {
-                throw new ArgumentException("Invalid pointer");
-            }
-
-            if (length <= 0)
-            {
-                throw new ArgumentException($"Invalid length: {length}", nameof(length));
-            }
+            Debug.Assert(pointer != null);
+            Debug.Assert(length > 0);
+            Debug.Assert(Allocator.IsCached(allocator));
 
             _buffer = (T*)pointer;
             _capacity = length;
@@ -124,10 +113,7 @@ namespace NativeCollections
 
         private NativeDeque(ref NativeDeque<T> deque)
         {
-            if (!deque.IsValid)
-            {
-                throw new ArgumentException("deque is invalid");
-            }
+            Debug.Assert(deque.IsValid);
 
             Allocator allocator = deque.GetAllocator()!;
             T* buffer = allocator.Allocate<T>(deque._capacity);
@@ -189,7 +175,9 @@ namespace NativeCollections
         public void AddFirst(T value)
         {
             if (_buffer == null)
-                return;
+            {
+                throw new ArgumentException("NativeDeque is invalid");
+            }
 
             if (_count == _capacity)
             {
@@ -216,7 +204,9 @@ namespace NativeCollections
         public void AddLast(T value)
         {
             if (_buffer == null)
-                return;
+            {
+                throw new ArgumentException("NativeDeque is invalid");
+            }
 
             if (_count == _capacity)
             {
@@ -303,7 +293,12 @@ namespace NativeCollections
         /// <returns><c>true</c> if the value was removed.</returns>
         public bool TryRemoveFirst(out T value)
         {
-            if(_count == 1)
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeDeque is invalid");
+            }
+
+            if (_count == 1)
             {
                 value = _buffer[_head];
                 _count--;
@@ -330,7 +325,12 @@ namespace NativeCollections
         /// <returns><c>true</c> if the value was removed.</returns>
         public bool TryRemoveLast(out T value)
         {
-            if(_count == 1)
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeDeque is invalid");
+            }
+
+            if (_count == 1)
             {
                 value = _buffer[_tail];
                 _count--;
@@ -357,6 +357,11 @@ namespace NativeCollections
         /// <returns><c>true</c> if the value exists.</returns>
         public bool TryPeekFirst(out T value)
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeDeque is invalid");
+            }
+
             if (_count > 0)
             {
                 value = _buffer[_head];
@@ -374,6 +379,11 @@ namespace NativeCollections
         /// <returns><c>true</c> if the value exists.</returns>
         public bool TryPeekLast(out T value)
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeDeque is invalid");
+            }
+
             if (_count > 0)
             {
                 value = _buffer[_tail];
@@ -389,10 +399,14 @@ namespace NativeCollections
         /// </summary>
         public void Clear()
         {
-            if(_count == 0)
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeDeque is invalid");
+            }
+
+            if (_count == 0)
                 return;
 
-            Unsafe.InitBlockUnaligned(_buffer, 0, (uint)(sizeof(T) * _capacity));
             _count = 0;
             _head = 0;
             _tail = 0;
@@ -407,7 +421,12 @@ namespace NativeCollections
         /// </returns>
         public bool Contains(T value)
         {
-            if(_count == 0)
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeDeque is invalid");
+            }
+
+            if (_count == 0)
             {
                 return false;
             }
@@ -431,6 +450,11 @@ namespace NativeCollections
         /// </summary>
         public void Reverse()
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeDeque is invalid");
+            }
+
             if (_count == 0)
                 return;
 
@@ -464,6 +488,11 @@ namespace NativeCollections
         /// <param name="capacity">The min capacity.</param>
         public void TrimExcess(int capacity)
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeDeque is invalid");
+            }
+
             if (capacity < _count)
             {
                 return;
@@ -487,7 +516,7 @@ namespace NativeCollections
                 throw new ArgumentException("Span is empty");
 
             if (_buffer == null)
-                throw new InvalidOperationException("NativeQueue is invalid");
+                throw new InvalidOperationException("NativeDeque is invalid");
 
             if (destinationIndex < 0 || destinationIndex > span.Length)
                 throw new ArgumentOutOfRangeException(nameof(destinationIndex), destinationIndex.ToString());
@@ -513,7 +542,12 @@ namespace NativeCollections
         /// <param name="capacity">The min capacity.</param>
         public void EnsureCapcity(int capacity)
         {
-            if(capacity > _capacity)
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeDeque is invalid");
+            }
+
+            if (capacity > _capacity)
             {
                 Resize(capacity);
             }
@@ -525,6 +559,11 @@ namespace NativeCollections
         /// <returns>An newly allocated array with the elements of this instance.</returns>
         public T[] ToArray()
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeDeque is invalid");
+            }
+
             if (_count == 0)
             {
                 return Array.Empty<T>();
@@ -541,6 +580,11 @@ namespace NativeCollections
         /// <returns>A new array with the elements of this instance.</returns>
         public NativeArray<T> ToNativeArray()
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeDeque is invalid");
+            }
+
             if (_count == 0)
                 return default;
 
@@ -566,7 +610,7 @@ namespace NativeCollections
         {
             if (_buffer == null)
             {
-                return default;
+                throw new ArgumentException("NativeDeque is invalid");
             }
 
             if (_count == _capacity || !createNewArrayIfNeeded)
@@ -592,7 +636,9 @@ namespace NativeCollections
         public void Dispose()
         {
             if (_buffer == null)
+            {
                 return;
+            }
 
             if (Allocator.IsCached(_allocatorID))
             {
@@ -648,9 +694,7 @@ namespace NativeCollections
 
         private void Resize(int capacity)
         {
-            if (_buffer == null)
-                return;
-
+            Debug.Assert(_buffer != null);
             T* newBuffer = GetAllocator()!.Allocate<T>(capacity);
 
             int i = 0;
@@ -676,7 +720,7 @@ namespace NativeCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeDeque<T> Clone()
         {
-            return _buffer == null ? default : new NativeDeque<T>(ref this);
+            return _buffer == null? throw new ArgumentException("NativeDeque is invalid"): new NativeDeque<T>(ref this);
         }
 
         /// <summary>

@@ -89,10 +89,10 @@ namespace NativeCollections.Tests
 
             str.CopyTo(span, 0, 5);
             Assert.AreEqual('H', span[0]);
-            Assert.AreEqual('e', span[0]);
-            Assert.AreEqual('l', span[0]);
-            Assert.AreEqual('l', span[0]);
-            Assert.AreEqual('o', span[0]);
+            Assert.AreEqual('e', span[1]);
+            Assert.AreEqual('l', span[2]);
+            Assert.AreEqual('l', span[3]);
+            Assert.AreEqual('o', span[4]);
         }
 
         [Test()]

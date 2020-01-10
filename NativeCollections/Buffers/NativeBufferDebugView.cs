@@ -16,7 +16,7 @@ namespace NativeCollections.Buffers
 
         unsafe private byte[] ToArray()
         {
-            byte[] array = new byte[_buffer.TotalBytes];
+            byte[] array = new byte[_buffer.Capacity];
             for(int i = 0; i < array.Length; i++)
             {
                 array[i] = _buffer._buffer[i];

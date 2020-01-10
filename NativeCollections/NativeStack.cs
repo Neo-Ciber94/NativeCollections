@@ -44,9 +44,9 @@ namespace NativeCollections
                 throw new ArgumentException($"capacity must be greater than 0: {initialCapacity}");
             }
 
-            if (allocator.ID <= 0)
+            if (Allocator.IsCached(allocator) is false)
             {
-                throw new ArgumentException("Allocator is not in cache.", "allocator");
+                throw new ArgumentException("Allocator is not in cache.", nameof(allocator));
             }
 
             _buffer = allocator.Allocate<T>(initialCapacity);
@@ -68,9 +68,9 @@ namespace NativeCollections
         /// <param name="allocator">The allocator.</param>
         public NativeStack(Span<int> elements, Allocator allocator)
         {
-            if (allocator.ID <= 0)
+            if (Allocator.IsCached(allocator) is false)
             {
-                throw new ArgumentException("Allocator is not in cache.", "allocator");
+                throw new ArgumentException("Allocator is not in cache.", nameof(allocator));
             }
 
             if (elements.IsEmpty)
@@ -91,20 +91,9 @@ namespace NativeCollections
 
         internal NativeStack(void* pointer, int length, Allocator allocator)
         {
-            if (pointer == null)
-            {
-                throw new ArgumentException("pointer is null");
-            }
-
-            if (length <= 0)
-            {
-                throw new ArgumentException($"length must be greater than 0: {length}");
-            }
-
-            if (allocator.ID <= 0)
-            {
-                throw new ArgumentException("Allocator is not in cache.", "allocator");
-            }
+            Debug.Assert(pointer != null);
+            Debug.Assert(length > 0);
+            Debug.Assert(Allocator.IsCached(allocator));
 
             _buffer = (T*)pointer;
             _capacity = length;
@@ -114,10 +103,7 @@ namespace NativeCollections
 
         private NativeStack(ref NativeStack<T> stack)
         {
-            if (!stack.IsValid)
-            {
-                throw new ArgumentException("stack is invalid");
-            }
+            Debug.Assert(stack.IsValid);
 
             Allocator allocator = stack.GetAllocator()!;
             T* buffer = allocator.Allocate<T>(stack._capacity);
@@ -176,6 +162,11 @@ namespace NativeCollections
         /// <param name="value">The value.</param>
         public void Push(T value)
         {
+            if(_buffer == null)
+            {
+                throw new InvalidOperationException("NativeStack is invalid");
+            }
+
             if (_count == _capacity)
             {
                 RequireCapacity(_count + 1);
@@ -192,12 +183,16 @@ namespace NativeCollections
         /// <exception cref="InvalidOperationException">if the stack is empty</exception>
         public T Pop()
         {
-            if (_count == 0)
-                throw new InvalidOperationException("Stack is empty");
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeStack is invalid");
+            }
 
-            ref T startAddress = ref Unsafe.AsRef<T>(_buffer);
-            ref T value = ref Unsafe.Add(ref startAddress, _count - 1);
-            Unsafe.Add(ref startAddress, _count--) = default;
+            if (!TryPop(out T value))
+            {
+                throw new InvalidOperationException("Stack is empty");
+            }
+
             return value;
         }
 
@@ -208,11 +203,16 @@ namespace NativeCollections
         /// <exception cref="InvalidOperationException">if the stack is empty</exception>
         public T Peek()
         {
-            if (_count == 0)
-                throw new InvalidOperationException("Stack is empty");
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeStack is invalid");
+            }
 
-            ref T startAddress = ref Unsafe.AsRef<T>(_buffer);
-            ref T value = ref Unsafe.Add(ref startAddress, _count - 1);
+            if (!TryPeek(out T value))
+            {
+                throw new InvalidOperationException("Stack is empty");
+            }
+
             return value;
         }
 
@@ -262,12 +262,16 @@ namespace NativeCollections
         /// </summary>
         public void Clear()
         {
-            if (_count == 0)
-                return;
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeStack is invalid");
+            }
 
-            ref byte pointer = ref Unsafe.As<T, byte>(ref Unsafe.AsRef<T>(_buffer));
-            uint length = (uint)(sizeof(T) * _count);
-            Unsafe.InitBlockUnaligned(ref pointer, 0, length);
+            if (_count == 0)
+            {
+                return;
+            }
+
             _count = 0;
         }
 
@@ -280,10 +284,12 @@ namespace NativeCollections
         /// </returns>
         public bool Contains(T value)
         {
-            if (_count == 0)
-                return false;
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeStack is invalid");
+            }
 
-            return UnsafeUtilities.IndexOf(_buffer, 0, _count, value) >= 0;
+            return _count == 0 ? false : UnsafeUtilities.IndexOf(_buffer, 0, _count, value) >= 0;
         }
 
         /// <summary>
@@ -300,7 +306,12 @@ namespace NativeCollections
         /// <param name="capacity">The min capacity.</param>
         public void TrimExcess(int capacity)
         {
-            if(capacity >= _count)
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeStack is invalid");
+            }
+
+            if (capacity >= _count)
             {
                 Resize(capacity);
             }
@@ -312,6 +323,11 @@ namespace NativeCollections
         /// <param name="capacity">The min capacity.</param>
         public void EnsureCapacity(int capacity)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeStack is invalid");
+            }
+
             if (capacity > _capacity)
             {
                 Resize(capacity);
@@ -352,7 +368,9 @@ namespace NativeCollections
         public void Dispose()
         {
             if (_buffer == null)
+            {
                 return;
+            }
 
             if (Allocator.IsCached(_allocatorID))
             {
@@ -376,6 +394,11 @@ namespace NativeCollections
         /// <returns>An newly allocated array with the elements of this instance.</returns>
         public T[] ToArray()
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeStack is invalid");
+            }
+
             if (_count == 0)
             {
                 return Array.Empty<T>();
@@ -392,8 +415,15 @@ namespace NativeCollections
         /// <returns>A new array with the elements of this instance.</returns>
         public NativeArray<T> ToNativeArray()
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeStack is invalid");
+            }
+
             if (_count == 0)
+            {
                 return default;
+            }
 
             NativeArray<T> array = new NativeArray<T>(_count, GetAllocator()!);
             void* src = _buffer;
@@ -412,7 +442,7 @@ namespace NativeCollections
         {
             if (_buffer == null)
             {
-                return default;
+                throw new InvalidOperationException("NativeStack is invalid");
             }
 
             if (_count == _capacity || !createNewArrayIfNeeded)
@@ -469,7 +499,7 @@ namespace NativeCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeStack<T> Clone()
         {
-            return _buffer == null? default : new NativeStack<T>(ref this);
+            return _buffer == null? throw new InvalidOperationException("NativeStack is invalid") : new NativeStack<T>(ref this);
         }
 
         private void RequireCapacity(int min)
@@ -489,9 +519,7 @@ namespace NativeCollections
 
         private void Resize(int newCapacity)
         {
-            if (_buffer == null)
-                return;
-
+            Debug.Assert(_buffer != null);
             newCapacity = newCapacity < 4 ? 4 : newCapacity;
             _buffer = GetAllocator()!.Reallocate(_buffer, newCapacity);
             _capacity = newCapacity;

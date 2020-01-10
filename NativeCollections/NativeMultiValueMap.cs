@@ -45,10 +45,7 @@ namespace NativeCollections
 
         private NativeMultiValueMap(ref NativeMultiValueMap<TKey, TValue> multiValueMap)
         {
-            if (!multiValueMap.IsValid)
-            {
-                throw new ArgumentException("the map is invalid");
-            }
+            Debug.Assert(multiValueMap.IsValid);
 
             Allocator allocator = multiValueMap.GetAllocator()!;
             int slots = multiValueMap.Slots;
@@ -57,7 +54,7 @@ namespace NativeCollections
             var source = multiValueMap._map._buffer;
             Unsafe.CopyBlockUnaligned(buffer, source, (uint)(sizeOfEntry * slots));
 
-            for(int i = 0; i < slots; i++)
+            for(int i = 0; i < slots; ++i)
             {
                 ref var entry = ref buffer[i];
                 if(entry.hashCode >= 0)
@@ -66,7 +63,7 @@ namespace NativeCollections
                 }
             }
 
-            _map = new NativeMap<TKey, NativeList<TValue>>(ref multiValueMap._map, buffer);
+            _map = new NativeMap<TKey, NativeList<TValue>>(ref multiValueMap._map, buffer);            
             _count = multiValueMap._count;
         }
 
@@ -415,7 +412,7 @@ namespace NativeCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeMultiValueMap<TKey, TValue> Clone()
         {
-            return _map.IsValid is false? default : new NativeMultiValueMap<TKey, TValue>(ref this);
+            return _map.IsValid is false? throw new InvalidOperationException("NativeMultiValueMap is invalid") : new NativeMultiValueMap<TKey, TValue>(ref this);
         }
 
         /// <summary>

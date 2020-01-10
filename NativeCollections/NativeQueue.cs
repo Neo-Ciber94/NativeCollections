@@ -46,9 +46,9 @@ namespace NativeCollections
                 throw new ArgumentException($"capacity must be greater than 0: {initialCapacity}");
             }
 
-            if (allocator.ID <= 0)
+            if (Allocator.IsCached(allocator) is false)
             {
-                throw new ArgumentException("Allocator is not in cache.", "allocator");
+                throw new ArgumentException("Allocator is not in cache.", nameof(allocator));
             }
 
             _buffer = (T*)allocator.Allocate(initialCapacity, sizeof(T));
@@ -70,9 +70,9 @@ namespace NativeCollections
         /// <param name="allocator">The allocator.</param>
         public NativeQueue(Span<int> elements, Allocator allocator)
         {
-            if (allocator.ID <= 0)
+            if (Allocator.IsCached(allocator) is false)
             {
-                throw new ArgumentException("Allocator is not in cache.", "allocator");
+                throw new ArgumentException("Allocator is not in cache.", nameof(allocator));
             }
 
             if (elements.IsEmpty)
@@ -95,10 +95,7 @@ namespace NativeCollections
 
         private NativeQueue(ref NativeQueue<T> queue)
         {
-            if (!queue.IsValid)
-            {
-                throw new ArgumentException("queue is invalid");
-            }
+            Debug.Assert(queue.IsValid);
 
             Allocator allocator = queue.GetAllocator()!;
             T* buffer = allocator.Allocate<T>(queue._capacity);
@@ -159,6 +156,11 @@ namespace NativeCollections
         /// <param name="value">The value.</param>
         public void Enqueue(T value)
         {
+            if(_buffer == null)
+            {
+                throw new InvalidOperationException("NativeQueue is invalid");
+            }
+
             if (_count == _capacity)
             {
                 RequireCapacity(_count + 1);
@@ -177,14 +179,16 @@ namespace NativeCollections
         /// <exception cref="InvalidOperationException">If the Queue is empty</exception>
         public T Dequeue()
         {
-            if (_count == 0)
-                throw new InvalidOperationException("The queue is empty");
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeQueue is invalid");
+            }
 
-            ref T startAddress = ref Unsafe.AsRef<T>(_buffer);
-            T value = Unsafe.Add(ref startAddress, _head);
-            Unsafe.Add(ref startAddress, _head) = default;
-            _head = (_head + 1) % _capacity;
-            _count--;
+            if (!TryDequeue(out T value))
+            {
+                throw new InvalidOperationException("The queue is empty");
+            }
+
             return value;
         }
 
@@ -195,11 +199,16 @@ namespace NativeCollections
         /// <exception cref="InvalidOperationException">If the Queue is empty</exception>
         public T Peek()
         {
-            if (_count == 0)
-                throw new InvalidOperationException("The queue is empty");
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeQueue is invalid");
+            }
 
-            ref T startAddress = ref Unsafe.AsRef<T>(_buffer);
-            T value = Unsafe.Add(ref startAddress, _head);
+            if (!TryPeek(out T value))
+            {
+                throw new InvalidOperationException("The queue is empty");
+            }
+
             return value;
         }
 
@@ -251,10 +260,16 @@ namespace NativeCollections
         /// </summary>
         public void Clear()
         {
-            if(_count == 0)
-                return;
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeQueue is invalid");
+            }
 
-            Unsafe.InitBlockUnaligned(_buffer, 0, (uint)(sizeof(T) * _capacity));
+            if (_count == 0)
+            {
+                return;
+            }
+
             _head = 0;
             _tail = 0;
             _count = 0;
@@ -269,7 +284,12 @@ namespace NativeCollections
         /// </returns>
         public bool Contains(T value)
         {
-            if(_count == 0)
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeQueue is invalid");
+            }
+
+            if (_count == 0)
             {
                 return false;
             }
@@ -310,6 +330,11 @@ namespace NativeCollections
         /// <param name="capacity">The min capacity.</param>
         public void TrimExcess(int capacity)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeQueue is invalid");
+            }
+
             if (capacity >= _count)
             {
                 Resize(capacity);
@@ -322,6 +347,11 @@ namespace NativeCollections
         /// <returns>An newly allocated array with the elements of this instance.</returns>
         public T[] ToArray()
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeQueue is invalid");
+            }
+
             if (_count == 0)
             {
                 return Array.Empty<T>();
@@ -338,8 +368,15 @@ namespace NativeCollections
         /// <returns>A new array with the elements of this instance.</returns>
         public NativeArray<T> ToNativeArray()
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeQueue is invalid");
+            }
+
             if (_count == 0)
+            {
                 return default;
+            }
 
             NativeArray<T> array = new NativeArray<T>(_count, GetAllocator()!);
             int i = 0;
@@ -370,7 +407,7 @@ namespace NativeCollections
         {
             if (_buffer == null)
             {
-                return default;
+                throw new InvalidOperationException("NativeQueue is invalid");
             }
 
             if (_count == _capacity || !createNewArrayIfNeeded)
@@ -436,6 +473,11 @@ namespace NativeCollections
         /// <param name="capacity">The min capacity.</param>
         public void EnsureCapacity(int capacity)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeQueue is invalid");
+            }
+
             if (capacity > _capacity)
             {
                 Resize(capacity);
@@ -459,18 +501,14 @@ namespace NativeCollections
 
         private void Resize(int newCapacity)
         {
-            if (_buffer == null)
-                return;
-
-            T* newBuffer = (T*)GetAllocator()!.Allocate<T>(newCapacity);
-            ref T destination = ref Unsafe.AsRef<T>(newBuffer);
-            ref T source = ref Unsafe.AsRef<T>(_buffer);
+            Debug.Assert(_buffer != null);
+            T* newBuffer = GetAllocator()!.Allocate<T>(newCapacity);
 
             int next = _head;
             int i = 0;
             do
             {
-                Unsafe.Add(ref destination, i) = Unsafe.Add(ref source, next);
+                newBuffer[i] = _buffer[next];
                 ++i;
 
                 next = (next + 1) % _capacity;
@@ -494,7 +532,9 @@ namespace NativeCollections
         public void Dispose()
         {
             if (_buffer == null)
+            {
                 return;
+            }
 
             if (Allocator.IsCached(_allocatorID))
             {
@@ -549,7 +589,7 @@ namespace NativeCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeQueue<T> Clone()
         {
-            return _buffer == null ? default : new NativeQueue<T>(ref this);
+            return _buffer == null ? throw new InvalidOperationException("NativeQueue is invalid") : new NativeQueue<T>(ref this);
         }
 
         /// <summary>

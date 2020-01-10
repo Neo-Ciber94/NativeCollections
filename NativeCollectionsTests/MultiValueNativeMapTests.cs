@@ -311,7 +311,8 @@ namespace NativeCollections.Tests
             Assert.IsFalse(map.ContainsValue(5));
 
             map.DisposeMapAndKeys();
-            clone.DisposeMapAndKeys();
+            // 'clone' is sharing the memory of the keys, so just call .Dispose() to avoid doble free
+            clone.Dispose();
         }
 
         [Test()]

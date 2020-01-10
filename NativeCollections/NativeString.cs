@@ -40,16 +40,13 @@ namespace NativeCollections
             if (string.IsNullOrEmpty(str))
             {
                 this = default;
+                return;
             }
-            else
+
+            fixed (char* p = str)
             {
-                fixed (char* p = str)
-                {
-                    int length = str.Length;
-                    _buffer = allocator.Allocate<char>(length);
-                    Unsafe.CopyBlockUnaligned(_buffer, p, (uint)(sizeof(char) * length));
-                    this = new NativeString(_buffer, length, allocator);
-                }
+                int length = str.Length;
+                this = new NativeString(p, length, allocator);
             }
         }
 
@@ -69,12 +66,11 @@ namespace NativeCollections
             if (span.IsEmpty)
             {
                 this = default;
+                return;
             }
-            else
-            {
-                char* p = (char*)Unsafe.AsPointer(ref span.GetPinnableReference());
-                this = new NativeString(p, span.Length, allocator);
-            }
+
+            char* src = (char*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+            this = new NativeString(src, span.Length, allocator);
         }
 
         /// <summary>
@@ -93,28 +89,15 @@ namespace NativeCollections
             if (span.IsEmpty)
             {
                 this = default;
+                return;
             }
-            else
-            {
-                char* p = (char*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
-                this = new NativeString(p, span.Length, allocator);
-            }
+
+            char* src = (char*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+            this = new NativeString(src, span.Length, allocator);
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="NativeString"/> struct.
-        /// </summary>
-        /// <param name="pointer">The pointer.</param>
-        /// <param name="length">The length.</param>
         public NativeString(char* pointer, int length) : this(pointer, length, Allocator.Default) { }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="NativeString"/> struct.
-        /// </summary>
-        /// <param name="pointer">The pointer.</param>
-        /// <param name="length">The length.</param>
-        /// <param name="allocator">The allocator.</param>
-        /// <exception cref="ArgumentException">If the pointer is null, length is 0 or the allocator is not in cache.</exception>
         public NativeString(char* pointer, int length, Allocator allocator)
         {
             if(pointer == null && length == 0)
@@ -133,12 +116,14 @@ namespace NativeCollections
                 throw new ArgumentException("length cannot be negative or zero");
             }
 
-            if(allocator.ID <= 0)
+            if(Allocator.IsCached(allocator) is false)
             {
                 throw new ArgumentException("Allocator is not in cache");
             }
 
-            _buffer = pointer;
+            char* buffer = allocator.Allocate<char>(length);
+            Unsafe.CopyBlockUnaligned(buffer, pointer, (uint)(sizeof(char) * length));
+            _buffer = buffer;
             _length = length;
             _allocatorID = allocator.ID;
         }

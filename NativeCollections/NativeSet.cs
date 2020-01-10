@@ -53,9 +53,9 @@ namespace NativeCollections
                 throw new ArgumentException("initialCapacity should be greater than 0.", nameof(initialCapacity));
             }
 
-            if (allocator.ID <= 0)
+            if (Allocator.IsCached(allocator) is false)
             {
-                throw new ArgumentException("Allocator is not in cache.", "allocator");
+                throw new ArgumentException("Allocator is not in cache.", nameof(allocator));
             }
 
             _buffer = (Slot*)allocator.Allocate(initialCapacity, sizeof(Slot));
@@ -82,9 +82,9 @@ namespace NativeCollections
         /// <exception cref="ArgumentException">If the capacity is negative or 0, or if the allocator is not in cache.</exception>
         public NativeSet(in Span<T> elements, Allocator allocator)
         {
-            if (allocator.ID <= 0)
+            if (Allocator.IsCached(allocator) is false)
             {
-                throw new ArgumentException("Allocator is not in cache.", "allocator");
+                throw new ArgumentException("Allocator is not in cache.", nameof(allocator));
             }
 
             if (elements.IsEmpty)
@@ -111,10 +111,7 @@ namespace NativeCollections
 
         private NativeSet(ref NativeSet<T> set)
         {
-            if (!set.IsValid)
-            {
-                throw new ArgumentException("set is invalid");
-            }
+            Debug.Assert(set.IsValid);
 
             Allocator allocator = set.GetAllocator()!;
             Slot* buffer = allocator.Allocate<Slot>(set._capacity);
@@ -208,6 +205,11 @@ namespace NativeCollections
         /// <returns><c>true</c> if the value was removed.</returns>
         public bool Remove(T value)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
+
             if (_count == 0)
                 return false;
 
@@ -253,7 +255,9 @@ namespace NativeCollections
         public int RemoveIf(Predicate<T> predicate)
         {
             if (_buffer == null)
-                return 0;
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
 
             int count = 0;
             foreach (ref var e in this)
@@ -273,10 +277,17 @@ namespace NativeCollections
         /// </summary>
         public void Clear()
         {
-            if (_count == 0)
-                return;
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
 
-            Unsafe.InitBlockUnaligned(_buffer, 0, (uint)(sizeof(Slot) * _count));
+            if (_count == 0)
+            {
+                return;
+            }
+
+            //Unsafe.InitBlockUnaligned(_buffer, 0, (uint)(sizeof(Slot) * _count));
             _count = 0;
             _freeCount = 0;
             _freeList = -1;
@@ -293,8 +304,15 @@ namespace NativeCollections
         /// </returns>
         public bool Contains(T value)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
+
             if (_count == 0)
+            {
                 return false;
+            }
 
             var comparer = EqualityComparer<T>.Default;
             int hashCode = GetHash(value);
@@ -324,6 +342,11 @@ namespace NativeCollections
         /// </returns>
         public bool ContainsAll(in Span<T> elements)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
+
             foreach (ref var e in elements)
             {
                 if (!Contains(e))
@@ -342,7 +365,9 @@ namespace NativeCollections
         public void UnionWith(in Span<T> elements)
         {
             if (_buffer == null)
-                return;
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
 
             foreach (ref var e in elements)
             {
@@ -357,7 +382,9 @@ namespace NativeCollections
         public void IntersectionWith(in Span<T> elements)
         {
             if (_buffer == null)
-                return;
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
 
             using NativeArray<T> copy = ToNativeArray();
 
@@ -377,7 +404,9 @@ namespace NativeCollections
         public void DifferenceWith(in Span<T> elements)
         {
             if (_buffer == null)
-                return;
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
 
             foreach (ref var e in elements)
             {
@@ -392,7 +421,9 @@ namespace NativeCollections
         public void SymmetricDifferenceWith(in Span<T> elements)
         {
             if (_buffer == null)
-                return;
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
 
             foreach (ref var e in elements)
             {
@@ -417,6 +448,11 @@ namespace NativeCollections
         /// <param name="capacity">The min capacity.</param>
         public void TrimExcess(int capacity)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
+
             if (capacity < Length)
             {
                 return;
@@ -464,6 +500,11 @@ namespace NativeCollections
         /// <param name="capacity">The min capacity.</param>
         public void EnsureCapacity(int capacity)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
+
             if (capacity > _capacity)
             {
                 Resize(capacity);
@@ -509,6 +550,11 @@ namespace NativeCollections
         /// <returns>An newly allocated array with the elements of this instance.</returns>
         public T[] ToArray()
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
+
             if (_count == 0)
             {
                 return Array.Empty<T>();
@@ -525,6 +571,11 @@ namespace NativeCollections
         /// <returns>A new array with the elements of this instance.</returns>
         public NativeArray<T> ToNativeArray()
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
+
             if (_count == 0)
                 return default;
 
@@ -548,7 +599,7 @@ namespace NativeCollections
         {
             if (_buffer == null)
             {
-                return default;
+                throw new InvalidOperationException("NativeSet is invalid");
             }
 
             if (_count == _capacity || !createNewArrayIfNeeded)
@@ -612,7 +663,7 @@ namespace NativeCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeSet<T> Clone()
         {
-            return _buffer == null ? default : new NativeSet<T>(ref this);
+            return _buffer == null ? throw new InvalidOperationException("NativeSet is invalid") : new NativeSet<T>(ref this);
         }
 
         /// <summary>
@@ -621,7 +672,9 @@ namespace NativeCollections
         public void Dispose()
         {
             if (_buffer == null)
+            {
                 return;
+            }
 
             if (Allocator.IsCached(_allocatorID))
             {
@@ -640,8 +693,10 @@ namespace NativeCollections
 
         private bool AddIfAbsent(T value)
         {
-            if (_buffer == null)
-                return false; 
+            if(_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
 
             var comparer = EqualityComparer<T>.Default;
             int hashCode = GetHash(value);
@@ -691,9 +746,7 @@ namespace NativeCollections
 
         private void Resize(int newCapacity)
         {
-            if (_buffer == null)
-                return;
-
+            Debug.Assert(_buffer != null);
             Slot* newBuffer = GetAllocator()!.Allocate<Slot>(newCapacity);
             Unsafe.CopyBlock(newBuffer, _buffer, (uint)(sizeof(Slot) * _count));
             GetAllocator()!.Free(_buffer);

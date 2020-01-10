@@ -41,15 +41,15 @@ namespace NativeCollections.Tests
             {
                 for (int i = 0; i < 5; i++)
                 {
-                    *p++ = i;
+                    p[i] = i + 1;
                 }
 
                 Span<int> span = new Span<int>(p, 5);
-                Assert.AreEqual(0, span[0]);
-                Assert.AreEqual(1, span[1]);
-                Assert.AreEqual(2, span[2]);
-                Assert.AreEqual(3, span[3]);
-                Assert.AreEqual(4, span[4]);
+                Assert.AreEqual(1, span[0]);
+                Assert.AreEqual(2, span[1]);
+                Assert.AreEqual(3, span[2]);
+                Assert.AreEqual(4, span[3]);
+                Assert.AreEqual(5, span[4]);
             }
             finally
             {
@@ -651,7 +651,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void DisposeTest()
         {
-            using NativeList<int> list = new NativeList<int>(stackalloc int[] { 1, 2, 3, 4, 5 });
+            NativeList<int> list = new NativeList<int>(stackalloc int[] { 1, 2, 3, 4, 5 });
             list.Dispose();
 
             Assert.IsFalse(list.IsValid);

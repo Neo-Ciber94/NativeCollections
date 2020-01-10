@@ -247,7 +247,7 @@ namespace NativeCollections
         /// <returns>The first element that matchs the condition or null if not found.</returns>
         public static T? FindFirst<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
-            for(int i = 0; i < list.Length; ++i)
+            for (int i = 0; i < list.Length; ++i)
             {
                 ref T value = ref list[i];
                 if (predicate(value))
@@ -289,6 +289,11 @@ namespace NativeCollections
         /// <exception cref="InvalidOperationException">If no value is not found.</exception>
         public static ref T FindFirstRef<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
+            if (!list.IsValid)
+            {
+                throw new ArgumentException("NativeList is invalid");
+            }
+
             foreach (ref var e in list)
             {
                 if (predicate(e))
@@ -310,6 +315,11 @@ namespace NativeCollections
         /// <exception cref="InvalidOperationException">If no value is not found.</exception>
         public static ref T FindLastRef<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
+            if (!list.IsValid)
+            {
+                throw new ArgumentException("NativeList is invalid");
+            }
+
             for (int i = list.Length - 1; i >= 0; --i)
             {
                 if (predicate(list[i]))
@@ -330,8 +340,12 @@ namespace NativeCollections
         /// <returns>An NativeArray with all the matches.</returns>
         public static NativeArray<T> FindAll<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
-            int expected = Math.Min(1, list.Length / 2);
-            NativeList<T> matches = new NativeList<T>(expected, list.GetAllocator()!);
+            if (!list.IsValid)
+            {
+                throw new ArgumentException("NativeList is invalid");
+            }
+
+            NativeList<T> matches = new NativeList<T>(4, list.GetAllocator()!);
 
             foreach (ref var e in list)
             {
@@ -353,6 +367,11 @@ namespace NativeCollections
         /// <returns>The index of the first element that meet the condition.</returns>
         public static int FindIndex<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
+            if (!list.IsValid)
+            {
+                throw new ArgumentException("NativeList is invalid");
+            }
+
             for (int i = 0; i < list.Length; ++i)
             {
                 if (predicate(list[i]))
@@ -373,6 +392,11 @@ namespace NativeCollections
         /// <returns>The index of the last element that meet the condition.</returns>
         public static int FindLastIndex<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
+            if (!list.IsValid)
+            {
+                throw new ArgumentException("NativeList is invalid");
+            }
+
             for (int i = list.Length - 1; i >= 0; --i)
             {
                 if (predicate(list[i]))
@@ -393,6 +417,11 @@ namespace NativeCollections
         /// <returns><c>true</c> if a value exists; otherwise <c>false</c>.</returns>
         public static bool AnyMatch<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
+            if (!list.IsValid)
+            {
+                throw new ArgumentException("NativeList is invalid");
+            }
+
             for (int i = 0; i < list.Length; ++i)
             {
                 if (predicate(list[i]))
@@ -415,6 +444,11 @@ namespace NativeCollections
         /// </returns>
         public static bool AllMatch<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
+            if (!list.IsValid)
+            {
+                throw new ArgumentException("NativeList is invalid");
+            }
+
             for (int i = 0; i < list.Length; ++i)
             {
                 if (!predicate(list[i]))
@@ -437,6 +471,11 @@ namespace NativeCollections
         /// </returns>
         public static bool NoneMatch<T>(this NativeList<T> list, Predicate<T> predicate) where T : unmanaged
         {
+            if (!list.IsValid)
+            {
+                throw new ArgumentException("NativeList is invalid");
+            }
+
             for (int i = 0; i < list.Length; ++i)
             {
                 if (predicate(list[i]))
@@ -512,6 +551,11 @@ namespace NativeCollections
         /// <param name="action">The action to perform over each element.</param>
         public static void ForEach<T>(this NativeList<T> list, Action<T> action) where T : unmanaged
         {
+            if (!list.IsValid)
+            {
+                throw new ArgumentException("NativeList is invalid");
+            }
+
             int length = list.Length;
             for (int i = 0; i < length; ++i)
             {
@@ -527,6 +571,11 @@ namespace NativeCollections
         /// <param name="action">The action to perform over each element and its index.</param>
         public static void ForEach<T>(this NativeList<T> list, Action<T, int> action) where T : unmanaged
         {
+            if (!list.IsValid)
+            {
+                throw new ArgumentException("NativeList is invalid");
+            }
+
             int length = list.Length;
             for (int i = 0; i < length; ++i)
             {
@@ -542,6 +591,11 @@ namespace NativeCollections
         /// <param name="action">The action to perform over each reference of the elements.</param>
         public static void ForEachRef<T>(this NativeList<T> list, RefAction<T> action) where T : unmanaged
         {
+            if (!list.IsValid)
+            {
+                throw new ArgumentException("NativeList is invalid");
+            }
+
             int length = list.Length;
             for (int i = 0; i < length; ++i)
             {
@@ -557,6 +611,11 @@ namespace NativeCollections
         /// <param name="action">The action to perform over each reference of the elements and its index.</param>
         public static void ForEachRef<T>(this NativeList<T> list, RefIndexedAction<T> action) where T : unmanaged
         {
+            if (!list.IsValid)
+            {
+                throw new ArgumentException("NativeList is invalid");
+            }
+
             int length = list.Length;
             for (int i = 0; i < length; ++i)
             {

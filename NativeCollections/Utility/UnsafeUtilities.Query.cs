@@ -19,7 +19,7 @@ namespace NativeCollections.Utility
         public static int Count<T>(void* pointer, int startElementOffset, int endElementOffset, Predicate<T> predicate)
         {
             Debug.Assert(pointer != null, "Pointer is null");
-            Debug.Assert(startElementOffset < endElementOffset, "Invalid range");
+            Debug.Assert(startElementOffset <= endElementOffset, "Invalid range");
 
             ref T ptr = ref Unsafe.AsRef<T>(pointer);
             int count = 0;
@@ -50,7 +50,7 @@ namespace NativeCollections.Utility
         public static bool AllMatch<T>(void* pointer, int startElementOffset, int endElementOffset, Predicate<T> predicate)
         {
             Debug.Assert(pointer != null, "Pointer is null");
-            Debug.Assert(startElementOffset < endElementOffset, "Invalid range");
+            Debug.Assert(startElementOffset <= endElementOffset, "Invalid range");
 
             ref T ptr = ref Unsafe.AsRef<T>(pointer);
 
@@ -77,7 +77,7 @@ namespace NativeCollections.Utility
         public static bool NoneMatch<T>(void* pointer, int startElementOffset, int endElementOffset, Predicate<T> predicate)
         {
             Debug.Assert(pointer != null, "Pointer is null");
-            Debug.Assert(startElementOffset < endElementOffset, "Invalid range");
+            Debug.Assert(startElementOffset <= endElementOffset, "Invalid range");
 
             ref T ptr = ref Unsafe.AsRef<T>(pointer);
 
@@ -104,7 +104,7 @@ namespace NativeCollections.Utility
         public static int FindFirst<T>(void* pointer, int startElementOffset, int endElementOffset, Predicate<T> predicate)
         {
             Debug.Assert(pointer != null, "Pointer is null");
-            Debug.Assert(startElementOffset < endElementOffset, "Invalid range");
+            Debug.Assert(startElementOffset <= endElementOffset, "Invalid range");
 
             ref T ptr = ref Unsafe.AsRef<T>(pointer);
 
@@ -131,7 +131,7 @@ namespace NativeCollections.Utility
         public static int FindLast<T>(void* pointer, int startElementOffset, int endElementOffset, Predicate<T> predicate)
         {
             Debug.Assert(pointer != null, "Pointer is null");
-            Debug.Assert(startElementOffset < endElementOffset, "Invalid range");
+            Debug.Assert(startElementOffset <= endElementOffset, "Invalid range");
 
             ref T ptr = ref Unsafe.AsRef<T>(pointer);
 
@@ -205,10 +205,8 @@ namespace NativeCollections.Utility
         /// <returns>The index of the first element or -1 if not found.</returns>
         public static int IndexOf<T>(void* pointer, int startElementOffset, int endElementOffset, T value, IEqualityComparer<T> comparer)
         {
-            if (startElementOffset > endElementOffset)
-            {
-                throw new ArgumentOutOfRangeException($"startElementOffset cannot be greater than endElementOffset: {startElementOffset} > {endElementOffset}");
-            }
+            Debug.Assert(pointer != null, "Pointer is null");
+            Debug.Assert(startElementOffset <= endElementOffset, "Invalid range");
 
             ref T ptr = ref Unsafe.AsRef<T>(pointer);
 
@@ -250,7 +248,8 @@ namespace NativeCollections.Utility
         /// <returns>The index of the last element or -1 if not found.</returns>
         public static int LastIndexOf<T>(void* pointer, int startElementOffset, int endElementOffset, T value, IEqualityComparer<T> comparer)
         {
-            Debug.Assert(startElementOffset < endElementOffset, "Invalid range");
+            Debug.Assert(pointer != null, "Pointer is null");
+            Debug.Assert(startElementOffset <= endElementOffset, "Invalid range");
 
             ref T ptr = ref Unsafe.AsRef<T>(pointer);
 
@@ -293,7 +292,7 @@ namespace NativeCollections.Utility
         public static int BinarySearch<T>(void* pointer, int startElementOffset, int endElementOffset, T value, IComparer<T> comparer)
         {
             Debug.Assert(pointer != null, "Pointer is null");
-            Debug.Assert(startElementOffset < endElementOffset, "Invalid range");
+            Debug.Assert(startElementOffset <= endElementOffset, "Invalid range");
 
             ref T startAddress = ref Unsafe.AsRef<T>(pointer);
 

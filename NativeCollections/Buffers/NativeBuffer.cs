@@ -57,7 +57,7 @@ namespace NativeCollections.Buffers
         /// <value>
         /// The bytes allocated.
         /// </value>
-        public int TotalBytes => _length;
+        public int Capacity => _length;
 
         /// <summary>
         /// Gets the number of bytes written.
@@ -81,7 +81,7 @@ namespace NativeCollections.Buffers
         /// <value>
         ///   <c>true</c> if this instance don't have bytes written; otherwise, <c>false</c>.
         /// </value>
-        public bool IsEmpty => _length == 0;
+        public bool IsEmpty => _offset == 0;
 
         /// <summary>
         /// Gets the <see cref="byte"/> at the specified index.
@@ -138,9 +138,10 @@ namespace NativeCollections.Buffers
             byte* end = _buffer + _length;
             byte* next = _buffer + _offset + sizeOfT;
 
-            if(next < end)
+            if(next <= end)
             {
-                *(T*)_offset = value;
+                T* cur = (T*)(_buffer + _offset);
+                *cur = value;
                 _offset += sizeOfT;
                 return true;
             }
@@ -174,8 +175,14 @@ namespace NativeCollections.Buffers
         /// <returns><c>true</c> if the the offset is in the bounds and the value was readen.</returns>
         public bool TryRead<T>(int byteOffset, out T value) where T: unmanaged
         {
+            if(byteOffset < 0)
+            {
+                value = default;
+                return false;
+            }
+
             int sizeOfT = sizeof(T);
-            if(byteOffset + sizeOfT > _length)
+            if(byteOffset + sizeOfT <= _length)
             {
                 byte* ptr = _buffer + byteOffset;
                 value = *(T*)ptr;
@@ -198,7 +205,7 @@ namespace NativeCollections.Buffers
             if (byteOffset < 0 || byteOffset > _offset)
                 return false;
 
-            if (bytesCount < 0 || bytesCount > (_length - byteOffset) || (_length - byteOffset) > destination.Length)
+            if (bytesCount < 0 || bytesCount > (_offset - byteOffset) || bytesCount > destination.Length)
                 return false;
 
             byte* dst = (byte*)Unsafe.AsPointer(ref destination.GetPinnableReference());
@@ -219,11 +226,11 @@ namespace NativeCollections.Buffers
         }
 
         /// <summary>
-        /// Copies the content of this buffer to a <see cref="Span{T}" />.
+        /// Copies the bytes of this buffer to a <see cref="Span{T}" />.
         /// </summary>
         /// <param name="span">The destination span to copy the data.</param>
         /// <param name="index">Start index of the destination where start to copy.</param>
-        /// <param name="count">The number of elements to copy.</param>
+        /// <param name="count">The number of bytes to copy.</param>
         /// <exception cref="ArgumentException">Span is empty</exception>
         /// <exception cref="InvalidOperationException">NativeBuffer is invalid</exception>
         /// <exception cref="ArgumentOutOfRangeException">If the index or count are out of range.</exception>
@@ -265,8 +272,8 @@ namespace NativeCollections.Buffers
                 return Array.Empty<byte>();
             }
 
-            byte[] array = new byte[_length];
-            CopyTo(array, 0, _length);
+            byte[] array = new byte[_offset];
+            CopyTo(array, 0, _offset);
             return array;
         }
 
@@ -276,7 +283,7 @@ namespace NativeCollections.Buffers
         /// <returns>An enumerator over the bytes of this instance.</returns>
         public RefEnumerator<byte> GetEnumerator()
         {
-            return _buffer == null ? default : new RefEnumerator<byte>(_buffer, _length);
+            return _buffer == null ? default : new RefEnumerator<byte>(_buffer, _offset);
         }
 
         /// <summary>

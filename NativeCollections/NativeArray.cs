@@ -45,7 +45,7 @@ namespace NativeCollections
                 throw new ArgumentException("Allocator is not in cache.", "allocator");
             }
 
-            _buffer = (T*)allocator.Allocate(sizeof(T) * capacity);
+            _buffer = allocator.Allocate<T>(capacity);
             _capacity = capacity;
             _allocatorID = allocator.ID;
         }
@@ -74,7 +74,7 @@ namespace NativeCollections
             }
             else
             {
-                _buffer = (T*)allocator.Allocate(sizeof(T) * elements.Length);
+                _buffer = allocator.Allocate<T>(elements.Length);
                 _capacity = elements.Length;
                 _allocatorID = allocator.ID;
 
@@ -153,11 +153,14 @@ namespace NativeCollections
         {
             get
             {
+                if (_buffer == null)
+                {
+                    throw new InvalidOperationException("NativeArray is invalid");
+                }
+
                 if (index < 0 || index >= _capacity)
                     throw new ArgumentOutOfRangeException("index", $"{index}");
 
-                //ref T pointer = ref Unsafe.AsRef<T>(_buffer);
-                //return ref Unsafe.Add(ref pointer, index);
                 return ref _buffer[index];
             }
         }
@@ -191,9 +194,14 @@ namespace NativeCollections
         {
             get
             {
+                if (_buffer == null)
+                {
+                    throw new InvalidOperationException("NativeArray is invalid");
+                }
+
                 var (index, length) = range.GetOffsetAndLength(_capacity);
 
-                if (index < 0 || index > _capacity)
+                if (index < 0 || index >= _capacity)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), index.ToString());
                 }
@@ -214,8 +222,10 @@ namespace NativeCollections
         /// <param name="value">The value to use.</param>
         public void Fill(T value)
         {
-            if (_capacity == 0)
-                return;
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeArray is invalid");
+            }
 
             if (sizeof(T) == 1)
             {
@@ -262,6 +272,7 @@ namespace NativeCollections
         /// <summary>
         /// Reverses the order of the content of this array.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Reverse()
         {
             Reverse(0, _capacity - 1);
@@ -271,6 +282,7 @@ namespace NativeCollections
         /// Reverses the order of the content of this array.
         /// </summary>
         /// <param name="start">The start index.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Reverse(int start)
         {
             Reverse(start, _capacity - 1);
@@ -483,7 +495,9 @@ namespace NativeCollections
         public void Dispose()
         {
             if (_buffer == null)
+            {
                 return;
+            }
 
             if (Allocator.IsCached(_allocatorID))
             {
@@ -499,7 +513,9 @@ namespace NativeCollections
         public NativeList<T> ToNativeListAndDispose()
         {
             if (_buffer == null)
+            {
                 throw new InvalidOperationException("NativeArray is invalid");
+            }
 
             // The new NativeList will owns this NativeArray memory
             NativeList<T> list = new NativeList<T>(_buffer, _capacity, GetAllocator()!);
@@ -577,7 +593,7 @@ namespace NativeCollections
         {
             if (_buffer == null)
             {
-                return default;
+                throw new InvalidOperationException("NativeArray is invalid");
             }
 
             void* dst = GetAllocator()!.Allocate<T>(_capacity);
@@ -592,39 +608,6 @@ namespace NativeCollections
     /// </summary>
     public static partial class NativeArray
     {
-        /// <summary>
-        /// Creates a new <see cref="NativeArray{T}"/> with the specified elements.
-        /// </summary>
-        /// <typeparam name="T">Type of the elements</typeparam>
-        /// <param name="args">The arguments.</param>
-        /// <returns>A new NativeArray with the using args.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        unsafe public static NativeArray<T> Create<T>(params T[] args) where T : unmanaged
-        {
-            return Create(Allocator.Default, args);
-        }
-
-        /// <summary>
-        /// Creates a new <see cref="NativeArray{T}"/> with the specified elements.
-        /// </summary>
-        /// <typeparam name="T">Type of the elements</typeparam>
-        /// <param name="allocator">The allocator to use.</param>
-        /// <param name="args">The arguments.</param>
-        /// <returns>A new NativeArray with the using args.</returns>
-        unsafe public static NativeArray<T> Create<T>(Allocator allocator, params T[] args) where T: unmanaged
-        {
-            if(args.Length == 0)
-            {
-                return default;
-            }
-
-            int length = args.Length;
-            void* source = Unsafe.AsPointer(ref args[0]);
-            void* buffer = allocator.Allocate<T>(length);
-            Unsafe.CopyBlock(buffer, source, (uint)(sizeof(T) * length));
-            return new NativeArray<T>(buffer, length, allocator);
-        }
-
         /// <summary>
         /// Creates a <see cref="NativeArray{T}"/> containing elements from start (inclusive) to end (exclusive)
         /// </summary>

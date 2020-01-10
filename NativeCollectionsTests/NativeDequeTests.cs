@@ -581,7 +581,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void ToNativeArrayAndDisposeTest()
         {
-            using NativeDeque<int> deque = new NativeDeque<int>(6);
+            NativeDeque<int> deque = new NativeDeque<int>(6);
             deque.AddLast(1);
             deque.AddLast(2);
             deque.AddLast(3);

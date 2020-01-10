@@ -345,6 +345,11 @@ namespace NativeCollections
         /// <exception cref="InvalidOperationException">If no value is not found.</exception>
         public static ref T FindFirstRef<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
         {
+            if (!array.IsValid)
+            {
+                throw new ArgumentException("NativeArray is invalid");
+            }
+
             foreach (ref var e in array)
             {
                 if (predicate(e))
@@ -366,6 +371,11 @@ namespace NativeCollections
         /// <exception cref="InvalidOperationException">If no value is not found.</exception>
         public static ref T FindLastRef<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
         {
+            if (!array.IsValid)
+            {
+                throw new ArgumentException("NativeArray is invalid");
+            }
+
             for (int i = array.Length - 1; i >= 0; --i)
             {
                 if (predicate(array[i]))
@@ -386,8 +396,12 @@ namespace NativeCollections
         /// <returns>An NativeArray with all the matches.</returns>
         public static NativeArray<T> FindAll<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
         {
-            int expected = Math.Min(1, array.Length / 2);
-            NativeList<T> matches = new NativeList<T>(expected, array.GetAllocator()!);
+            if (!array.IsValid)
+            {
+                return default;
+            }
+
+            NativeList<T> matches = new NativeList<T>(4, array.GetAllocator()!);
 
             foreach (ref var e in array)
             {
@@ -409,6 +423,11 @@ namespace NativeCollections
         /// <returns>The index of the first element that meet the condition.</returns>
         public static int FindIndex<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
         {
+            if (!array.IsValid)
+            {
+                throw new ArgumentException("NativeArray is invalid");
+            }
+
             for (int i = 0; i < array.Length; ++i)
             {
                 if (predicate(array[i]))
@@ -429,6 +448,11 @@ namespace NativeCollections
         /// <returns>The index of the last element that meet the condition.</returns>
         public static int FindLastIndex<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
         {
+            if (!array.IsValid)
+            {
+                throw new ArgumentException("NativeArray is invalid");
+            }
+
             for (int i = array.Length - 1; i >= 0; --i)
             {
                 if (predicate(array[i]))
@@ -449,7 +473,12 @@ namespace NativeCollections
         /// <returns><c>true</c> if a value exists; otherwise <c>false</c>.</returns>
         public static bool AnyMatch<T>(this NativeArray<T> array, Predicate<T> predicate) where T: unmanaged
         {
-            for(int i = 0; i < array.Length; ++i)
+            if (!array.IsValid)
+            {
+                throw new ArgumentException("NativeArray is invalid");
+            }
+
+            for (int i = 0; i < array.Length; ++i)
             {
                 if (predicate(array[i]))
                 {
@@ -471,6 +500,11 @@ namespace NativeCollections
         /// </returns>
         public static bool AllMatch<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
         {
+            if (!array.IsValid)
+            {
+                throw new ArgumentException("NativeArray is invalid");
+            }
+
             for (int i = 0; i < array.Length; ++i)
             {
                 if (!predicate(array[i]))
@@ -493,6 +527,11 @@ namespace NativeCollections
         /// </returns>
         public static bool NoneMatch<T>(this NativeArray<T> array, Predicate<T> predicate) where T : unmanaged
         {
+            if (!array.IsValid)
+            {
+                throw new ArgumentException("NativeArray is invalid");
+            }
+
             for (int i = 0; i < array.Length; ++i)
             {
                 if (predicate(array[i]))
@@ -512,6 +551,11 @@ namespace NativeCollections
         /// <param name="action">The action to perform over each element.</param>
         public static void ForEach<T>(this NativeArray<T> array, Action<T> action) where T: unmanaged
         {
+            if (!array.IsValid)
+            {
+                throw new ArgumentException("NativeArray is invalid");
+            }
+
             int length = array.Length;
             for(int i = 0; i < length; ++i)
             {
@@ -527,6 +571,11 @@ namespace NativeCollections
         /// <param name="action">The action to perform over each element and its index.</param>
         public static void ForEach<T>(this NativeArray<T> array, Action<T, int> action) where T : unmanaged
         {
+            if (!array.IsValid)
+            {
+                throw new ArgumentException("NativeArray is invalid");
+            }
+
             int length = array.Length;
             for (int i = 0; i < length; ++i)
             {
@@ -542,6 +591,11 @@ namespace NativeCollections
         /// <param name="action">The action to perform over each reference of the elements.</param>
         public static void ForEachRef<T>(this NativeArray<T> array, RefAction<T> action) where T : unmanaged
         {
+            if (!array.IsValid)
+            {
+                throw new ArgumentException("NativeArray is invalid");
+            }
+
             int length = array.Length;
             for (int i = 0; i < length; ++i)
             {
@@ -557,6 +611,11 @@ namespace NativeCollections
         /// <param name="action">The action to perform over each reference of the elements and its index.</param>
         public static void ForEachRef<T>(this NativeArray<T> array, RefIndexedAction<T> action) where T : unmanaged
         {
+            if (!array.IsValid)
+            {
+                throw new ArgumentException("NativeArray is invalid");
+            }
+
             int length = array.Length;
             for (int i = 0; i < length; ++i)
             {

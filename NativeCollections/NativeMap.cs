@@ -26,6 +26,8 @@ namespace NativeCollections
     [DebuggerTypeProxy(typeof(NativeMapDebugView<,>))]
     public unsafe struct NativeMap<TKey, TValue> : INativeContainer<KeyValuePair<TKey, TValue>>, IDisposable where TKey : unmanaged where TValue : unmanaged
     {
+        internal Span<Entry> MemoryBlock => new Span<Entry>(_buffer, _capacity);
+
         internal struct Entry
         {
             public TKey key;
@@ -49,6 +51,11 @@ namespace NativeCollections
 
             internal KeyCollection(ref NativeMap<TKey, TValue> map)
             {
+                if (map.IsValid is false)
+                {
+                    throw new InvalidOperationException("NativeMap is invalid");
+                }
+
                 _map = map;
             }
 
@@ -197,6 +204,11 @@ namespace NativeCollections
 
             internal ValueCollection(ref NativeMap<TKey, TValue> map)
             {
+                if (map.IsValid is false)
+                {
+                    throw new InvalidOperationException("NativeMap is invalid");
+                }
+
                 _map = map;
             }
 
@@ -362,9 +374,9 @@ namespace NativeCollections
                 throw new ArgumentException($"initialCapacity should be greater than 0: {initialCapacity}");
             }
 
-            if (allocator.ID <= 0)
+            if (Allocator.IsCached(allocator) is false)
             {
-                throw new ArgumentException("Allocator is not in cache.", "allocator");
+                throw new ArgumentException("Allocator is not in cache.", nameof(allocator));
             }
 
             _buffer = (Entry*)allocator.Allocate(initialCapacity, sizeof(Entry));
@@ -390,9 +402,9 @@ namespace NativeCollections
         /// <param name="allocator">The allocator.</param>
         public NativeMap(Span<(TKey, TValue)> elements, Allocator allocator)
         {
-            if (allocator.ID <= 0)
+            if (Allocator.IsCached(allocator) is false)
             {
-                throw new ArgumentException("Allocator is not in cache.", "allocator");
+                throw new ArgumentException("Allocator is not in cache.", nameof(allocator));
             }
 
             if (elements.IsEmpty)
@@ -419,10 +431,7 @@ namespace NativeCollections
 
         internal NativeMap(ref NativeMap<TKey, TValue> map, Entry* buffer)
         {
-            if (!map.IsValid)
-            {
-                throw new ArgumentException("map is invalid");
-            }
+            Debug.Assert(map.IsValid);
 
             _buffer = buffer;
             _count = map._count;
@@ -434,10 +443,7 @@ namespace NativeCollections
 
         private NativeMap(ref NativeMap<TKey, TValue> map)
         {
-            if (!map.IsValid)
-            {
-                throw new ArgumentException("map is invalid");
-            }
+            Debug.Assert(map.IsValid);
 
             Allocator allocator = map.GetAllocator()!;
             Entry* buffer = allocator.Allocate<Entry>(map._capacity);
@@ -497,6 +503,11 @@ namespace NativeCollections
         {
             readonly get
             {
+                if (_buffer == null)
+                {
+                    throw new ArgumentException("NativeMap is invalid");
+                }
+
                 var index = FindEntry(key);
                 if (index >= 0)
                 {
@@ -518,6 +529,11 @@ namespace NativeCollections
         /// <exception cref="InvalidOperationException">If the key already exists.</exception>
         public void Add(TKey key, TValue value)
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeMap is invalid");
+            }
+
             if (!TryInsert(key, value, InsertMode.Add))
                 throw new InvalidOperationException($"Duplicated key: {key}");
         }
@@ -540,6 +556,11 @@ namespace NativeCollections
         /// <param name="value">The value.</param>
         public void AddOrUpdate(TKey key, TValue value)
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeMap is invalid");
+            }
+
             TryInsert(key, value, InsertMode.Any);
         }
 
@@ -551,6 +572,11 @@ namespace NativeCollections
         /// <returns><c>true</c> if the value was replaced otherwise <c>false</c>.</returns>
         public bool Replace(TKey key, TValue newValue)
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeMap is invalid");
+            }
+
             if (TryInsert(key, newValue, InsertMode.Replace))
                 return true;
 
@@ -564,6 +590,11 @@ namespace NativeCollections
         /// <returns><c>true</c> if the key and value were removed.</returns>
         public bool Remove(TKey key)
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeMap is invalid");
+            }
+
             var comparer = EqualityComparer<TKey>.Default;
             var hashCode = GetHash(key);
             var bucket = GetBucket(hashCode, _capacity);
@@ -604,10 +635,14 @@ namespace NativeCollections
         /// </summary>
         public void Clear()
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeMap is invalid");
+            }
+
             if (_count == 0)
                 return;
 
-            Unsafe.InitBlockUnaligned(_buffer, 0, (uint)(sizeof(Entry) * _count));
             _count = 0;
             _freeCount = 0;
             _freeList = -1;
@@ -661,6 +696,11 @@ namespace NativeCollections
         /// <exception cref="KeyNotFoundException"> if the key don't exists.</exception>
         public TValue GetValue(TKey key)
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeMap is invalid");
+            }
+
             if (!TryGetValue(key, out TValue value))
             {
                 throw new KeyNotFoundException(key.ToString());
@@ -677,6 +717,11 @@ namespace NativeCollections
         /// <returns>The value associated to the key or the default value if the key don't exists.</returns>
         public TValue GetValueOrDefault(TKey key, TValue defaultValue)
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeMap is invalid");
+            }
+
             if (TryGetValue(key, out TValue value))
             {
                 return value;
@@ -693,6 +738,11 @@ namespace NativeCollections
         /// <exception cref="KeyNotFoundException"> if the key don't exists.</exception>
         public ref TValue GetValueReference(TKey key)
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeMap is invalid");
+            }
+
             int index = FindEntry(key);
 
             if (index >= 0)
@@ -712,6 +762,11 @@ namespace NativeCollections
         /// </returns>
         public readonly bool ContainsKey(in TKey key)
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeMap is invalid");
+            }
+
             return FindEntry(key) >= 0;
         }
 
@@ -724,6 +779,11 @@ namespace NativeCollections
         /// </returns>
         public readonly bool ContainsValue(in TValue value)
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeMap is invalid");
+            }
+
             var comparer = EqualityComparer<TValue>.Default;
 
             for (int i = 0; i < _count; i++)
@@ -747,6 +807,11 @@ namespace NativeCollections
         /// <exception cref="ArgumentOutOfRangeException">If the range startIndex and count are out of range.</exception>
         public readonly void CopyTo(in Span<KeyValuePair<TKey, TValue>> span, int startIndex, int count)
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeMap is invalid");
+            }
+
             if (span.IsEmpty)
                 throw new ArgumentException("Span is empty", nameof(span));
 
@@ -778,6 +843,11 @@ namespace NativeCollections
         /// <returns>An array with the key-values of this map.</returns>
         public readonly KeyValuePair<TKey, TValue>[] ToArray()
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeMap is invalid");
+            }
+
             if (_count == 0)
             {
                 return Array.Empty<KeyValuePair<TKey, TValue>>();
@@ -803,6 +873,11 @@ namespace NativeCollections
         /// <returns>An array with the key-values of this map.</returns>
         public NativeArray<KeyValuePair<TKey, TValue>> ToNativeArray()
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeMap is invalid");
+            }
+
             if (_count == 0)
             {
                 return default;
@@ -832,7 +907,7 @@ namespace NativeCollections
         {
             if (_buffer == null)
             {
-                return default;
+                throw new ArgumentException("NativeMap is invalid");
             }
 
             if (_count == _capacity || !createNewArrayIfNeeded)
@@ -866,13 +941,18 @@ namespace NativeCollections
         /// <param name="capacity">The min capacity.</param>
         public void TrimExcess(int capacity)
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeMap is invalid");
+            }
+
             if (capacity < Length)
             {
                 return;
             }
 
             Entry* newBuffer = GetAllocator()!.Allocate<Entry>(capacity);
-            Unsafe.CopyBlock(newBuffer, _buffer, (uint)(Unsafe.SizeOf<Entry>() * _count));
+            Unsafe.CopyBlock(newBuffer, _buffer, (uint)(sizeof(Entry) * _count));
 
             // Free old buffer
             GetAllocator()!.Free(_buffer);
@@ -900,6 +980,7 @@ namespace NativeCollections
                 }
             }
 
+            _buffer = newBuffer;
             _freeCount = 0;
             _freeList = -1;
             _count = count;
@@ -912,6 +993,11 @@ namespace NativeCollections
         /// <param name="capacity">The min capacity.</param>
         public void EnsureCapacity(int capacity)
         {
+            if (_buffer == null)
+            {
+                throw new ArgumentException("NativeMap is invalid");
+            }
+
             if (capacity > _capacity)
             {
                 Resize(capacity);
@@ -924,7 +1010,9 @@ namespace NativeCollections
         public void Dispose()
         {
             if (_buffer == null)
+            {
                 return;
+            }
 
             if (Allocator.IsCached(_allocatorID))
             {
@@ -945,8 +1033,6 @@ namespace NativeCollections
             {
                 return "[]";
             }
-
-            // TODO: Reduce StringBuilderCache calls overhead by implementing ToString() for (1..10) elements?
 
             StringBuilder sb = StringBuilderCache.Acquire();
             sb.Append('[');
@@ -984,7 +1070,7 @@ namespace NativeCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeMap<TKey, TValue> Clone()
         {
-            return _buffer == null? default : new NativeMap<TKey, TValue>(ref this);
+            return _buffer == null? throw new ArgumentException("NativeMap is invalid") : new NativeMap<TKey, TValue>(ref this);
         }
 
         /// <summary>
@@ -1057,10 +1143,13 @@ namespace NativeCollections
             return true;
         }
 
-        internal Span<Entry> MemoryData => new Span<Entry>(_buffer, _capacity);
-
         private readonly int FindEntry(in TKey key)
         {
+            Debug.Assert(_buffer != null);
+
+            if (_buffer == null)
+                return -1;
+
             var comparer = EqualityComparer<TKey>.Default;
             var hashCode = GetHash(key);
             var bucket = GetBucket(hashCode, _capacity);
@@ -1080,11 +1169,13 @@ namespace NativeCollections
             return -1;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Initializate()
         {
             for (int i = 0; i < _capacity; i++)
             {
                 _buffer[i].bucket = -1;
+                _buffer[i].hashCode = -1;
             }
         }
 
@@ -1095,9 +1186,7 @@ namespace NativeCollections
 
         private void Resize(int newCapacity)
         {
-            if (_buffer == null)
-                return;
-
+            Debug.Assert(_buffer != null);
             Entry* newBuffer = GetAllocator()!.Allocate<Entry>(newCapacity);
             Unsafe.CopyBlock(newBuffer, _buffer, (uint)(sizeof(Entry) * _count));
             GetAllocator()!.Free(_buffer);

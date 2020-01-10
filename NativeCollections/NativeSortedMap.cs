@@ -40,6 +40,11 @@ namespace NativeCollections
 
             internal KeyCollection(ref NativeSortedMap<TKey, TValue> map)
             {
+                if(map.IsValid is false)
+                {
+                    throw new InvalidOperationException("NativeSortedMap is invalid");
+                }
+
                 _map = map;
             }
 
@@ -174,6 +179,11 @@ namespace NativeCollections
 
             internal ValueCollection(ref NativeSortedMap<TKey, TValue> map)
             {
+                if (map.IsValid is false)
+                {
+                    throw new InvalidOperationException("NativeSortedMap is invalid");
+                }
+
                 _map = map;
             }
 
@@ -325,9 +335,9 @@ namespace NativeCollections
                 throw new ArgumentException("initialCapacity should be greater than 0.", nameof(initialCapacity));
             }
 
-            if (allocator.ID <= 0)
+            if (Allocator.IsCached(allocator) is false)
             {
-                throw new ArgumentException("Allocator is not in cache.", "allocator");
+                throw new ArgumentException("Allocator is not in cache.", nameof(allocator));
             }
 
             _buffer = (Entry*)allocator.Allocate(initialCapacity, sizeof(Entry));
@@ -350,9 +360,9 @@ namespace NativeCollections
         /// <exception cref="ArgumentException">If the capacity is negative or 0, or if the allocator is not in cache.</exception>
         public NativeSortedMap(Span<(TKey, TValue)> elements, Allocator allocator)
         {
-            if (allocator.ID <= 0)
+            if (Allocator.IsCached(allocator) is false)
             {
-                throw new ArgumentException("Allocator is not in cache.", "allocator");
+                throw new ArgumentException("Allocator is not in cache.", nameof(allocator));
             }
 
             if (elements.IsEmpty)
@@ -377,7 +387,7 @@ namespace NativeCollections
         {
             Debug.Assert(pointer != null);
             Debug.Assert(length > 0);
-            Debug.Assert(allocator.ID > 0);
+            Debug.Assert(Allocator.IsCached(allocator));
 
             _buffer = (Entry*)pointer;
             _count = length;
@@ -387,10 +397,7 @@ namespace NativeCollections
 
         private NativeSortedMap(ref NativeSortedMap<TKey, TValue> map)
         {
-            if (!map.IsValid)
-            {
-                throw new ArgumentException("map is invalid");
-            }
+            Debug.Assert(map.IsValid);
 
             Allocator allocator = map.GetAllocator()!;
             Entry* buffer = allocator.Allocate<Entry>(map._capacity);
@@ -450,8 +457,15 @@ namespace NativeCollections
         {
             get
             {
+                if (_buffer == null)
+                {
+                    throw new InvalidOperationException("NativeSortedMap is invalid");
+                }
+
                 if (_count == 0)
+                {
                     throw new InvalidOperationException("NativeSortedMap is empty");
+                }
 
                 return ref _buffer[0].key;
             }
@@ -464,8 +478,15 @@ namespace NativeCollections
         {
             get
             {
+                if (_buffer == null)
+                {
+                    throw new InvalidOperationException("NativeSortedMap is invalid");
+                }
+
                 if (_count == 0)
+                {
                     throw new InvalidOperationException("NativeSortedMap is empty");
+                }
 
                 return ref _buffer[_count - 1].key;
             }
@@ -488,6 +509,11 @@ namespace NativeCollections
         {
             get
             {
+                if (_buffer == null)
+                {
+                    throw new InvalidOperationException("NativeSortedMap is invalid");
+                }
+
                 int index = BinarySearch(key);
                 if(index >= 0)
                 {
@@ -511,6 +537,11 @@ namespace NativeCollections
         /// <exception cref="ArgumentException">If the key is duplicated.</exception>
         public void Add(TKey key, TValue value)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             if (!TryInsert(key, value, InsertMode.Add))
             {
                 throw new ArgumentException("Duplicated key", nameof(key));
@@ -535,6 +566,11 @@ namespace NativeCollections
         /// <param name="value">The value.</param>
         public void AddOrUpdate(TKey key, TValue value)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             TryInsert(key, value, InsertMode.Any);
         }
 
@@ -546,6 +582,11 @@ namespace NativeCollections
         /// <returns><c>true</c> if the value was replaced.</returns>
         public bool Replace(TKey key, TValue value)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             if (_count == 0)
             {
                 return false;
@@ -569,6 +610,11 @@ namespace NativeCollections
         /// <returns><c>true</c> if the key and value were removed.</returns>
         public bool Remove(TKey key)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             if (_count == 0)
             {
                 return false;
@@ -591,6 +637,11 @@ namespace NativeCollections
         /// <param name="index">The index.</param>
         public void RemoveAt(int index)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             if (index < 0 || index > _count)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), index.ToString());
@@ -654,6 +705,11 @@ namespace NativeCollections
         /// <exception cref="KeyNotFoundException">If the key don't exists in the map.</exception>
         public TValue GetValue(TKey key)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             if (!TryGetValue(key, out TValue value))
             {
                 throw new KeyNotFoundException(key.ToString());
@@ -670,6 +726,11 @@ namespace NativeCollections
         /// <returns>The found value or the default.</returns>
         public TValue GetValueOrDefault(TKey key, TValue defaultValue)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             if (TryGetValue(key, out TValue value))
             {
                 return value;
@@ -686,6 +747,11 @@ namespace NativeCollections
         /// <exception cref="KeyNotFoundException">If the key don't exists in the map.</exception>
         public ref TValue GetValueReference(TKey key)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             int index = BinarySearch(key);
 
             if (index >= 0)
@@ -703,6 +769,11 @@ namespace NativeCollections
         /// <returns>The key with a lower value than the specified or null if not found.</returns>
         public TKey? LowerKey(TKey key)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             int index = BinarySearch(key);
             if (index >= 0)
             {
@@ -726,6 +797,11 @@ namespace NativeCollections
         /// <returns>The key with a higher value than the specified or null if not found.</returns>
         public TKey? HigherKey(TKey key)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             int index = BinarySearch(key);
             if (index >= 0)
             {
@@ -750,6 +826,11 @@ namespace NativeCollections
         /// <returns>A range of this map within the given values.</returns>
         public NativeSortedMap<TKey, TValue> SubMap(TKey fromKey, TKey toKey)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             var comparer = Comparer<TKey>.Default;
             int comp = comparer.Compare(fromKey, toKey);
             if (comp > 0)
@@ -788,6 +869,11 @@ namespace NativeCollections
         /// <returns>A sub map within the given range.</returns>
         public NativeSortedMap<TKey, TValue> SubMap(Range range)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             var (startIndex, length) = range.GetOffsetAndLength(_count);
 
             if (length == 0)
@@ -805,12 +891,16 @@ namespace NativeCollections
         /// </summary>
         public void Clear()
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             if (_count == 0)
             {
                 return;
             }
 
-            Unsafe.InitBlockUnaligned(_buffer, 0, (uint)(sizeof(Entry) * _count));
             _count = 0;
         }
 
@@ -821,6 +911,11 @@ namespace NativeCollections
         /// <returns>The key-value at the specified index.</returns>
         public ref KeyValuePair<TKey, TValue> ElementAt(int index)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             if (index < 0 || index > _count)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), index.ToString());
@@ -838,6 +933,11 @@ namespace NativeCollections
         /// </returns>
         public bool ContainsKey(TKey key)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             if (_count == 0)
             {
                 return false;
@@ -855,6 +955,11 @@ namespace NativeCollections
         /// </returns>
         public bool ContainsValue(TValue value)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             if (_count == 0)
             {
                 return false;
@@ -880,6 +985,11 @@ namespace NativeCollections
         /// <returns>The index of the key or -1 if not found.</returns>
         public int IndexOfKey(TKey key)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             int index = BinarySearch(key);
             return index >= 0 ? index : -1;
         }
@@ -891,6 +1001,11 @@ namespace NativeCollections
         /// <returns>The index of the value or -1 if not found.</returns>
         public int IndexOfValue(TValue value)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             var comparer = EqualityComparer<TValue>.Default;
 
             for(int i = 0; i < _count; i++)
@@ -918,6 +1033,11 @@ namespace NativeCollections
         /// <param name="capacity">The min capacity.</param>
         public void TrimExcess(int capacity)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             if (capacity < _count)
             {
                 return;
@@ -932,6 +1052,11 @@ namespace NativeCollections
         /// <param name="capacity">The min capacity.</param>
         public void EnsureCapacity(int capacity)
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             if (capacity > _capacity)
             {
                 Resize(capacity);
@@ -953,7 +1078,7 @@ namespace NativeCollections
                 throw new ArgumentException("Span is empty");
 
             if (_buffer == null)
-                throw new InvalidOperationException("NativeSet is invalid");
+                throw new InvalidOperationException("NativeSortedMap is invalid");
 
             if (destinationIndex < 0 || destinationIndex > span.Length)
                 throw new ArgumentOutOfRangeException(nameof(destinationIndex), destinationIndex.ToString());
@@ -974,6 +1099,11 @@ namespace NativeCollections
         /// <returns>An newly allocated array with the elements of this instance.</returns>
         public KeyValuePair<TKey, TValue>[] ToArray()
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             if (_count == 0)
             {
                 return Array.Empty<KeyValuePair<TKey, TValue>>();
@@ -994,8 +1124,15 @@ namespace NativeCollections
         /// <returns>A new array with the elements of this instance.</returns>
         public NativeArray<KeyValuePair<TKey, TValue>> ToNativeArray()
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSortedMap is invalid");
+            }
+
             if (_count == 0)
+            {
                 return default;
+            }
 
             NativeArray<KeyValuePair<TKey, TValue>> array = new NativeArray<KeyValuePair<TKey, TValue>>(_count, GetAllocator()!);
             int i = 0;
@@ -1017,7 +1154,7 @@ namespace NativeCollections
         {
             if (_buffer == null)
             {
-                return default;
+                throw new InvalidOperationException("NativeSortedMap is invalid");
             }
 
             if (_count == _capacity || !createNewArrayIfNeeded)
@@ -1044,16 +1181,14 @@ namespace NativeCollections
 
         private void Resize(int newCapacity)
         {
-            if (_buffer == null)
-                return;
-
+            Debug.Assert(_buffer != null);
             _buffer = GetAllocator()!.Reallocate<Entry>(_buffer, newCapacity);
             _capacity = newCapacity;
         }
 
         private bool TryInsert(TKey key, TValue value, InsertMode mode)
         {
-            if (_buffer == null || _capacity == 0)
+            if(_buffer == null)
             {
                 return false;
             }
@@ -1179,7 +1314,9 @@ namespace NativeCollections
         public void Dispose()
         {
             if (_buffer == null)
+            {
                 return;
+            }
 
             if (Allocator.IsCached(_allocatorID))
             {
@@ -1197,7 +1334,7 @@ namespace NativeCollections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeSortedMap<TKey, TValue> Clone()
         {
-            return _buffer == null? default : new NativeSortedMap<TKey, TValue>(ref this);
+            return _buffer == null? throw new InvalidOperationException("NativeSortedMap is invalid") : new NativeSortedMap<TKey, TValue>(ref this);
         }
 
         /// <summary>
