@@ -96,6 +96,11 @@ namespace NativeCollections.Buffers
         {
             get
             {
+                if(_buffer == null)
+                {
+                    throw new InvalidOperationException("NativeBuffer is invalid");
+                }
+
                 if (index < 0 || index > _offset)
                     throw new ArgumentOutOfRangeException(nameof(index), index.ToString());
 
@@ -120,6 +125,11 @@ namespace NativeCollections.Buffers
         /// <exception cref="InvalidOperationException">If the buffer don't have memory to write to.</exception>
         public void Write<T>(T value) where T: unmanaged
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeBuffer is invalid");
+            }
+
             if (!TryWrite(value))
             {
                 throw new InvalidOperationException("Buffer don't have memory left to write");
@@ -158,7 +168,12 @@ namespace NativeCollections.Buffers
         /// <exception cref="InvalidOperationException">Byte offset is out of range</exception>
         public T Read<T>(int byteOffset) where T: unmanaged
         {
-            if(!TryRead(byteOffset, out T value))
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeBuffer is invalid");
+            }
+
+            if (!TryRead(byteOffset, out T value))
             {
                 throw new InvalidOperationException("Byte offset is out of range");
             }
@@ -218,6 +233,11 @@ namespace NativeCollections.Buffers
         /// </summary>
         public void Clear()
         {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeBuffer is invalid");
+            }
+
             if (_offset == 0)
                 return;
 
@@ -267,7 +287,12 @@ namespace NativeCollections.Buffers
         /// <returns>A byte array with the bytes of this instance.</returns>
         public byte[] ToArray()
         {
-            if(_buffer == null)
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeBuffer is invalid");
+            }
+
+            if (_offset == 0)
             {
                 return Array.Empty<byte>();
             }

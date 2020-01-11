@@ -497,6 +497,41 @@ namespace NativeCollections
         }
 
         /// <summary>
+        /// Gets a new <see cref="NativeQuery{T}"/> which elements are the result of operate with the elements of this
+        /// query and the specified <see cref="Span{T}"/>.
+        /// </summary>
+        /// <typeparam name="TFirst">The type of the first element.</typeparam>
+        /// <typeparam name="TSecond">The type of the second element.</typeparam>
+        /// <typeparam name="TResult">The type of the result elements.</typeparam>
+        /// <param name="query">The query.</param>
+        /// <param name="elements">The elements.</param>
+        /// <param name="operation">The operation.</param>
+        /// <returns>The resulting query.</returns>
+        unsafe public static NativeQuery<TResult> Zip<TFirst, TSecond, TResult>(this NativeQuery<TFirst> query, in Span<TSecond> elements, Func<TFirst, TSecond, TResult> operation) where TFirst : unmanaged where TSecond : unmanaged where TResult : unmanaged
+        {
+            if(query.IsEmpty || elements.IsEmpty)
+            {
+                var emptyQuery = new NativeQuery<TResult>(query.GetAllocator());
+                query.Dispose();
+                return emptyQuery;
+            }
+
+            int length = Math.Min(query.Length, elements.Length);
+            NativeArray<TResult> result = new NativeArray<TResult>(length);
+
+            for (int i = 0; i < length; i++)
+            {
+                TFirst first = query[i];
+                TSecond second = elements[i];
+                result[i] = operation(first, second);
+            }
+
+            var allocator = query.GetAllocator()!;
+            query.Dispose();
+            return new NativeQuery<TResult>(result.GetUnsafePointer(), result.Length, allocator);
+        }
+
+        /// <summary>
         /// Releases the resources used for this query and each of its elements.
         /// </summary>
         /// <typeparam name="T">Type of the elements</typeparam>
@@ -518,6 +553,114 @@ namespace NativeCollections
             {
                 query.Dispose();
             }
+        }
+        
+        /// <summary>
+        /// Concatenates the elements of this query with the given <see cref="Span{T}"/>.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="query">The query.</param>
+        /// <param name="elements">The elements.</param>
+        /// <returns>A new query with the concatenates elements.</returns>
+        unsafe public static NativeQuery<T> Concat<T>(this NativeQuery<T> query, in Span<T> elements) where T: unmanaged
+        {
+            if (query.Length == 0 && elements.IsEmpty)
+            {
+                return query;
+            }
+
+            NativeList<T> list = new NativeList<T>(query.Length + elements.Length);
+            list.AddAll(query._buffer, query.Length);
+            list.AddAll(elements);
+
+            Allocator allocator = query.GetAllocator()!;
+            query.Dispose();
+            return new NativeQuery<T>(list.GetUnsafePointer(), list.Length, allocator);
+        }
+
+        /// <summary>
+        /// Concatenates the elements of this query with the given <see cref="Span{T}"/>.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="query">The query.</param>
+        /// <param name="elements">The elements.</param>
+        /// <returns>A new query with the concatenates elements.</returns>
+        unsafe public static NativeQuery<T> Concat<T>(this NativeQuery<T> query, in ReadOnlySpan<T> elements) where T : unmanaged
+        {
+            if (query.Length == 0 && elements.IsEmpty)
+            {
+                return query;
+            }
+
+            NativeList<T> list = new NativeList<T>(query.Length + elements.Length);
+            list.AddAll(query._buffer, query.Length);
+            list.AddAll(elements);
+
+            Allocator allocator = query.GetAllocator()!;
+            query.Dispose();
+            return new NativeQuery<T>(list.GetUnsafePointer(), list.Length, allocator);
+        }
+
+        /// <summary>
+        /// Determines if this query and the elements have the same sequence of elements.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="query">The query.</param>
+        /// <param name="elements">The elements to compare to.</param>
+        /// <returns><c>true</c> if the sequence are equals, otherwise <c>false</c>.</returns>
+        unsafe public static bool SequenceEquals<T>(this NativeQuery<T> query, in Span<T> elements) where T : unmanaged
+        {
+            if (query.Length != elements.Length)
+            {
+                query.Dispose();
+                return false;
+            }
+
+            var comparer = EqualityComparer<T>.Default;
+            bool result = true;
+
+            for (int i = 0; i < query.Length; i++)
+            {
+                if (comparer.Equals(query._buffer[i], elements[i]) is false)
+                {
+                    result = false;
+                    break;
+                }
+            }
+
+            query.Dispose();
+            return result;
+        }
+
+        /// <summary>
+        /// Determines if this query and the elements have the same sequence of elements.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="query">The query.</param>
+        /// <param name="elements">The elements to compare to.</param>
+        /// <returns><c>true</c> if the sequence are equals, otherwise <c>false</c>.</returns>
+        unsafe public static bool SequenceEquals<T>(this NativeQuery<T> query, in ReadOnlySpan<T> elements) where T : unmanaged
+        {
+            if (query.Length != elements.Length)
+            {
+                query.Dispose();
+                return false;
+            }
+
+            var comparer = EqualityComparer<T>.Default;
+            bool result = true;
+
+            for (int i = 0; i < query.Length; i++)
+            {
+                if (comparer.Equals(query._buffer[i], elements[i]) is false)
+                {
+                    result = false;
+                    break;
+                }
+            }
+
+            query.Dispose();
+            return result;
         }
     }
 }

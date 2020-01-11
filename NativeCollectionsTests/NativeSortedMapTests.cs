@@ -3,6 +3,7 @@ using NativeCollections;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
 namespace NativeCollections.Tests
 {
@@ -157,7 +158,7 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
-        public void SubMapTest()
+        public void GetRangeTest()
         {
             using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
             map.Add(1, 'a');
@@ -167,7 +168,7 @@ namespace NativeCollections.Tests
             map.Add(5, 'c');
             map.Add(6, 'c');
 
-            using NativeSortedMap<int, char> map2 = map.SubMap(2, 5);
+            using NativeSortedMap<int, char> map2 = map.GetRange(2, 5);
             Assert.IsTrue(map2.ContainsKey(2));
             Assert.IsTrue(map2.ContainsKey(3));
             Assert.IsTrue(map2.ContainsKey(4));
@@ -181,7 +182,7 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
-        public void SubMapTest1()
+        public void GetRangeTest1()
         {
             using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
             map.Add(1, 'a');
@@ -191,7 +192,7 @@ namespace NativeCollections.Tests
             map.Add(5, 'c');
             map.Add(6, 'c');
 
-            using NativeSortedMap<int, char> map2 = map.SubMap(1, 6);
+            using NativeSortedMap<int, char> map2 = map.GetRange(1, 6);
             Assert.IsTrue(map2.ContainsKey(1));
             Assert.IsTrue(map2.ContainsKey(2));
             Assert.IsTrue(map2.ContainsKey(3));
@@ -204,7 +205,7 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
-        public void SubMapTest2()
+        public void GetRangeTest2()
         {
             using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
             map.Add(1, 'a');
@@ -214,7 +215,7 @@ namespace NativeCollections.Tests
             map.Add(5, 'c');
             map.Add(6, 'c');
 
-            using NativeSortedMap<int, char> map2 = map.SubMap(2, 3);
+            using NativeSortedMap<int, char> map2 = map.GetRange(2, 3);
             Assert.IsTrue(map2.ContainsKey(2));
             Assert.IsTrue(map2.ContainsKey(3));
 
@@ -226,14 +227,14 @@ namespace NativeCollections.Tests
             Assert.AreEqual(2, map2.Length);
             Assert.AreEqual(2, map2.Capacity);
 
-            using NativeSortedMap<int, char> map3 = map.SubMap(1, 2);
+            using NativeSortedMap<int, char> map3 = map.GetRange(1, 2);
             Assert.IsTrue(map3.ContainsKey(1));
             Assert.IsTrue(map3.ContainsKey(2));
 
             Assert.AreEqual(2, map3.Length);
             Assert.AreEqual(2, map3.Capacity);
 
-            using NativeSortedMap<int, char> map4 = map.SubMap(5, 6);
+            using NativeSortedMap<int, char> map4 = map.GetRange(5, 6);
             Assert.IsTrue(map4.ContainsKey(5));
             Assert.IsTrue(map4.ContainsKey(6));
 
@@ -242,7 +243,28 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
-        public void SubMapRangeTest()
+        public void GetRangeTest3()
+        {
+            using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
+            map.Add(1, 'a');
+            map.Add(2, 'b');
+            map.Add(3, 'c');
+            map.Add(4, 'd');
+            map.Add(5, 'e');
+            map.Add(6, 'f');
+
+            CollectionAssert.AreEqual(new int[] { 1, 2, 3, 4, 5, 6 }, map.GetRange(1, 6).ToArray().Select(e => e.Key));
+            CollectionAssert.AreEqual(new int[] { 2, 3, 4, 5 }, map.GetRange(2, 5).ToArray().Select(e => e.Key));
+            CollectionAssert.AreEqual(new int[] { 1, 2, 3, 4 }, map.GetRange(-3, 4).ToArray().Select(e => e.Key));
+            CollectionAssert.AreEqual(new int[] { 3, 4, 5, 6 }, map.GetRange(3, 8).ToArray().Select(e => e.Key));
+            CollectionAssert.AreEqual(new int[0], map.GetRange(3, 3).ToArray().Select(e => e.Key));
+            CollectionAssert.AreEqual(new int[0], map.GetRange(-3, -1).ToArray().Select(e => e.Key));
+            CollectionAssert.AreEqual(new int[0], map.GetRange(7, 9).ToArray().Select(e => e.Key));
+            CollectionAssert.AreEqual(new int[] { 1, 2, 3, 4, 5, 6 }, map.GetRange(-3, 8).ToArray().Select(e => e.Key));
+        }
+
+        [Test()]
+        public void GetRangeRangeTest()
         {
             using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
             map.Add(1, 'a');
@@ -252,7 +274,7 @@ namespace NativeCollections.Tests
             map.Add(5, 'c');
             map.Add(6, 'c');
 
-            using NativeSortedMap<int, char> map2 = map.SubMap(1..5);
+            using NativeSortedMap<int, char> map2 = map.GetRange(1..5);
             Assert.IsTrue(map2.ContainsKey(2));
             Assert.IsTrue(map2.ContainsKey(3));
             Assert.IsTrue(map2.ContainsKey(4));
@@ -266,7 +288,7 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
-        public void SubMapRangeTest1()
+        public void GetRangeRangeTest1()
         {
             using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
             map.Add(1, 'a');
@@ -276,7 +298,7 @@ namespace NativeCollections.Tests
             map.Add(5, 'c');
             map.Add(6, 'c');
 
-            using NativeSortedMap<int, char> map2 = map.SubMap(0..6);
+            using NativeSortedMap<int, char> map2 = map.GetRange(0..6);
             Assert.IsTrue(map2.ContainsKey(1));
             Assert.IsTrue(map2.ContainsKey(2));
             Assert.IsTrue(map2.ContainsKey(3));
@@ -287,7 +309,7 @@ namespace NativeCollections.Tests
             Assert.AreEqual(6, map2.Length);
             Assert.AreEqual(6, map2.Capacity);
 
-            using NativeSortedMap<int, char> map3 = map.SubMap(..);
+            using NativeSortedMap<int, char> map3 = map.GetRange(..);
             Assert.IsTrue(map3.ContainsKey(1));
             Assert.IsTrue(map3.ContainsKey(2));
             Assert.IsTrue(map3.ContainsKey(3));
@@ -300,7 +322,7 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
-        public void SubMapRangeTest2()
+        public void GetRangeRangeTest2()
         {
             using NativeSortedMap<int, char> map = new NativeSortedMap<int, char>(4);
             map.Add(1, 'a');
@@ -310,7 +332,7 @@ namespace NativeCollections.Tests
             map.Add(5, 'c');
             map.Add(6, 'c');
 
-            using NativeSortedMap<int, char> map2 = map.SubMap(1..3);
+            using NativeSortedMap<int, char> map2 = map.GetRange(1..3);
             Assert.IsTrue(map2.ContainsKey(2));
             Assert.IsTrue(map2.ContainsKey(3));
 
@@ -322,14 +344,14 @@ namespace NativeCollections.Tests
             Assert.AreEqual(2, map2.Length);
             Assert.AreEqual(2, map2.Capacity);
 
-            using NativeSortedMap<int, char> map3 = map.SubMap(..2);
+            using NativeSortedMap<int, char> map3 = map.GetRange(..2);
             Assert.IsTrue(map3.ContainsKey(1));
             Assert.IsTrue(map3.ContainsKey(2));
 
             Assert.AreEqual(2, map3.Length);
             Assert.AreEqual(2, map3.Capacity);
 
-            using NativeSortedMap<int, char> map4 = map.SubMap(4..);
+            using NativeSortedMap<int, char> map4 = map.GetRange(4..);
             Assert.IsTrue(map4.ContainsKey(5));
             Assert.IsTrue(map4.ContainsKey(6));
 
@@ -728,8 +750,8 @@ namespace NativeCollections.Tests
             map.Add(1, 'a');
             map.Add(2, 'b');
             map.Add(3, 'c');
-
             map.Dispose();
+
             Assert.IsTrue(map.IsEmpty);
             Assert.IsFalse(map.IsValid);
             Assert.AreEqual(0, map.Length);

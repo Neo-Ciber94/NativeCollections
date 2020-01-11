@@ -7,12 +7,12 @@ using System.Text;
 namespace NativeCollections.Tests
 {
     [TestFixture()]
-    public class NativeSetTests
+    public class NativeSortedSetTests
     {
         [Test()]
-        public void NativeSetTest()
+        public void NativeSortedSetTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(4);
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(4);
             Assert.IsTrue(set.IsEmpty);
             Assert.IsTrue(set.IsValid);
             Assert.AreEqual(0, set.Length);
@@ -20,19 +20,19 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
-        public void NativeSetTest1()
+        public void NativeSortedSetTest1()
         {
-            using NativeSet<int> set = new NativeSet<int>(stackalloc int[] { 1, 2, 3, 4 });
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(stackalloc int[] { 1, 2, 2, 3, 4, 4 });
             Assert.IsFalse(set.IsEmpty);
             Assert.IsTrue(set.IsValid);
             Assert.AreEqual(4, set.Length);
-            Assert.AreEqual(4, set.Capacity);
+            Assert.AreEqual(6, set.Capacity);
         }
 
         [Test()]
         public void GetAllocatorTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(4);
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(4);
 
             unsafe
             {
@@ -55,7 +55,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void AddTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(4);
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(4);
             Assert.IsTrue(set.Add(1));
             Assert.IsTrue(set.Add(2));
             Assert.IsTrue(set.Add(3));
@@ -75,11 +75,11 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
-        public void AddRangeTest()
+        public void AddAllTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(4);
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(4);
             Assert.AreEqual(4, set.AddAll(stackalloc[] { 1, 2, 3, 4 }));
-            Assert.AreEqual(1, set.AddAll(stackalloc[] { 1, 2, 5 }));
+            Assert.AreEqual(3, set.AddAll(stackalloc[] { 1, 2, 5 }));
 
             Assert.AreEqual(5, set.Length);
             Assert.AreEqual(8, set.Capacity);
@@ -88,7 +88,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void RemoveTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(stackalloc int[] { 1, 2, 3, 4 });
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(stackalloc int[] { 1, 2, 3, 4 });
             Assert.IsTrue(set.Remove(1));
             Assert.AreEqual(3, set.Length);
 
@@ -109,7 +109,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void RemoveIfTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(stackalloc int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(stackalloc int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
             set.RemoveIf((e) => e % 2 != 0);
 
             Assert.IsTrue(set.Contains(2));
@@ -127,7 +127,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void ClearTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(4);
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(4);
             Assert.IsTrue(set.Add(1));
             Assert.IsTrue(set.Add(2));
             Assert.IsTrue(set.Add(3));
@@ -152,7 +152,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void ContainsTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(stackalloc int[] { 1, 2, 3 });
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(stackalloc int[] { 1, 2, 3 });
 
             Assert.IsTrue(set.Contains(1));
             Assert.IsTrue(set.Contains(2));
@@ -174,15 +174,45 @@ namespace NativeCollections.Tests
         [Test()]
         public void ContainsAllTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(stackalloc int[] { 1, 2, 3 });
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(stackalloc int[] { 1, 2, 3 });
             Assert.IsTrue(set.ContainsAll(stackalloc int[] { 1, 2, 3 }));
             Assert.IsFalse(set.ContainsAll(stackalloc int[] { 1, 2, 3, 5 }));
         }
 
         [Test()]
+        public void GetRangeTest()
+        {
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(stackalloc int[] { 1, 2, 3, 4, 5, 6});
+            CollectionAssert.AreEqual(new int[] { 2, 3, 4, 5 }, set.GetRange(2, 5).ToArray());
+            CollectionAssert.AreEqual(new int[] { 1, 2, 3, 4, 5, 6 }, set.GetRange(1, 6).ToArray());
+            CollectionAssert.AreEqual(new int[0] , set.GetRange(4, 4).ToArray());
+
+            CollectionAssert.AreEqual(new int[0], set.GetRange(7, 10).ToArray());
+            CollectionAssert.AreEqual(new int[] { 1, 2, 3 }, set.GetRange(-1, 3).ToArray());
+            CollectionAssert.AreEqual(new int[] { 4, 5, 6 }, set.GetRange(4, 10).ToArray());
+            CollectionAssert.AreEqual(new int[] { 1, 2, 3, 4, 5, 6 }, set.GetRange(-3, 8).ToArray());
+        }
+
+        [Test()]
+        public void GetRangeTest1()
+        {
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(stackalloc int[] { 1, 2, 3, 4, 5, 6 });
+
+            CollectionAssert.AreEqual(new int[] { 2, 3, 4, 5 }, set.GetRange(1..5).ToArray());
+            CollectionAssert.AreEqual(new int[] { 1, 2, 3, 4, 5, 6 }, set.GetRange(0..6).ToArray());
+            CollectionAssert.AreEqual(new int[] { 1, 2, 3, 4, 5, 6 }, set.GetRange(..).ToArray());
+
+            CollectionAssert.AreEqual(new int[0], set.GetRange(2..2).ToArray());
+            CollectionAssert.AreEqual(new int[] { 1, 2, 3 }, set.GetRange(0..3).ToArray());
+            CollectionAssert.AreEqual(new int[] { 1, 2, 3 }, set.GetRange(..3).ToArray());
+            CollectionAssert.AreEqual(new int[] { 3, 4, 5, 6 }, set.GetRange(2..6).ToArray());
+            CollectionAssert.AreEqual(new int[] { 3, 4, 5, 6 }, set.GetRange(2..).ToArray());
+        }
+
+        [Test()]
         public void UnionWithTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(stackalloc int[] { 1, 2, 3 });
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(stackalloc int[] { 1, 2, 3 });
             set.UnionWith(stackalloc int[] { 1, 2, 3, 4, 5, 6 });
 
             Assert.AreEqual(6, set.Length);
@@ -198,7 +228,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void IntersectionWithTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(stackalloc int[] { 1, 2, 3, 4, 5 });
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(stackalloc int[] { 1, 2, 3, 4, 5 });
             set.IntersectionWith(stackalloc int[] { 2, 3, 4 });
 
             Assert.AreEqual(3, set.Length);
@@ -214,7 +244,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void DifferenceWithTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(stackalloc int[] { 1, 2, 3, 4, 5 });
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(stackalloc int[] { 1, 2, 3, 4, 5 });
             set.DifferenceWith(stackalloc int[] { 4, 5, 6, 7 });
 
             Assert.AreEqual(3, set.Length);
@@ -230,7 +260,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void SymmetricDifferenceWithTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(stackalloc int[] { 1, 2, 3, 4, 5 });
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(stackalloc int[] { 1, 2, 3, 4, 5 });
             set.SymmetricDifferenceWith(stackalloc int[] { 2, 3, 4});
 
             Assert.AreEqual(2, set.Length);
@@ -246,8 +276,9 @@ namespace NativeCollections.Tests
         [Test()]
         public void TrimExcessTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(10);
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(10);
             set.Add(1);
+            set.Add(3);
             set.Add(2);
             set.Add(3);
 
@@ -259,8 +290,9 @@ namespace NativeCollections.Tests
         [Test()]
         public void TrimExcessTest1()
         {
-            using NativeSet<int> set = new NativeSet<int>(10);
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(10);
             set.Add(1);
+            set.Add(3);
             set.Add(2);
             set.Add(3);
 
@@ -272,8 +304,9 @@ namespace NativeCollections.Tests
         [Test()]
         public void EnsureCapacityTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(5);
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(5);
             set.Add(1);
+            set.Add(2);
             set.Add(2);
             set.Add(3);
 
@@ -285,12 +318,12 @@ namespace NativeCollections.Tests
         [Test()]
         public void CopyToTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(6);
-            set.Add(1);
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(6);
             set.Add(2);
+            set.Add(1);
             set.Add(3);
-            set.Add(4);
             set.Add(5);
+            set.Add(4);
 
             Span<int> span = stackalloc int[5];
             set.CopyTo(span, 1, 3);
@@ -305,27 +338,24 @@ namespace NativeCollections.Tests
         [Test()]
         public void ToArrayTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(6);
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(6);
+            set.Add(4);
+            set.Add(2);
             set.Add(1);
             set.Add(2);
             set.Add(3);
-            set.Add(4);
 
-            int[] array = set.ToArray();
-            Assert.AreEqual(1, array[0]);
-            Assert.AreEqual(2, array[1]);
-            Assert.AreEqual(3, array[2]);
-            Assert.AreEqual(4, array[3]);
+            CollectionAssert.AreEqual(new int[] { 1, 2, 3, 4 }, set.ToArray());
         }
 
         [Test()]
         public void ToNativeArrayTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(6);
-            set.Add(1);
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(6);
             set.Add(2);
-            set.Add(3);
+            set.Add(1);
             set.Add(4);
+            set.Add(3);
 
             using NativeArray<int> array = set.ToNativeArray();
             Assert.AreEqual(1, array[0]);
@@ -337,11 +367,11 @@ namespace NativeCollections.Tests
         [Test()]
         public void ToNativeArrayAndDisposeTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(6);
-            set.Add(1);
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(6);
             set.Add(2);
-            set.Add(3);
+            set.Add(1);
             set.Add(4);
+            set.Add(3);
 
             using NativeArray<int> array = set.ToNativeArrayAndDispose();
 
@@ -359,11 +389,11 @@ namespace NativeCollections.Tests
         [Test()]
         public void ToStringTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(6);
-            set.Add(1);
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(6);
             set.Add(2);
-            set.Add(3);
+            set.Add(1);
             set.Add(4);
+            set.Add(3);
 
             Assert.AreEqual("[1, 2, 3, 4]", set.ToString());
         }
@@ -371,7 +401,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void DisposeTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(6);
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(6);
             set.Add(1);
             set.Add(2);
             set.Add(3);
@@ -386,7 +416,7 @@ namespace NativeCollections.Tests
         [Test()]
         public void GetEnumeratorTest()
         {
-            using NativeSet<int> set = new NativeSet<int>(stackalloc int[] { 1, 2, 3, 4, 5 });
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(stackalloc int[] { 5, 3, 2, 4, 1 });
             var enumerator = set.GetEnumerator();
 
             Assert.IsTrue(enumerator.MoveNext());

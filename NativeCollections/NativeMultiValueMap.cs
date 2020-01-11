@@ -119,7 +119,7 @@ namespace NativeCollections
                 {
                     ref NativeList<TValue> list = ref reference.Value;
                     list.Clear();
-                    list.AddRange(value.Span);
+                    list.AddAll(value.Span);
                 }
                 else
                 {
@@ -171,12 +171,12 @@ namespace NativeCollections
 
             if(_map.TryGetValueReference(key, out ByReference<NativeList<TValue>> reference))
             {
-                reference.Value.AddRange(values);
+                reference.Value.AddAll(values);
             }
             else
             {
                 var list = new NativeList<TValue>(values.Length);
-                list.AddRange(values);
+                list.AddAll(values);
                 _map.Add(key, list);
             }
 
@@ -198,7 +198,7 @@ namespace NativeCollections
             {
                 ref NativeList<TValue> list = ref reference.Value;
                 list.Clear();
-                list.AddRange(values);
+                list.AddAll(values);
                 return true;
             }
 

@@ -434,5 +434,49 @@ namespace NativeCollections
             Dispose();
             return new NativeQuery<T>(array.GetUnsafePointer(), array.Length, allocator);
         }
+
+        /// <summary>
+        /// Appends the specified value to the query.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>A query with the value appended.</returns>
+        public NativeQuery<T> Append(T value)
+        {
+            Allocator? allocator = GetAllocator()!;
+
+            if(allocator == null)
+            {
+                return default;
+            }
+
+            NativeList<T> list = new NativeList<T>(_length + 1, allocator);
+            list.AddAll(_buffer, _length);
+            list.Add(value);
+
+            Dispose();
+            return new NativeQuery<T>(list.GetUnsafePointer(), list.Length, allocator);
+        }
+
+        /// <summary>
+        /// Prepends the specified value to the query.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>A query with the value prepended.</returns>
+        public NativeQuery<T> Prepend(T value)
+        {
+            Allocator? allocator = GetAllocator();
+
+            if (allocator == null)
+            {
+                return default;
+            }
+
+            NativeList<T> list = new NativeList<T>(_length + 1, allocator);
+            list.Add(value);
+            list.AddAll(_buffer, _length);
+
+            Dispose();
+            return new NativeQuery<T>(list.GetUnsafePointer(), list.Length, allocator);
+        }
     }
 }

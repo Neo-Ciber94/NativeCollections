@@ -8,6 +8,27 @@ namespace NativeCollections
     unsafe public static class NativeListExtensions
     {
         /// <summary>
+        /// Adds the bytes of the specified value to the list.
+        /// </summary>
+        /// <typeparam name="T">Type of the element.</typeparam>
+        /// <param name="list">The list.</param>
+        /// <param name="value">The value.</param>
+        public static void AddBytes<T>(this NativeList<byte> list, T value) where T: unmanaged
+        {
+            if(list.IsValid is false)
+            {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
+
+            byte* data = (byte*)&value;
+
+            for(int i = 0; i < sizeof(T); ++i)
+            {
+                list.Add(data[i]);
+            }
+        }
+
+        /// <summary>
         /// Sorts the content of this list.
         /// </summary>
         /// <typeparam name="T">Type of the elements</typeparam>

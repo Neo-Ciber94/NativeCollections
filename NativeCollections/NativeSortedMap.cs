@@ -821,30 +821,18 @@ namespace NativeCollections
         /// <summary>
         /// Gets a range from this map.
         /// </summary>
-        /// <param name="fromKey">Start key of the range (inclusive).</param>
-        /// <param name="toKey">End key of the range (inclusive).</param>
+        /// <param name="lowerKey">Start key of the range (inclusive).</param>
+        /// <param name="upperKey">End key of the range (inclusive).</param>
         /// <returns>A range of this map within the given values.</returns>
-        public NativeSortedMap<TKey, TValue> SubMap(TKey fromKey, TKey toKey)
+        public NativeSortedMap<TKey, TValue> GetRange(TKey lowerKey, TKey upperKey)
         {
             if (_buffer == null)
             {
                 throw new InvalidOperationException("NativeSortedMap is invalid");
             }
 
-            var comparer = Comparer<TKey>.Default;
-            int comp = comparer.Compare(fromKey, toKey);
-            if (comp > 0)
-            {
-                throw new ArgumentException($"fromKey is greater than toKey: {fromKey} > {toKey}");
-            }
-
-            if(comp == 0)
-            {
-                return default;
-            }
-
-            int startIndex = BinarySearch(fromKey);
-            int toIndex = BinarySearch(toKey);
+            int startIndex = BinarySearch(lowerKey);
+            int toIndex = BinarySearch(upperKey);
 
             if (startIndex < 0)
             {
@@ -854,6 +842,26 @@ namespace NativeCollections
             if (toIndex < 0)
             {
                 toIndex = ~toIndex;
+            }
+
+            if(toIndex >= _count)
+            {
+                toIndex = _count - 1;
+            }
+
+            if (startIndex >= _count)
+            {
+                startIndex = _count - 1;
+            }
+
+            if(startIndex == toIndex)
+            {
+                return default;
+            }
+
+            if(startIndex > toIndex)
+            {
+                throw new ArgumentException($"lowerKey is greater than upperKey: {lowerKey} > {upperKey}");
             }
 
             int length = toIndex - startIndex + 1;
@@ -867,7 +875,7 @@ namespace NativeCollections
         /// </summary>
         /// <param name="range">The range.</param>
         /// <returns>A sub map within the given range.</returns>
-        public NativeSortedMap<TKey, TValue> SubMap(Range range)
+        public NativeSortedMap<TKey, TValue> GetRange(Range range)
         {
             if (_buffer == null)
             {
@@ -876,7 +884,12 @@ namespace NativeCollections
 
             var (startIndex, length) = range.GetOffsetAndLength(_count);
 
-            if (length == 0)
+            if(startIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException($"start index cannot be negative: {range}", nameof(range));
+            }
+
+            if (length == 0 || startIndex >= _count)
             {
                 return default;
             }
@@ -1099,11 +1112,6 @@ namespace NativeCollections
         /// <returns>An newly allocated array with the elements of this instance.</returns>
         public KeyValuePair<TKey, TValue>[] ToArray()
         {
-            if (_buffer == null)
-            {
-                throw new InvalidOperationException("NativeSortedMap is invalid");
-            }
-
             if (_count == 0)
             {
                 return Array.Empty<KeyValuePair<TKey, TValue>>();
@@ -1124,11 +1132,6 @@ namespace NativeCollections
         /// <returns>A new array with the elements of this instance.</returns>
         public NativeArray<KeyValuePair<TKey, TValue>> ToNativeArray()
         {
-            if (_buffer == null)
-            {
-                throw new InvalidOperationException("NativeSortedMap is invalid");
-            }
-
             if (_count == 0)
             {
                 return default;
@@ -1318,11 +1321,8 @@ namespace NativeCollections
                 return;
             }
 
-            if (Allocator.IsCached(_allocatorID))
-            {
-                GetAllocator()!.Free(_buffer);
-                this = default;
-            }
+            GetAllocator()!.Free(_buffer);
+            this = default;
         }
 
         /// <summary>

@@ -479,9 +479,9 @@ namespace NativeCollections
         /// <returns>An array with the elements of this</returns>
         public T[] ToArray()
         {
-            if (_buffer == null)
+            if (_capacity == 0)
             {
-                throw new InvalidOperationException("NativeArray is invalid");
+                return Array.Empty<T>();
             }
 
             T[] array = new T[_capacity];
@@ -499,11 +499,8 @@ namespace NativeCollections
                 return;
             }
 
-            if (Allocator.IsCached(_allocatorID))
-            {
-                GetAllocator()!.Free(_buffer);
-                this = default;
-            }
+            GetAllocator()!.Free(_buffer);
+            this = default;
         }
 
         /// <summary>

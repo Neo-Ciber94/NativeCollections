@@ -98,6 +98,21 @@ namespace NativeCollections.Allocators
         }
 
         /// <summary>
+        /// Allocates a copy of the elements in the given memory block.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="pointer">The pointer to the memory block.</param>
+        /// <param name="elementCount">The number of elements to copy.</param>
+        /// <returns>A copy of the given memory block.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe T* AllocateCopy<T>(T* pointer, int elementCount) where T: unmanaged
+        {
+            T* buffer = Allocate<T>(elementCount);
+            Unsafe.CopyBlockUnaligned(buffer, pointer, (uint)(sizeof(T) * elementCount));
+            return buffer;
+        }
+
+        /// <summary>
         /// Allocates the specified amount of elements and perform an operation over them using a <see cref="Span{T}"/>.
         /// </summary>
         /// <typeparam name="T">Type of the allocated elements.</typeparam>

@@ -63,17 +63,17 @@ namespace NativeCollections
         /// <summary>
         /// The number of elements in this query.
         /// </summary>
-        public int Length => _length;
+        public readonly int Length => _length;
 
         /// <summary>
         /// Determines if this query have not elements.
         /// </summary
-        public bool IsEmpty => _length == 0;
+        public readonly bool IsEmpty => _length == 0;
 
         /// <summary>
         /// Determines if this query is allocated.
         /// </summary
-        public bool IsValid => _buffer != null;
+        public readonly bool IsValid => _buffer != null;
 
         /// <summary>
         /// Gets a read-only reference to the element at the specified index.
@@ -97,7 +97,7 @@ namespace NativeCollections
         /// </summary>
         /// <returns>The allocator used for this query.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal Allocator? GetAllocator()
+        internal readonly Allocator? GetAllocator()
         {
             return Allocator.GetAllocatorByID(_allocatorID);
         }
@@ -107,7 +107,7 @@ namespace NativeCollections
         /// </summary>
         /// <param name="action">The action to execute over each element.</param>
         [DisposeAfterCall]
-        public void ForEach(Action<T> action)
+        public readonly void ForEach(Action<T> action)
         {
             try
             {
@@ -183,7 +183,7 @@ namespace NativeCollections
         /// Gets an enumerator over the elements of this query.
         /// </summary>
         /// <returns>An enumerator over the elements of the query.</returns>
-        public RefEnumerator<T> GetEnumerator()
+        public readonly RefEnumerator<T> GetEnumerator()
         {
             if (_buffer == null)
             {

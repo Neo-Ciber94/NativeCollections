@@ -181,7 +181,7 @@ namespace NativeCollections
         /// </summary>
         /// <param name="elements">The elements to add.</param>
         /// <returns>The number of elements added to the set.</returns>
-        public int AddRange(in Span<T> elements)
+        public int AddAll(in Span<T> elements)
         {
             if (elements.IsEmpty)
                 return 0;
@@ -273,6 +273,82 @@ namespace NativeCollections
         }
 
         /// <summary>
+        /// Performs an union with this set and the specified elements.
+        /// </summary>
+        /// <param name="elements">The elements to perform the union with.</param>
+        public void UnionWith(in Span<T> elements)
+        {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
+
+            foreach (ref var e in elements)
+            {
+                Add(e);
+            }
+        }
+
+        /// <summary>
+        /// Performs an intersection with this set and the specified elements.
+        /// </summary>
+        /// <param name="elements">The elements to perform the intersection with.</param>
+        public void IntersectionWith(in Span<T> elements)
+        {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
+
+            using NativeArray<T> copy = ToNativeArray();
+
+            foreach (ref var e in copy)
+            {
+                if (!SpanHelper.Contains(elements, e))
+                {
+                    Remove(e);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Performs a difference with this set and the specified elements.
+        /// </summary>
+        /// <param name="elements">The elements to perform the difference with.</param>
+        public void DifferenceWith(in Span<T> elements)
+        {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
+
+            foreach (ref var e in elements)
+            {
+                Remove(e);
+            }
+        }
+
+        /// <summary>
+        /// Performs a symmetric difference with this set and the specified elements.
+        /// </summary>
+        /// <param name="elements">The elements to perform the symmetric difference.</param>
+        public void SymmetricDifferenceWith(in Span<T> elements)
+        {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeSet is invalid");
+            }
+
+            foreach (ref var e in elements)
+            {
+                if (Contains(e))
+                {
+                    Remove(e);
+                }
+            }
+        }
+
+        /// <summary>
         /// Clears the content of this set.
         /// </summary>
         public void Clear()
@@ -356,82 +432,6 @@ namespace NativeCollections
             }
 
             return true;
-        }
-
-        /// <summary>
-        /// Performs an union with this set and the specified elements.
-        /// </summary>
-        /// <param name="elements">The elements to perform the union with.</param>
-        public void UnionWith(in Span<T> elements)
-        {
-            if (_buffer == null)
-            {
-                throw new InvalidOperationException("NativeSet is invalid");
-            }
-
-            foreach (ref var e in elements)
-            {
-                Add(e);
-            }
-        }
-
-        /// <summary>
-        /// Performs an intersection with this set and the specified elements.
-        /// </summary>
-        /// <param name="elements">The elements to perform the intersection with.</param>
-        public void IntersectionWith(in Span<T> elements)
-        {
-            if (_buffer == null)
-            {
-                throw new InvalidOperationException("NativeSet is invalid");
-            }
-
-            using NativeArray<T> copy = ToNativeArray();
-
-            foreach (ref var e in copy)
-            {
-                if (!SpanHelper.Contains(elements, e))
-                {
-                    Remove(e);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Performs a difference with this set and the specified elements.
-        /// </summary>
-        /// <param name="elements">The elements to perform the difference with.</param>
-        public void DifferenceWith(in Span<T> elements)
-        {
-            if (_buffer == null)
-            {
-                throw new InvalidOperationException("NativeSet is invalid");
-            }
-
-            foreach (ref var e in elements)
-            {
-                Remove(e);
-            }
-        }
-
-        /// <summary>
-        /// Performs a symmetric difference with this set and the specified elements.
-        /// </summary>
-        /// <param name="elements">The elements to perform the symmetric difference.</param>
-        public void SymmetricDifferenceWith(in Span<T> elements)
-        {
-            if (_buffer == null)
-            {
-                throw new InvalidOperationException("NativeSet is invalid");
-            }
-
-            foreach (ref var e in elements)
-            {
-                if (Contains(e))
-                {
-                    Remove(e);
-                }
-            }
         }
 
         /// <summary>
@@ -550,11 +550,6 @@ namespace NativeCollections
         /// <returns>An newly allocated array with the elements of this instance.</returns>
         public T[] ToArray()
         {
-            if (_buffer == null)
-            {
-                throw new InvalidOperationException("NativeSet is invalid");
-            }
-
             if (_count == 0)
             {
                 return Array.Empty<T>();
@@ -571,13 +566,10 @@ namespace NativeCollections
         /// <returns>A new array with the elements of this instance.</returns>
         public NativeArray<T> ToNativeArray()
         {
-            if (_buffer == null)
-            {
-                throw new InvalidOperationException("NativeSet is invalid");
-            }
-
             if (_count == 0)
+            {
                 return default;
+            }
 
             NativeArray<T> array = new NativeArray<T>(_count, GetAllocator()!);
             int i = 0;
@@ -666,11 +658,8 @@ namespace NativeCollections
                 return;
             }
 
-            if (Allocator.IsCached(_allocatorID))
-            {
-                GetAllocator()!.Free(_buffer);
-                this = default;
-            }
+            GetAllocator()!.Free(_buffer);
+            this = default;
         }
 
         private void Initializate()

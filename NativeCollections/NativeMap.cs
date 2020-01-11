@@ -843,11 +843,6 @@ namespace NativeCollections
         /// <returns>An array with the key-values of this map.</returns>
         public readonly KeyValuePair<TKey, TValue>[] ToArray()
         {
-            if (_buffer == null)
-            {
-                throw new ArgumentException("NativeMap is invalid");
-            }
-
             if (_count == 0)
             {
                 return Array.Empty<KeyValuePair<TKey, TValue>>();
@@ -873,11 +868,6 @@ namespace NativeCollections
         /// <returns>An array with the key-values of this map.</returns>
         public NativeArray<KeyValuePair<TKey, TValue>> ToNativeArray()
         {
-            if (_buffer == null)
-            {
-                throw new ArgumentException("NativeMap is invalid");
-            }
-
             if (_count == 0)
             {
                 return default;
@@ -1014,11 +1004,8 @@ namespace NativeCollections
                 return;
             }
 
-            if (Allocator.IsCached(_allocatorID))
-            {
-                GetAllocator()!.Free(_buffer);
-                this = default;
-            }
+            GetAllocator()!.Free(_buffer);
+            this = default;
         }
 
         /// <summary>

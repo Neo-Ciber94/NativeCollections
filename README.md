@@ -3,55 +3,34 @@
 A library inspired in ```Unity.Collections``` that provides a set of containers that 
 make use of unmanaged memory for hold their elements.
 
-The main purpose is to provide containers that produces <i>zero allocations</i>
+The main purpose is to provide containers that produces *zero allocations*
 and call ```Dispose``` after use.
 
 ------------------------
 
 ### This libray provides the follow containers:
-```csharp
-// A fixed length collection
-struct NativeArray<T> where T: unmanaged
 
-// A dynamic size collection
-struct NativeList<T> where T: unmanaged
 
-// A dynamic size collection of differents items
-struct NativeSet<T> where T: unmanaged
+| Collection  | Description										   |
+| ----------- | -------------------------------------------------- |
+| NativeArray | A fixed length collection						   |
+| NativeList  | A dynamic size collection						   |
+| NativeMap   | A dynamic size key-value collection				   |
+| NativeSet	  | A dynamic size collection of different items	   |
+| NativeStack | A dynamic size FILO (first-in last-out) collection |
+| NativeQueue | A dynamic size FIFO (first-in first-out) collection|
+| NativeDeque | A dynamic size double-ended queue collection	   |
+| NativeSortedMap | A dynamic size sorted key-value collection     |
+| NativeString | A fixed size colleciton of ``char``			   |
 
-// A dynamic size FILO (first-in last-out) collection
-struct NativeStack<T> where T: unmanaged
-
-// A dynamic size FIFO (first-in first-out) collection
-struct NativeQueue<T> where T: unmanaged
-
-// A dynamic size double-ended queue  collection
-struct NativeDeque<T> where T: unmanaged
-
-// A dynamic size key-value collection
-struct NativeMap<TKey,TValue> where TKey: unmanaged where TValue: unmanaged
-
-// A dynamic size ordered key-value collection
-struct NativeSortedMap<TKey, TValue>  where TKey: unmanaged where TValue: unmanaged
-
-// A fixed size collection of 'char'
-struct NativeString
-```
 
 ### Others:
-```csharp
-// Provides LINQ utilities
-readonly ref struct NativeQuery<T>
-
-// A view to unmanaged memory
-readonly ref struct NativeSlice<T>
-
-// A reference to a value
-ref struct ByReference<T>
-
-// A read-only reference to a value
-readonly ref struct ByReadOnlyReferene<T>
-```
+| Collection  | Description										   |
+| ----------- | -------------------------------------------------- |
+| NativeQuery | Provides methods for query over a NativeContainer  |
+| NativeSlice | A view to a contiguous region of memory			   |
+| ByReference | A reference to a value							   |
+| ByReadOnlyReference | A read-only reference to a value	       |
 
 Each container inherit from ```INativeContainer``` and ```IDisposable```.
 

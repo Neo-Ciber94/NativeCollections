@@ -272,7 +272,7 @@ namespace NativeCollections
                 return;
             }
 
-            Allocator.Default.Free(_buffer);
+            GetAllocator()!.Free(_buffer);
             this = default;
         }
 
@@ -282,9 +282,9 @@ namespace NativeCollections
         /// <returns>A <see cref="char"/> array with this instance values.</returns>
         public char[] ToArray()
         {
-            if (_buffer == null)
+            if (_length == 0)
             {
-                throw new InvalidOperationException("NativeString is invalid");
+                return Array.Empty<char>();
             }
 
             char[] array = new char[_length];
@@ -299,9 +299,9 @@ namespace NativeCollections
         /// <exception cref="InvalidOperationException">If NativeString is invalid</exception>
         public NativeArray<char> ToNativeArray()
         {
-            if (_buffer == null)
+            if (_length == 0)
             {
-                throw new InvalidOperationException("NativeString is invalid");
+                return default;
             }
 
             NativeArray<char> array = new NativeArray<char>(_length, GetAllocator()!);

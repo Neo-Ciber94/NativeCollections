@@ -372,11 +372,8 @@ namespace NativeCollections
                 return;
             }
 
-            if (Allocator.IsCached(_allocatorID))
-            {
-                GetAllocator()!.Free(_buffer);
-                this = default;
-            }
+            GetAllocator()!.Free(_buffer);
+            this = default;
         }
 
         /// <summary>
@@ -394,11 +391,6 @@ namespace NativeCollections
         /// <returns>An newly allocated array with the elements of this instance.</returns>
         public T[] ToArray()
         {
-            if (_buffer == null)
-            {
-                throw new InvalidOperationException("NativeStack is invalid");
-            }
-
             if (_count == 0)
             {
                 return Array.Empty<T>();
@@ -415,11 +407,6 @@ namespace NativeCollections
         /// <returns>A new array with the elements of this instance.</returns>
         public NativeArray<T> ToNativeArray()
         {
-            if (_buffer == null)
-            {
-                throw new InvalidOperationException("NativeStack is invalid");
-            }
-
             if (_count == 0)
             {
                 return default;

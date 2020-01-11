@@ -701,6 +701,18 @@ namespace NativeCollections.Tests
             Assert.AreEqual(2, emptyArray.AsQuery().Reduce(2, (total, cur) => total + cur));
         }
 
+
+        [Test()]
+        public void SequenceEqualsTest()
+        {
+            using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 1, 2, 3 });
+
+            Assert.IsTrue(array.AsQuery().SequenceEquals(stackalloc int[] { 1, 2, 3 }));
+            Assert.IsFalse(array.AsQuery().SequenceEquals(stackalloc int[] { 3, 2, 1}));
+            Assert.IsFalse(array.AsQuery().SequenceEquals(stackalloc int[] { 1, 2, 4 }));
+            Assert.IsFalse(array.AsQuery().SequenceEquals(stackalloc int[] { 1, 2, 3, 4 }));
+        }
+
         // Extensions
 
         [Test()]
@@ -885,6 +897,55 @@ namespace NativeCollections.Tests
 
             NativeQuery<int> emptyQuery = new NativeQuery<int>().DefaultIfEmpty(stackalloc int[] { 11, 12, 13 });
             Assert.AreEqual(new int[] { 11, 12, 13 }, ToArrayAndDispose(ref emptyQuery));
+        }
+
+        [Test()]
+        public void ZipTest()
+        {
+            using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 1, 2, 3 });
+            using NativeQuery<int> query = array.AsQuery().Zip(stackalloc int[] { 3, 2, 1 }, (a, b) => a + b);
+
+            Assert.AreEqual(4, query[0]);
+            Assert.AreEqual(4, query[1]);
+            Assert.AreEqual(4, query[2]);
+        }
+
+        [Test()]
+        public void ConcatTest()
+        {
+            using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 1, 2, 3 });
+            using NativeQuery<int> query = array.AsQuery().Concat(stackalloc int[] { 4, 5, 6 });
+
+            Assert.AreEqual(1, query[0]);
+            Assert.AreEqual(2, query[1]);
+            Assert.AreEqual(3, query[2]);
+            Assert.AreEqual(4, query[3]);
+            Assert.AreEqual(5, query[4]);
+            Assert.AreEqual(6, query[5]);
+        }
+
+        [Test()]
+        public void AppendTest()
+        {
+            using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 1, 2, 3 });
+            using NativeQuery<int> query = array.AsQuery().Append(4);
+
+            Assert.AreEqual(1, query[0]);
+            Assert.AreEqual(2, query[1]);
+            Assert.AreEqual(3, query[2]);
+            Assert.AreEqual(4, query[3]);
+        }
+
+        [Test()]
+        public void PrependTest()
+        {
+            using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 1, 2, 3 });
+            using NativeQuery<int> query = array.AsQuery().Prepend(0);
+
+            Assert.AreEqual(0, query[0]);
+            Assert.AreEqual(1, query[1]);
+            Assert.AreEqual(2, query[2]);
+            Assert.AreEqual(3, query[3]);
         }
 
         // ToNativeContainer

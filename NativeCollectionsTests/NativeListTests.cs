@@ -87,7 +87,7 @@ namespace NativeCollections.Tests
         public void AddRangeTest()
         {
             using NativeList<int> list = new NativeList<int>(3);
-            list.AddRange(stackalloc int[] { 1, 2, 3 });
+            list.AddAll(stackalloc int[] { 1, 2, 3 });
 
             Assert.AreEqual(1, list[0]);
             Assert.AreEqual(2, list[1]);
@@ -97,7 +97,7 @@ namespace NativeCollections.Tests
             Assert.AreEqual(3, list.Capacity);
             Assert.IsFalse(list.IsEmpty);
 
-            list.AddRange(stackalloc int[] { 4, 5, 6, 7, 8 });
+            list.AddAll(stackalloc int[] { 4, 5, 6, 7, 8 });
             Assert.AreEqual(8, list.Length);
             Assert.AreEqual(8, list.Capacity);
 

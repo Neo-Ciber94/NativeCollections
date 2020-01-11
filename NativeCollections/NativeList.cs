@@ -262,7 +262,7 @@ namespace NativeCollections
         /// Adds all the elements in the span at the end of the list.
         /// </summary>
         /// <param name="elements">The span that holds the elements to add.</param>
-        public void AddRange(in Span<T> elements)
+        public void AddAll(in Span<T> elements)
         {
             if (elements.IsEmpty)
             {
@@ -270,24 +270,39 @@ namespace NativeCollections
             }
 
             void* startAddress = Unsafe.AsPointer(ref MemoryMarshal.GetReference(elements));
-            AddRange(startAddress, elements.Length);
+            AddAll(startAddress, elements.Length);
+        }
+
+        /// <summary>
+        /// Adds all the elements in the span at the end of the list.
+        /// </summary>
+        /// <param name="elements">The span that holds the elements to add.</param>
+        public void AddAll(in ReadOnlySpan<T> elements)
+        {
+            if (elements.IsEmpty)
+            {
+                throw new ArgumentException("Empty span");
+            }
+
+            void* startAddress = Unsafe.AsPointer(ref MemoryMarshal.GetReference(elements));
+            AddAll(startAddress, elements.Length);
         }
 
         /// <summary>
         /// Adds all the elements in the array at the end of the list.
         /// </summary>
         /// <param name="elements">The array that holds the elements to add.</param>
-        public void AddRange(NativeArray<T> elements)
+        public void AddAll(NativeArray<T> elements)
         {
             if (_buffer == null)
             {
                 throw new ArgumentException("Invalid array");
             }
 
-            AddRange(elements._buffer, elements.Length);
+            AddAll(elements._buffer, elements.Length);
         }
 
-        private void AddRange(void* source, int length)
+        internal void AddAll(void* source, int length)
         {
             if (_buffer == null)
             {
@@ -346,6 +361,28 @@ namespace NativeCollections
         }
 
         /// <summary>
+        /// Inserts all the elements in the span at the specified index.
+        /// </summary>
+        /// <param name="index">The index where insert the elements.</param>
+        /// <param name="elements">The span that holds the elements.</param>
+        /// <exception cref="ArgumentOutOfRangeException">If the index is lower than 0 or greater than Length.</exception>
+        public void InsertRange(int index, ReadOnlySpan<T> elements)
+        {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeList is invalid");
+            }
+
+            if (elements.IsEmpty)
+            {
+                throw new ArgumentException("Empty span");
+            }
+
+            void* pointer = Unsafe.AsPointer(ref MemoryMarshal.GetReference(elements));
+            InsertRange(index, pointer, elements.Length);
+        }
+
+        /// <summary>
         /// Inserts all the elements in the array at the specified index.
         /// </summary>
         /// <param name="index">The index where insert the elements.</param>
@@ -366,7 +403,7 @@ namespace NativeCollections
             InsertRange(index, elements._buffer, elements.Length);
         }
 
-        private void InsertRange(int index, void* source, int length)
+        internal void InsertRange(int index, void* source, int length)
         {
             Debug.Assert(_buffer != null, "NativeList is invalid");
 
@@ -768,9 +805,9 @@ namespace NativeCollections
         /// <summary>
         /// Copies the content of this list to a <see cref="System.Span{T}" />.</summary>
         /// <param name="span">The destination span to copy the data.</param>
-        /// <param name="destinationIndex">Start index of the destination where start to copy.</param>
+        /// <param name="index">Start index of the destination where start to copy.</param>
         /// <param name="count">The number of elements to copy.</param>
-        public readonly void CopyTo(in Span<T> span, int destinationIndex, int count)
+        public readonly void CopyTo(in Span<T> span, int index, int count)
         {
             if (span.IsEmpty)
                 throw new ArgumentException("Span is empty");
@@ -778,13 +815,13 @@ namespace NativeCollections
             if (_buffer == null)
                 throw new InvalidOperationException("NativeList is invalid");
 
-            if (destinationIndex < 0 || destinationIndex > span.Length)
-                throw new ArgumentOutOfRangeException(nameof(destinationIndex), destinationIndex.ToString());
+            if (index < 0 || index > span.Length)
+                throw new ArgumentOutOfRangeException(nameof(index), index.ToString());
 
-            if (count < 0 || count > _count || count > (span.Length - destinationIndex))
+            if (count < 0 || count > _count || count > (span.Length - index))
                 throw new ArgumentOutOfRangeException(nameof(count), count.ToString());
 
-            void* dst = (T*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span)) + destinationIndex;
+            void* dst = (T*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span)) + index;
             void* src = _buffer;
             Unsafe.CopyBlock(dst, src, (uint)(sizeof(T) * count));
         }
@@ -795,11 +832,6 @@ namespace NativeCollections
         /// <returns>An array with the elements of this list.</returns>
         public T[] ToArray()
         {
-            if (_buffer == null)
-            {
-                throw new InvalidOperationException("NativeList is invalid");
-            }
-
             if (_count == 0)
             {
                 return Array.Empty<T>();
@@ -816,9 +848,9 @@ namespace NativeCollections
         /// <returns>A newly create array with this list elements.</returns>
         public NativeArray<T> ToNativeArray()
         {
-            if (_buffer == null)
+            if (_count == 0)
             {
-                throw new InvalidOperationException("NativeList is invalid");
+                return default;
             }
 
             NativeArray<T> array = new NativeArray<T>(_count, GetAllocator()!);
@@ -875,11 +907,8 @@ namespace NativeCollections
                 return;
             }
 
-            if (Allocator.IsCached(_allocatorID))
-            {
-                GetAllocator()!.Free(_buffer);
-                this = default;
-            }
+            GetAllocator()!.Free(_buffer);
+            this = default;
         }
 
         /// <summary>
