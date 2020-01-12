@@ -179,7 +179,7 @@ namespace NativeCollections.Allocators
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool IsOwner(void* block)
+        public bool IsOwner(void* block)
         {
             return block != null && block >= _bufferStart && block < _bufferEnd;
         }

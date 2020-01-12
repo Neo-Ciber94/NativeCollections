@@ -471,7 +471,8 @@ namespace NativeCollections
 
                 if (i < _count - 1)
                 {
-                    sb.Append(", ");
+                    sb.Append(',');
+                    sb.Append(' ');
                 }
             }
 

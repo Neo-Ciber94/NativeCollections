@@ -129,16 +129,9 @@ namespace NativeCollections
         [DisposeAfterCall]
         public void ForEach(Action<T> action)
         {
-            try
+            foreach (var e in this)
             {
-                foreach (var e in this)
-                {
-                    action(e);
-                }
-            }
-            finally
-            {
-                Dispose();
+                action(e);
             }
         }
 
@@ -156,18 +149,19 @@ namespace NativeCollections
             }
 
             StringBuilder sb = StringBuilderCache.Acquire();
-            RefEnumerator<T> enumerable = GetEnumerator();
+            Enumerator enumerator = GetEnumerator();
             sb.Append('[');
 
-            if (enumerable.MoveNext())
+            if (enumerator.MoveNext())
             {
                 while (true)
                 {
-                    sb.Append(enumerable.Current.ToString());
+                    sb.Append(enumerator.Current.ToString());
 
-                    if (enumerable.MoveNext())
+                    if (enumerator.MoveNext())
                     {
-                        sb.Append(", ");
+                        sb.Append(',');
+                        sb.Append(' ');
                     }
                     else
                     {
@@ -200,17 +194,120 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Gets an enumerator over the elements of this query.
+        /// Gets an enumerator over the elements of this query that may be dispose the query at the end.
         /// </summary>
         /// <returns>An enumerator over the elements of the query.</returns>
-        public readonly RefEnumerator<T> GetEnumerator()
+        public readonly Enumerator GetEnumerator()
         {
             if (_buffer == null)
             {
                 return default;
             }
 
-            return new RefEnumerator<T>(_buffer, _length);
+            fixed (NativeQuery<T>* p = &this)
+            {
+                return new Enumerator(p, dispose: true);
+            }
+        }
+
+        /// <summary>
+        /// Gets an enumerator over the elements of this query that may be dispose the query at the end.
+        /// </summary>
+        /// <param name="disposing">If set to true Dispose will be called for the query after the enumeration is done.</param>
+        /// <returns>An enumerator over the elements of the query.</returns>
+        public readonly Enumerator GetEnumerator(bool disposing)
+        {
+            if(_buffer == null)
+            {
+                return default;
+            }
+
+            fixed(NativeQuery<T>* p = &this)
+            {
+                return new Enumerator(p, disposing);
+            }
+        }
+
+        /// <summary>
+        /// Gets an enumerator over the elemnets of a <see cref="NativeQuery{T}"/> that can dispose the query after enumeration.
+        /// </summary>
+        public struct Enumerator
+        {
+            private NativeQuery<T>* _query;
+            private int _pos;
+            private bool _dispose;
+
+            internal Enumerator(NativeQuery<T>* query, bool dispose)
+            {
+                _query = query;
+                _pos = -1;
+                _dispose = dispose;
+            }
+
+            /// <summary>
+            /// Gets a reference to the current value.
+            /// </summary>
+            public readonly ref T Current
+            {
+                get
+                {
+                    if (_query == null)
+                    {
+                        throw new InvalidOperationException("Enumerator is invalid");
+                    }
+
+                    if (_pos < 0 || _pos > _query->_length)
+                    {
+                        throw new ArgumentOutOfRangeException(_pos.ToString());
+                    }
+
+                    ref NativeQuery<T> query = ref *_query;
+                    return ref query[_pos];
+                }
+            }
+
+            /// <summary>
+            /// Moves to the next value.
+            /// </summary>
+            public bool MoveNext()
+            {
+                if (_query != null)
+                {
+                    int index = _pos + 1;
+                    if (index < _query->_length)
+                    {
+                        _pos = index;
+                        return true;
+                    }
+
+                    if (_query != null && _dispose)
+                    {
+                        Dispose();
+                    }
+                }
+
+                return false;
+            }
+
+            /// <summary>
+            /// Resets this enumerator.
+            /// </summary>
+            public void Reset()
+            {
+                _pos = -1;
+            }
+
+            /// <summary>
+            /// Dispose this enumerator and the <see cref="NativeQuery{T}"/>.
+            /// </summary>
+            public void Dispose()
+            {
+                if (_query != null)
+                {
+                    _query->Dispose();
+                    this = default;
+                }
+            }
         }
     }
 }

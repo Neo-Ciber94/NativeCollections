@@ -58,7 +58,6 @@ namespace NativeCollections
             }
 
             set.TrimExcess();
-            Dispose();
             return set;
         }
 
@@ -97,7 +96,6 @@ namespace NativeCollections
                 queue.Enqueue(e);
             }
 
-            Dispose();
             return queue;
         }
 
@@ -119,7 +117,6 @@ namespace NativeCollections
                 deque.AddFirst(e);
             }
 
-            Dispose();
             return deque;
         }
 
@@ -142,7 +139,6 @@ namespace NativeCollections
             }
 
             set.TrimExcess();
-            Dispose();
             return set;
         }
 
@@ -167,7 +163,6 @@ namespace NativeCollections
                 map.TryAdd(key, e);
             }
 
-            Dispose();
             return map;
         }
 
@@ -194,7 +189,6 @@ namespace NativeCollections
                 map.TryAdd(key, value);
             }
 
-            Dispose();
             return map;
         }
 
@@ -219,7 +213,6 @@ namespace NativeCollections
                 map.TryAdd(key, e);
             }
 
-            Dispose();
             return map;
         }
 
@@ -246,7 +239,6 @@ namespace NativeCollections
                 map.TryAdd(key, value);
             }
 
-            Dispose();
             return map;
         }
     }

@@ -25,14 +25,14 @@ namespace NativeCollections
             int length = _length;
             Allocator allocator = GetAllocator()!;
             TResult* buffer = GetAllocator()!.Allocate<TResult>(length);
-            RefEnumerator<T> enumerable = GetEnumerator();
+            Enumerator enumerator = GetEnumerator(disposing: false);
 
-            if (enumerable.MoveNext())
+            if (enumerator.MoveNext())
             {
                 for (int i = 0; i < length; i++)
                 {
-                    buffer[i] = selector(enumerable.Current);
-                    enumerable.MoveNext();
+                    buffer[i] = selector(enumerator.Current);
+                    enumerator.MoveNext();
                 }
             }
 
@@ -165,7 +165,7 @@ namespace NativeCollections
 
             Allocator allocator = GetAllocator()!;
             NativeList<T> list = new NativeList<T>(_length, allocator);
-            RefEnumerator<T> enumerator = GetEnumerator();
+            Enumerator enumerator = GetEnumerator(disposing: false);
 
             while (enumerator.MoveNext())
             {
@@ -207,7 +207,7 @@ namespace NativeCollections
                 return new NativeQuery<T>(GetAllocator());
             }
 
-            RefEnumerator<T> enumerator = GetEnumerator();
+            Enumerator enumerator = GetEnumerator(disposing: false);
             bool hasNext = enumerator.MoveNext();
             int skip = 0;
 
@@ -460,14 +460,14 @@ namespace NativeCollections
             int length = _length;
             Allocator allocator = GetAllocator()!;
             IndexedValue<T>* buffer = GetAllocator()!.Allocate<IndexedValue<T>>(length);
-            RefEnumerator<T> enumerable = GetEnumerator();
+            Enumerator enumerator = GetEnumerator(disposing: false);
 
-            if (enumerable.MoveNext())
+            if (enumerator.MoveNext())
             {
                 for (int i = 0; i < length; i++)
                 {
-                    buffer[i] = new IndexedValue<T>(enumerable.Current, i);
-                    enumerable.MoveNext();
+                    buffer[i] = new IndexedValue<T>(enumerator.Current, i);
+                    enumerator.MoveNext();
                 }
             }
 

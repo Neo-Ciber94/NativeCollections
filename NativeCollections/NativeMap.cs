@@ -1019,7 +1019,8 @@ namespace NativeCollections
                     ref KeyValuePair<TKey, TValue> pair = ref enumerator.Current;
                     sb.Append('{');
                     sb.Append(pair.Key.ToString());
-                    sb.Append(", ");
+                    sb.Append(',');
+                    sb.Append(' ');
                     sb.Append(pair.Value.ToString());
                     sb.Append('}');
 
@@ -1028,7 +1029,8 @@ namespace NativeCollections
                         break;
                     }
 
-                    sb.Append(", ");
+                    sb.Append(',');
+                    sb.Append(' ');
                 }
             }
 

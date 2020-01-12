@@ -709,7 +709,8 @@ namespace NativeCollections
                     sb.Append(enumerator.Current.ToString());
                     if (enumerator.MoveNext())
                     {
-                        sb.Append(", ");
+                        sb.Append(',');
+                        sb.Append(' ');
                     }
                     else
                     {

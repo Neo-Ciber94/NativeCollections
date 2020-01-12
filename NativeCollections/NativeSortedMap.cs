@@ -1298,13 +1298,15 @@ namespace NativeCollections
                 ref Entry entry = ref _buffer[i];
                 sb.Append('{');
                 sb.Append(entry.key.ToString());
-                sb.Append(", ");
+                sb.Append(',');
+                sb.Append(' ');
                 sb.Append(entry.value.ToString());
                 sb.Append('}');
 
                 if (i != _count - 1)
                 {
-                    sb.Append(", ");
+                    sb.Append(',');
+                    sb.Append(' ');
                 }
             }
             sb.Append(']');

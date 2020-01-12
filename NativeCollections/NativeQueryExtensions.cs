@@ -40,7 +40,6 @@ namespace NativeCollections
                 throw new InvalidOperationException("Cannot find the min value.");
             }
 
-            query.Dispose();
             return min.Value;
         }
 
@@ -76,7 +75,6 @@ namespace NativeCollections
                 throw new InvalidOperationException("Cannot find the min value.");
             }
 
-            query.Dispose();
             return max.Value;
         }
 
@@ -95,7 +93,6 @@ namespace NativeCollections
                 total += e;
             }
 
-            query.Dispose();
             return total;
         }
 
@@ -114,7 +111,6 @@ namespace NativeCollections
                 total += e;
             }
 
-            query.Dispose();
             return total;
         }
 
@@ -133,7 +129,6 @@ namespace NativeCollections
                 total += e;
             }
 
-            query.Dispose();
             return total;
         }
 
@@ -152,7 +147,6 @@ namespace NativeCollections
                 total += e;
             }
 
-            query.Dispose();
             return total;
         }
 
@@ -171,7 +165,6 @@ namespace NativeCollections
                 total += e;
             }
 
-            query.Dispose();
             return total;
         }
 
@@ -190,7 +183,6 @@ namespace NativeCollections
                 total += e;
             }
 
-            query.Dispose();
             return total;
         }
 
@@ -209,7 +201,6 @@ namespace NativeCollections
                 total += e;
             }
 
-            query.Dispose();
             return total;
         }
 
@@ -228,13 +219,12 @@ namespace NativeCollections
             }
 
             int total = 0;
+            int length = query.Length;
             foreach (ref var e in query)
             {
                 total += e;
             }
 
-            int length = query.Length;
-            query.Dispose();
             return total / length;
         }
 
@@ -253,13 +243,12 @@ namespace NativeCollections
             }
 
             long total = 0;
+            int length = query.Length;
             foreach (ref var e in query)
             {
                 total += e;
             }
 
-            int length = query.Length;
-            query.Dispose();
             return total / length;
         }
 
@@ -278,13 +267,12 @@ namespace NativeCollections
             }
 
             uint total = 0;
+            int length = query.Length;
             foreach (ref var e in query)
             {
                 total += e;
             }
 
-            int length = query.Length;
-            query.Dispose();
             return total / (uint)length;
         }
 
@@ -303,13 +291,12 @@ namespace NativeCollections
             }
 
             ulong total = 0;
+            int length = query.Length;
             foreach (ref var e in query)
             {
                 total += e;
             }
 
-            int length = query.Length;
-            query.Dispose();
             return total / (ulong)length;
         }
 
@@ -328,13 +315,12 @@ namespace NativeCollections
             }
 
             float total = 0;
+            int length = query.Length;
             foreach (ref var e in query)
             {
                 total += e;
             }
 
-            int length = query.Length;
-            query.Dispose();
             return total / length;
         }
 
@@ -353,13 +339,12 @@ namespace NativeCollections
             }
 
             double total = 0;
+            int length = query.Length;
             foreach (ref var e in query)
             {
                 total += e;
             }
 
-            int length = query.Length;
-            query.Dispose();
             return total / length;
         }
 
@@ -378,13 +363,12 @@ namespace NativeCollections
             }
 
             decimal total = 0;
+            int length = query.Length;
             foreach (ref var e in query)
             {
                 total += e;
             }
 
-            int length = query.Length;
-            query.Dispose();
             return total / length;
         }
 

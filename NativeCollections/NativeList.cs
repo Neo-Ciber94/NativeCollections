@@ -1010,7 +1010,8 @@ namespace NativeCollections
 
                     if (enumerator.MoveNext())
                     {
-                        sb.Append(", ");
+                        sb.Append(',');
+                        sb.Append(' ');
                     }
                     else
                     {
@@ -1046,7 +1047,7 @@ namespace NativeCollections
 
     public static class NativeList
     {
-        internal const int DefaultCapacity = 4;
+        internal const int DefaultCapacity = 10;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NativeList<T> Create<T>() where T: unmanaged

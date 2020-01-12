@@ -556,7 +556,8 @@ namespace NativeCollections
 
                     if (enumerator.MoveNext())
                     {
-                        sb.Append(", ");
+                        sb.Append(',');
+                        sb.Append(' ');
                     }
                     else
                     {
