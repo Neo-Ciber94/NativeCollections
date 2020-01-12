@@ -103,7 +103,7 @@ namespace NativeCollections
                 throw new ArgumentException(count.ToString(), nameof(count));
             }
 
-            int length = count > _length ? _length : count;
+            int length = count >= _length ? _length : count;
             Allocator allocator = GetAllocator()!;
             void* src = _buffer;
             void* dst = allocator.Allocate<T>(length);
@@ -258,6 +258,70 @@ namespace NativeCollections
 
             Dispose();
             return new NativeQuery<T>(list.GetUnsafePointer(), list.Length, allocator);
+        }
+
+        /// <summary>
+        /// Takes the specified number of elements from the end of this query.
+        /// </summary>
+        /// <param name="count">Number of elements to take.</param>
+        /// <returns>The new query with the resulting elements.</returns>
+        [DisposeAfterCall]
+        public NativeQuery<T> TakeLast(int count)
+        {
+            if (_length == 0)
+            {
+                return new NativeQuery<T>(GetAllocator());
+            }
+
+            if (count == 0)
+            {
+                var emptyQuery = new NativeQuery<T>(GetAllocator());
+                Dispose();
+                return emptyQuery;
+            }
+
+            if (count < 0)
+            {
+                Dispose();
+                throw new ArgumentException(count.ToString(), nameof(count));
+            }
+
+            int length = count >= _length ? _length : count;
+            Allocator allocator = GetAllocator()!;
+            void* src = _buffer + (_length - count);
+            void* dst = allocator.Allocate<T>(length);
+            Unsafe.CopyBlockUnaligned(dst, src, (uint)(sizeof(T) * length));
+            Dispose();
+            return new NativeQuery<T>(dst, length, allocator);
+        }
+
+        /// <summary>
+        /// Skips elements from the end of this query.
+        /// </summary>
+        /// <param name="count">Number of elements to skip.</param>
+        /// <returns>The new query with the resulting elements.</returns>
+        [DisposeAfterCall]
+        public NativeQuery<T> SkipLast(int count)
+        {
+            if (_length == 0 || count > _length)
+            {
+                return new NativeQuery<T>(GetAllocator());
+            }
+
+            if (count < 0)
+            {
+                Dispose();
+                throw new ArgumentException(count.ToString(), nameof(count));
+            }
+
+            int length = _length - count;
+
+            Allocator allocator = GetAllocator()!;
+            void* src = _buffer;
+            void* dst = allocator.Allocate<T>(length);
+            Unsafe.CopyBlockUnaligned(dst, src, (uint)(sizeof(T) * length));
+            Dispose();
+            return new NativeQuery<T>(dst, length, allocator);
         }
 
         /// <summary>

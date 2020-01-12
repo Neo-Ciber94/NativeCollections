@@ -417,6 +417,32 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
+        public void TakeLastTest()
+        {
+            using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 1, 3, 5, 2, 4 });
+            using NativeQuery<int> query = array.AsQuery().TakeLast(3);
+
+            Assert.AreEqual(3, query.Length);
+
+            Assert.AreEqual(5, query[0]);
+            Assert.AreEqual(2, query[1]);
+            Assert.AreEqual(4, query[2]);
+        }
+
+        [Test()]
+        public void SkipLastTest()
+        {
+            using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 1, 3, 5, 2, 4 });
+            using NativeQuery<int> query = array.AsQuery().SkipLast(2);
+
+            Assert.AreEqual(3, query.Length);
+
+            Assert.AreEqual(1, query[0]);
+            Assert.AreEqual(3, query[1]);
+            Assert.AreEqual(5, query[2]);
+        }
+
+        [Test()]
         public void ReverseTest()
         {
             using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 1, 3, 5, 2, 4 });

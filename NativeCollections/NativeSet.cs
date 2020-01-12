@@ -458,11 +458,11 @@ namespace NativeCollections
                 return;
             }
 
-            Slot* newBuffer = (Slot*)GetAllocator()!.Allocate(capacity, sizeof(Slot));
+            Slot* newBuffer = GetAllocator()!.Allocate<Slot>(capacity);
             Unsafe.CopyBlock(newBuffer, _buffer, (uint)(Unsafe.SizeOf<Slot>() * _count));
 
             // Free old buffer
-            Allocator.Default.Free(_buffer);
+            GetAllocator()!.Free(_buffer);
 
             for (int i = 0; i < capacity; i++)
             {
@@ -571,12 +571,13 @@ namespace NativeCollections
                 return default;
             }
 
-            NativeArray<T> array = new NativeArray<T>(_count, GetAllocator()!);
+            NativeArray<T> array = new NativeArray<T>(Length, GetAllocator()!);
+            Enumerator enumerator = GetEnumerator();
+
             int i = 0;
-            foreach(ref var e in this)
+            while (enumerator.MoveNext())
             {
-                array[i] = e;
-                ++i;
+                array[i++] = enumerator.Current;
             }
             return array;
         }
@@ -584,31 +585,17 @@ namespace NativeCollections
         /// <summary>
         /// Creates a new <see cref="NativeArray{T}"/> with the elements of this set and dispose this set.
         /// </summary>
-        /// <param name="createNewArrayIfNeeded">If <c>true</c> a new array will be created if the capacity of this
-        /// set is different than its length; otherwise is guaranteed the new array will use this set memory.</param>
         /// <returns>A newly created array with this list elements.</returns>
-        public NativeArray<T> ToNativeArrayAndDispose(bool createNewArrayIfNeeded = true)
+        public NativeArray<T> ToNativeArrayAndDispose()
         {
             if (_buffer == null)
             {
                 throw new InvalidOperationException("NativeSet is invalid");
             }
 
-            if (_count == _capacity || !createNewArrayIfNeeded)
-            {
-                // NativeArray will owns this instance memory
-                NativeArray<T> array = new NativeArray<T>(_buffer, _capacity, GetAllocator()!);
-
-                // Not actual dispose, just invalidate this instance
-                this = default;
-                return array;
-            }
-            else
-            {
-                NativeArray<T> array = ToNativeArray();
-                Dispose();
-                return array;
-            }
+            NativeArray<T> array = ToNativeArray();
+            Dispose();
+            return array;
         }
 
         /// <summary>
@@ -667,6 +654,7 @@ namespace NativeCollections
             for(int i = 0; i < _capacity; ++i)
             {
                 _buffer[i].bucket = -1;
+                _buffer[i].hashCode = -1;
             }
         }
 
