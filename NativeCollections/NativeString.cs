@@ -19,7 +19,7 @@ namespace NativeCollections
     /// <seealso cref="IComparable{string}" />
     unsafe public struct NativeString : INativeContainer<char>, IDisposable, IEquatable<NativeString>, IEquatable<string>, IComparable<NativeString>, IComparable<string>
     {
-        private readonly char* _buffer;
+        internal readonly char* _buffer;
         private readonly int _length;
         private readonly int _allocatorID;
 

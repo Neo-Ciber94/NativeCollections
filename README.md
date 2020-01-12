@@ -20,6 +20,7 @@ and call ```Dispose``` after use.
 | NativeStack | A dynamic size FILO (first-in last-out) collection |
 | NativeQueue | A dynamic size FIFO (first-in first-out) collection|
 | NativeDeque | A dynamic size double-ended queue collection	   |
+| NativeSortedSet | A dynamic size sorted collection of different items |
 | NativeSortedMap | A dynamic size sorted key-value collection     |
 | NativeString | A fixed size colleciton of ``char``			   |
 
@@ -32,7 +33,7 @@ and call ```Dispose``` after use.
 | ByReference | A reference to a value							   |
 | ByReadOnlyReference | A read-only reference to a value	       |
 
-Each container inherit from ```INativeContainer``` and ```IDisposable```.
+Each container inherit from ```INativeContainer<T>``` and ```IDisposable```.
 
 ```csharp
 public interface INativeContainer<T>
@@ -46,30 +47,3 @@ public interface INativeContainer<T>
 ```
 
 ------------------------
-
-### Examples:
-
-#### Example1
-```csharp
-// Creates a new NativeArray<T>
-NativeArray<int> array = new NativeArray<int>(4);
-array[0] = 2;
-array[1] = 4;
-array[2] = 6;
-array[3] = 8;
-
-// Each container must be disposed after use
-array.Dispose();
-```
-
-#### Example2
-```csharp
-// Creates a new NativeList<T> with 'using' of C#8
-// when 'list' goes out of scope 'Dispose' will be called.
-using NativeList<int> list = new NativeList<int>(4);
-list.Add(2);
-list.Add(4);
-list.Add(6);
-list.Add(8);
-```
-

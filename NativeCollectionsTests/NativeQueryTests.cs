@@ -248,6 +248,45 @@ namespace NativeCollections.Tests
             Assert.IsFalse(enumerator.MoveNext());
         }
 
+        [Test()]
+        public void NativeSortedSetAsQuery()
+        {
+            using NativeSortedSet<int> set = new NativeSortedSet<int>(stackalloc int[] { 1, 3, 5, 2, 4 });
+            using NativeQuery<int> query = set.AsQuery();
+
+            var enumerator = query.GetEnumerator();
+            Assert.IsTrue(enumerator.MoveNext());
+
+            Assert.AreEqual(1, enumerator.Current);
+            Assert.IsTrue(enumerator.MoveNext());
+
+            Assert.AreEqual(2, enumerator.Current);
+            Assert.IsTrue(enumerator.MoveNext());
+
+            Assert.AreEqual(3, enumerator.Current);
+            Assert.IsTrue(enumerator.MoveNext());
+
+            Assert.AreEqual(4, enumerator.Current);
+            Assert.IsTrue(enumerator.MoveNext());
+
+            Assert.AreEqual(5, enumerator.Current);
+            Assert.IsFalse(enumerator.MoveNext());
+        }
+
+        [Test()]
+        public void NativeStringAsQuery()
+        {
+            using NativeString str = "Hello";
+            using NativeQuery<char> query = str.AsQuery();
+
+            Assert.AreEqual(5, query.Length);
+            Assert.AreEqual('H', query[0]);
+            Assert.AreEqual('e', query[1]);
+            Assert.AreEqual('l', query[2]);
+            Assert.AreEqual('l', query[3]);
+            Assert.AreEqual('o', query[4]);
+        }
+
         // Transform
 
         [Test()]
@@ -701,7 +740,6 @@ namespace NativeCollections.Tests
             Assert.AreEqual(2, emptyArray.AsQuery().Reduce(2, (total, cur) => total + cur));
         }
 
-
         [Test()]
         public void SequenceEqualsTest()
         {
@@ -1074,9 +1112,22 @@ namespace NativeCollections.Tests
             Assert.AreEqual('d', result[3]);
         }
 
+        [Test]
+        public void ToNativeSortedSetTest()
+        {
+            using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 2, 2, 1, 1, 4, 3 });
+            using NativeSortedSet<int> result = array.AsQuery().Select(e => e * 2).ToNativeSortedSet();
+
+            Assert.AreEqual(4, result.Length);
+            Assert.AreEqual(2, result[0]);
+            Assert.AreEqual(4, result[1]);
+            Assert.AreEqual(6, result[2]);
+            Assert.AreEqual(8, result[3]);
+        }
+
         //TearDown
 
-       [TearDown]
+        [TearDown]
         public void CheckMemory()
         {
             DebugAllocator allocator = Allocator.Default as DebugAllocator;

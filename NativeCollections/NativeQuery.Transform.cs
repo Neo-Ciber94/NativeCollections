@@ -430,6 +430,7 @@ namespace NativeCollections
                 set.Add(e);
             }
 
+            set.TrimExcess();
             NativeArray<T> array = set.ToNativeArrayAndDispose();
             Dispose();
             return new NativeQuery<T>(array.GetUnsafePointer(), array.Length, allocator);
@@ -440,6 +441,7 @@ namespace NativeCollections
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>A query with the value appended.</returns>
+        [DisposeAfterCall]
         public NativeQuery<T> Append(T value)
         {
             Allocator? allocator = GetAllocator()!;
@@ -462,6 +464,7 @@ namespace NativeCollections
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>A query with the value prepended.</returns>
+        [DisposeAfterCall]
         public NativeQuery<T> Prepend(T value)
         {
             Allocator? allocator = GetAllocator();

@@ -124,6 +124,29 @@ namespace NativeCollections
         }
 
         /// <summary>
+        /// Gets a <see cref="NativeSortedSet{T}"/> using the elements of this query and then dispose this instance.
+        /// </summary>
+        /// <returns>A native set with this instance elements.</returns>
+        [DisposeAfterCall]
+        public NativeSortedSet<T> ToNativeSortedSet()
+        {
+            if (_buffer == null)
+            {
+                return default;
+            }
+
+            NativeSortedSet<T> set = new NativeSortedSet<T>(_length, GetAllocator()!);
+            foreach (ref var e in this)
+            {
+                set.Add(e);
+            }
+
+            set.TrimExcess();
+            Dispose();
+            return set;
+        }
+
+        /// <summary>
         /// Gets a <see cref="NativeMap{TKey, TValue}"/> using the elements of this query and then dispose this instance.
         /// Each repeated key will be ignore.
         /// </summary>

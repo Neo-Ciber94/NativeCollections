@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Linq;
 using NativeCollections.Allocators;
 using NativeCollections.Utility;
 
@@ -9,7 +10,8 @@ namespace NativeCollections
 {
     /// <summary>
     /// Provides methods for filter, reduce and convert elements of a collection.
-    /// Most of the methods dispose the NativeQuery after called.
+    /// Most of the methods dispose the NativeQuery after called, each result of the method generate
+    /// a new query on memory differents from <see cref="Enumerable"/> what is lazy.
     /// </summary>
     /// <typeparam name="T">Type of the elements.</typeparam>
     [DebuggerDisplay("Length = {Length}")]
@@ -20,9 +22,14 @@ namespace NativeCollections
         private readonly int _length;
         private readonly int _allocatorID;
 
+        /// <summary>
+        /// Gets an empty <see cref="NativeQuery{T}" />.
+        /// </summary>
+        public static NativeQuery<T> Empty => new NativeQuery<T>(Allocator.Default);
+
         internal NativeQuery(Allocator? allocator)
         {
-            if(allocator == null)
+            if (allocator == null)
             {
                 this = new NativeQuery<T>(Allocator.Default);
                 return;
@@ -38,9 +45,22 @@ namespace NativeCollections
             _allocatorID = allocator.ID;
         }
 
-        internal NativeQuery(void* pointer, int length, Allocator allocator)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeQuery{T}" /> struct.
+        /// </summary>
+        /// <param name="pointer">The pointer.</param>
+        /// <param name="length">The length.</param>
+        public NativeQuery(void* pointer, int length) : this(pointer, length, Allocator.Default) { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NativeQuery{T}" /> struct.
+        /// </summary>
+        /// <param name="pointer">The pointer.</param>
+        /// <param name="length">The length.</param>
+        /// <param name="allocator">The allocator to use.</param>
+        public NativeQuery(void* pointer, int length, Allocator allocator)
         {
-            if(pointer == null)
+            if (pointer == null)
             {
                 throw new ArgumentException("pointer is null");
             }
@@ -107,7 +127,7 @@ namespace NativeCollections
         /// </summary>
         /// <param name="action">The action to execute over each element.</param>
         [DisposeAfterCall]
-        public readonly void ForEach(Action<T> action)
+        public void ForEach(Action<T> action)
         {
             try
             {

@@ -43,7 +43,7 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Gets a <see cref="NativeList{T}"/> over the elements of this list.
+        /// Gets a <see cref="NativeQuery{T}"/> over the elements of this list.
         /// </summary>
         /// <typeparam name="T">Type of the elements.</typeparam>
         /// <param name="list">The list.</param>
@@ -61,7 +61,7 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Gets a <see cref="NativeStack{T}"/> over the elements of this array.
+        /// Gets a <see cref="NativeQuery{T}"/> over the elements of this stack.
         /// </summary>
         /// <typeparam name="T">Type of the elements.</typeparam>
         /// <param name="stack">The stack.</param>
@@ -79,7 +79,7 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Gets a <see cref="NativeQueue{T}"/> over the elements of this queue.
+        /// Gets a <see cref="NativeQuery{T}"/> over the elements of this queue.
         /// </summary>
         /// <typeparam name="T">Type of the elements.</typeparam>
         /// <param name="queue">The queue.</param>
@@ -97,7 +97,7 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Gets a <see cref="NativeDeque{T}"/> over the elements of this deque.
+        /// Gets a <see cref="NativeQuery{T}"/> over the elements of this deque.
         /// </summary>
         /// <typeparam name="T">Type of the elements.</typeparam>
         /// <param name="array">The deque.</param>
@@ -115,7 +115,7 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Gets a <see cref="NativeSet{T}"/> over the elements of this set.
+        /// Gets a <see cref="NativeQuery{T}"/> over the elements of this set.
         /// </summary>
         /// <typeparam name="T">Type of the elements.</typeparam>
         /// <param name="set">The set.</param>
@@ -133,7 +133,7 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Gets a <see cref="NativeSlice{T}"/> over the elements of this slice.
+        /// Gets a <see cref="NativeQuery{T}"/> over the elements of this slice.
         /// </summary>
         /// <typeparam name="T">Type of the elements.</typeparam>
         /// <param name="slice">The slice.</param>
@@ -144,7 +144,7 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Gets a <see cref="NativeSlice{T}"/> over the elements of this array.
+        /// Gets a <see cref="NativeQuery{T}"/> over the elements of this slice.
         /// </summary>
         /// <typeparam name="T">Type of the elements.</typeparam>
         /// <param name="slice">The slice.</param>
@@ -162,7 +162,26 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Gets a <see cref="NativeMap{TKey, TValue}"/> over the elements of this map.
+        /// Gets a <see cref="NativeQuery{T}"/> over the elements of this set.
+        /// </summary>
+        /// <typeparam name="T">Type of the elements.</typeparam>
+        /// <param name="set">The set.</param>
+        /// <param name="allocator">The allocator to use.</param>
+        /// <returns>A query over the elements.</returns>
+        public static NativeQuery<T> AsQuery<T>(this NativeSortedSet<T> set) where T: unmanaged
+        {
+            if (set.IsEmpty)
+            {
+                return default;
+            }
+
+            Allocator allocator = set.GetAllocator()!;
+            NativeArray<T> array = set.ToNativeArray();
+            return new NativeQuery<T>(array.GetUnsafePointer(), set.Length, allocator);
+        }
+
+        /// <summary>
+        /// Gets a <see cref="NativeQuery{T}"/> over the elements of this map.
         /// </summary>
         /// <typeparam name="T">Type of the elements.</typeparam>
         /// <param name="map">The map.</param>
@@ -180,7 +199,7 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Gets a <see cref="NativeSortedMap{TKey, TValue}"/> over the elements of this map.
+        /// Gets a <see cref="NativeQuery{T}"/> over the elements of this map.
         /// </summary>
         /// <typeparam name="T">Type of the elements.</typeparam>
         /// <param name="map">The map.</param>
@@ -195,6 +214,23 @@ namespace NativeCollections
             Allocator allocator = map.GetAllocator()!;
             NativeArray<KeyValuePair<TKey, TValue>> array = map.ToNativeArray();
             return new NativeQuery<KeyValuePair<TKey, TValue>>(array.GetUnsafePointer(), array.Length, allocator);
+        }
+
+        /// <summary>
+        /// Gets a <see cref="NativeQuery{char}"/> of the <see langword="char"/> of this <see cref="NativeString"/>.
+        /// </summary>
+        /// <param name="str">The string.</param>
+        /// <returns>A query over the chars of this string.</returns>
+        public static NativeQuery<char> AsQuery(this NativeString str)
+        {
+            if (str.IsEmpty)
+            {
+                return NativeQuery<char>.Empty;
+            }
+
+            Allocator allocator = str.GetAllocator()!;
+            char* buffer = (char*)AllocateCopy<char>(str._buffer, str.Length, allocator);
+            return new NativeQuery<char>(buffer, str.Length, allocator);
         }
     }
 }
