@@ -41,6 +41,35 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
+        public void ResizeTest()
+        {
+            using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 1, 2, 3 });
+
+            Assert.AreEqual(3, array.Length);
+
+            array.Resize(5);
+
+            Assert.AreEqual(5, array.Length);
+            Assert.AreEqual(1, array[0]);
+            Assert.AreEqual(2, array[1]);
+            Assert.AreEqual(3, array[2]);
+            Assert.AreEqual(0, array[3]);
+            Assert.AreEqual(0, array[4]);
+
+            array[3] = 4;
+            array[4] = 5;
+
+            Assert.AreEqual(4, array[3]);
+            Assert.AreEqual(5, array[4]);
+
+            array.Resize(3);
+            Assert.AreEqual(3, array.Length);
+            Assert.AreEqual(1, array[0]);
+            Assert.AreEqual(2, array[1]);
+            Assert.AreEqual(3, array[2]);
+        }
+
+        [Test()]
         public void ReverseTest()
         {
             using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 1, 2, 3, 4, 5 });
@@ -77,6 +106,15 @@ namespace NativeCollections.Tests
             Assert.AreEqual(5, array[2]);
             Assert.AreEqual(4, array[3]);
             Assert.AreEqual(3, array[4]);
+        }
+
+        [Test()]
+        public void ReverseTest3()
+        {
+            using NativeArray<int> array = new NativeArray<int>(stackalloc int[] { 42 });
+            array.Reverse();
+
+            Assert.AreEqual(42, array[0]);
         }
 
         [Test()]

@@ -18,8 +18,8 @@ namespace NativeCollections
     [DebuggerTypeProxy(typeof(NativeArrayDebugView<>))]
     unsafe public struct NativeArray<T> : INativeContainer<T>, IDisposable where T : unmanaged
     {
-        internal readonly T* _buffer;
-        private readonly int _capacity;
+        internal T* _buffer;
+        private int _capacity;
         private readonly int _allocatorID;
 
         /// <summary>
@@ -267,6 +267,32 @@ namespace NativeCollections
                     pointer[pos++] = value;
                 }
             }
+        }
+
+        /// <summary>
+        /// Resizes this array.
+        /// </summary>
+        /// <param name="newCapacity">The new capacity.</param>
+        /// <exception cref="ArgumentException">If newCapacity is negative or zero.</exception>
+        public void Resize(int newCapacity)
+        {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeArray is invalid");
+            }
+
+            if (newCapacity <= 0)
+            {
+                throw new ArgumentException("newCapacity cannot be negative or zero", nameof(newCapacity));
+            }
+
+            if (newCapacity == _capacity)
+            {
+                return;
+            }
+
+            _buffer = GetAllocator()!.Reallocate<T>(_buffer, newCapacity);
+            _capacity = newCapacity;
         }
 
         /// <summary>

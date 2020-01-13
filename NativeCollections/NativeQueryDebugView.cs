@@ -10,10 +10,12 @@ namespace NativeCollections
         public NativeQueryDebugView(NativeQuery<T> query)
         {
             T[] array = new T[query.Length];
+            var enumerator = query.GetEnumerator(false);
             int i = 0;
-            foreach(var e in query)
+
+            while (enumerator.MoveNext())
             {
-                array[i++] = e;
+                array[i++] = enumerator.Current;
             }
 
             Items = array;

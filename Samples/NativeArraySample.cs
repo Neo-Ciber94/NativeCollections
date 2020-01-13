@@ -5,77 +5,44 @@ namespace Samples
 {
     class NativeArraySample
     {
-        struct Client : IDisposable
+        public static void Run()
         {
-            public NativeString Name { get; }
+            // NativeArray can be created with 'using' so Dispose will be call when its out of scope,
+            // Always should declare the initial capacity.
+            using NativeArray<int> array = new NativeArray<int>(100);
 
-            public Client(NativeString name)
+            // A custom number generator
+            RandomNumberGenerator random = new RandomNumberGenerator(123);
+
+            // Most of the NativeContainers can be iterate 'by reference' and/or 'by readonly reference'
+            foreach (ref int d in array)
             {
-                Name = name;
+                d = random.NextInt(0, 1000);
             }
 
-            public void Dispose()
+            // Is recommended to declare the collections with 'using' to avoid memory leaks.
+            NativeArray<IndexedValue<int>> lowerThan200 = new NativeArray<IndexedValue<int>>(array.Length);
+
+            // A LINQ-like ForEach that pass elements by reference
+            array.ForEachRef((ref int value, int index) =>
             {
-                Name.Dispose();
-            }
-        }
+                if(value <= 200)
+                {
+                    lowerThan200[index] = IndexedValue.Create(value, index);
+                }
+            });
 
-        struct Order : IDisposable
-        {
-            public NativeString ProductName { get; }
-            public Client Client { get; }
-            public int ID { get; }
-            public double Price { get; }
+            // Sorts the array
+            lowerThan200.SortBy(e => e.Value);
 
-            public Order(NativeString productName, Client client, int iD, double price)
-            {
-                ProductName = productName;
-                Client = client;
-                ID = iD;
-                Price = price;
-            }
+            var min = lowerThan200[0];
+            var max = lowerThan200[^0];
 
-            public void Dispose()
-            {
-                ProductName.Dispose();
-                Client.Dispose();
-            }
-        }
+            // Prints the min and max: (0, 184)
+            Console.WriteLine((min.Value, max.Value));
 
-        public static void Main()
-        {
-            // Creating an NativeArray of 10 elements
-            NativeArray<Order> orders = new NativeArray<Order>(4);
-
-            // Fills the NativeArray
-            orders[0] = new Order("Laptop", new Client("Carlos"),   0,  400.0);
-            orders[1] = new Order("Shirt",  new Client("Maria"),    1,  200.0);
-            orders[2] = new Order("Desk",   new Client("Carlos"),   2,  100.0);
-            orders[3] = new Order("Book",   new Client("Takashi"),  3,  50.0);
-
-            // Also 'using' can be used and Dispose will be called for the NativeArray
-            using NativeArray<double> prices = new NativeArray<double>(orders.Length);
-            int count = 0;
-
-            // Iterate over each element 'by reference'
-            foreach (ref Order order in orders)
-            {
-                prices[count++] = order.Price;
-            }
-
-            // [300.0, 200.0, 100.0, 50.0]
-            Console.WriteLine(prices);
-
-            double priceSum = 0.0;
-
-            foreach(ref double d in prices)
-            {
-                priceSum += 0;
-            }
-
-            // Dispose the NativeArray
-            // By calling Dispose(true), Dispose will be called for each Disposable element in orders.
-            orders.Dispose(true);
+            // Dispose the array
+            lowerThan200.Dispose();
         }
     }
 }

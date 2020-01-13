@@ -96,7 +96,7 @@ namespace NativeCollections.Utility
         public static void Reverse<T>(void* pointer, int startElementOffset, int endElementOffset)
         {
             Debug.Assert(pointer != null, "Pointer is null");
-            Debug.Assert(startElementOffset < endElementOffset, "Invalid range");
+            Debug.Assert(startElementOffset <= endElementOffset, "Invalid range");
 
             ref T startAddress = ref Unsafe.AsRef<T>(pointer);
 

@@ -136,6 +136,28 @@ namespace NativeCollections
         }
 
         /// <summary>
+        /// Gets a shadow clone of this instance.
+        /// </summary>
+        /// <returns>A shadow clone of this instance.</returns>
+        public NativeQuery<T> Clone()
+        {
+            Allocator? allocator = GetAllocator();
+
+            if (allocator == null)
+            {
+                return default;
+            }
+
+            if (_length == 0)
+            {
+                return new NativeQuery<T>(allocator);
+            }
+
+            T* buffer = allocator.AllocateCopy(_buffer, _length);
+            return new NativeQuery<T>(buffer, _length, allocator);
+        }
+
+        /// <summary>
         /// Gets a string representation of the elements of this query.
         /// </summary>
         /// <returns>
@@ -149,7 +171,7 @@ namespace NativeCollections
             }
 
             StringBuilder sb = StringBuilderCache.Acquire();
-            Enumerator enumerator = GetEnumerator();
+            Enumerator enumerator = GetEnumerator(disposing: false);
             sb.Append('[');
 
             if (enumerator.MoveNext())

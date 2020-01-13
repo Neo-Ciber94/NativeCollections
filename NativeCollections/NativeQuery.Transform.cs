@@ -24,19 +24,15 @@ namespace NativeCollections
 
             int length = _length;
             Allocator allocator = GetAllocator()!;
-            TResult* buffer = GetAllocator()!.Allocate<TResult>(length);
+            TResult* buffer = allocator.Allocate<TResult>(length);
             Enumerator enumerator = GetEnumerator(disposing: false);
 
-            if (enumerator.MoveNext())
+            int i = 0;
+            foreach(ref var e in this)
             {
-                for (int i = 0; i < length; i++)
-                {
-                    buffer[i] = selector(enumerator.Current);
-                    enumerator.MoveNext();
-                }
+                buffer[i++] = selector(e);
             }
 
-            Dispose();
             return new NativeQuery<TResult>(buffer, length, allocator);
         }
 
@@ -67,14 +63,13 @@ namespace NativeCollections
             if (list.Length == 0)
             {
                 list.Dispose();
-                var emptyQuery = new NativeQuery<T>(GetAllocator());
-                Dispose();
+                var emptyQuery = new NativeQuery<T>(allocator);
                 return emptyQuery;
             }
 
-            Dispose();
             list.TrimExcess();
-            return new NativeQuery<T>(list.GetUnsafePointer(), list.Length, allocator);
+            var q = new NativeQuery<T>(list.GetUnsafePointer(), list.Length, allocator);
+            return q;
         }
 
         /// <summary>
@@ -107,9 +102,9 @@ namespace NativeCollections
             Allocator allocator = GetAllocator()!;
             void* src = _buffer;
             void* dst = allocator.Allocate<T>(length);
-            Unsafe.CopyBlockUnaligned(dst, src, (uint)(sizeof(T) * count));
+            Unsafe.CopyBlockUnaligned(dst, src, (uint)(sizeof(T) * length));
             Dispose();
-            return new NativeQuery<T>(dst, count, allocator);
+            return new NativeQuery<T>(dst, length, allocator);
         }
 
         /// <summary>

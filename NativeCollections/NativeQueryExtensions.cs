@@ -79,6 +79,78 @@ namespace NativeCollections
         }
 
         /// <summary>
+        /// Gets the minimun value of this query and then dispose this query.
+        /// </summary>
+        /// <typeparam name="T">Type of the value.</typeparam>
+        /// <param name="query">The query.</param>
+        /// <param name="comparison">Provides a comparison of 2 values.</param>
+        /// <returns>The minimun value of the query.</returns>
+        [DisposeAfterCall]
+        public static T Min<T>(this NativeQuery<T> query, Comparison<T> comparison) where T: unmanaged
+        {
+            T? min = null;
+
+            foreach (ref var e in query)
+            {
+                if (min == null)
+                {
+                    min = e;
+                }
+                else
+                {
+                    int c = comparison(e, min.Value);
+                    if (c < 0)
+                    {
+                        min = e;
+                    }
+                }
+            }
+
+            if (min == null)
+            {
+                throw new InvalidOperationException("Cannot find the min value.");
+            }
+
+            return min.Value;
+        }
+
+        /// <summary>
+        /// Gets the maximun value of this query and then dispose this query.
+        /// </summary>
+        /// <typeparam name="T">Type of the value.</typeparam>
+        /// <param name="query">The query.</param>
+        /// <param name="comparison">Provides a comparison of 2 values.</param>
+        /// <returns>The maximun value of the query.</returns>
+        [DisposeAfterCall]
+        public static T Max<T>(this NativeQuery<T> query, Comparison<T> comparison) where T : unmanaged
+        {
+            T? max = null;
+
+            foreach (ref var e in query)
+            {
+                if (max == null)
+                {
+                    max = e;
+                }
+                else
+                {
+                    int c = comparison(e, max.Value);
+                    if (c > 0)
+                    {
+                        max = e;
+                    }
+                }
+            }
+
+            if (max == null)
+            {
+                throw new InvalidOperationException("Cannot find the min value.");
+            }
+
+            return max.Value;
+        }
+
+        /// <summary>
         /// Sums the values of this query and gets the <see cref="int"/> result, then dispose this query.
         /// </summary>
         /// <param name="query">The query.</param>
