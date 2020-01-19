@@ -12,12 +12,12 @@ namespace NativeCollectionsBenchmark
         [Params(10, 100, 1000, 10000, 100000, 1000000)]
         public int ListSize;
 
-        private ForwardPoolAllocator allocator;
+        private MemoryPoolAllocator allocator;
 
         [GlobalSetup]
         public void Setup()
         {
-            allocator = new ForwardPoolAllocator(1000);
+            allocator = new MemoryPoolAllocator(1000);
         }
 
         [GlobalCleanup]

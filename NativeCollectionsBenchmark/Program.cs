@@ -10,11 +10,11 @@ namespace NativeCollectionsBenchmark
         static void Main()
         {
             //BenchmarkRunner.Run<NativeArrayVsArray>();
-            BenchmarkRunner.Run<NativeListVsList>();
+            //BenchmarkRunner.Run<NativeListVsList>();
             //BenchmarkRunner.Run<NativeMapVsDictionary>();
+            //BenchmarkRunner.Run<MemoryInitBenchmark>();
 
-            //BenchmarkRunner.Run<AllocatorsBenchmark>();
-            //BenchmarkRunner.Run<CppAllocatorBenchmark>();
+            BenchmarkRunner.Run<AllocatorsBenchmark>();
         }
     }
 }

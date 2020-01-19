@@ -4,11 +4,12 @@ using System.Runtime.CompilerServices;
 namespace NativeCollections.Allocators
 {
     /// <summary>
-    /// A fixed-size memory pool allocator.
+    /// Represents a pool allocator that allocates memory with an external allocator if the
+    /// bytes required are greater than certain threshold defined by the bytes per pool chunk.
     /// </summary>
-    /// <seealso cref="NativeCollections.Allocators.Allocator" />
-    /// <seealso cref="System.IDisposable" />
-    unsafe public sealed class FixedMemoryPoolAllocator : Allocator, IDisposable
+    /// <seealso cref="Allocator" />
+    /// <seealso cref="IDisposable" />
+    unsafe public sealed class MemoryPoolAllocator : Allocator, IDisposable
     {
         struct Chunk
         {
@@ -16,6 +17,9 @@ namespace NativeCollections.Allocators
         }
 
         private const int DefaultBytesPerChunk = 1024;
+        private const int DefaultChunkCount = 10;
+
+        private readonly Allocator _defaultAllocator;
 
         private Chunk* _head;
         private byte* _bufferStart;
@@ -40,37 +44,54 @@ namespace NativeCollections.Allocators
         public int BytesPerChunk => _chunkSize;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FixedMemoryPoolAllocator"/> class.
+        /// Gets the bytes threshold for small allocations.
         /// </summary>
-        /// <param name="chunkCount">The number of chunks.</param>
-        /// <exception cref="ArgumentException">If chunkCount is negative or 0.</exception>
-        public FixedMemoryPoolAllocator(int chunkCount) : this(chunkCount, DefaultBytesPerChunk) { }
+        /// <value>
+        /// The bytes threshold.
+        /// </value>
+        public int BytesThreshold => _chunkSize;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FixedMemoryPoolAllocator"/> class.
+        /// Initializes a new instance of the <see cref="MemoryPoolAllocator"/> class.
         /// </summary>
-        /// <param name="chunkCount">The number of chunks.</param>
-        /// <param name="bytesPerChunk">The size in bytes of each chunk.</param>
-        /// <exception cref="ArgumentException">If chunkCount or bytesPerChunk are negative or 0.</exception>
-        public FixedMemoryPoolAllocator(int chunkCount, int bytesPerChunk) : base(true)
+        /// <param name="bytesPerChunk">The bytes per chunk which also is the threshold for small allocations.</param>
+        public MemoryPoolAllocator(int bytesPerChunk) : this(DefaultChunkCount, bytesPerChunk, Default) { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MemoryPoolAllocator"/> class.
+        /// </summary>
+        /// <param name="chunkCount">The number of chunks in the pool.</param>
+        /// <param name="bytesPerChunk">The bytes per chunk which also is the threshold for small allocations.</param>
+        /// <param name="allocator">The allocator.</param>
+        public MemoryPoolAllocator(int chunkCount, int bytesPerChunk) : this(chunkCount, bytesPerChunk, Default) { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MemoryPoolAllocator"/> class.
+        /// </summary>
+        /// <param name="chunkCount">The number of chunks in the pool.</param>
+        /// <param name="bytesPerChunk">The bytes per chunk which also is the threshold for small allocations.</param>
+        /// <param name="allocator">The allocator.</param>
+        public MemoryPoolAllocator(int chunkCount, int bytesPerChunk, Allocator allocator) : base(true)
         {
-            if(chunkCount <= 0)
+            if (chunkCount <= 0)
             {
                 throw new ArgumentException("chunkCount cannot be negative or 0", nameof(chunkCount));
             }
 
-            if(bytesPerChunk <= 0)
+            if (bytesPerChunk <= 0)
             {
                 throw new ArgumentException("bytesPerChunk cannot be negative or 0", nameof(bytesPerChunk));
             }
 
             int totalBytes = chunkCount * Math.Max(IntPtr.Size, bytesPerChunk);
+
+            _defaultAllocator = allocator;
             _bufferStart = (byte*)Default.Allocate(totalBytes, initMemory: false);
             _bufferEnd = _bufferStart + (totalBytes);
             _chunkCount = chunkCount;
             _chunkSize = bytesPerChunk;
 
-            for(int i = 0; i < chunkCount; ++i)
+            for (int i = 0; i < chunkCount; ++i)
             {
                 Chunk* cur = (Chunk*)(_bufferStart + (bytesPerChunk * i));
                 cur->next = _head;
@@ -97,26 +118,21 @@ namespace NativeCollections.Allocators
 
             int totalBytes = elementCount * elementSize;
 
-            if(_head == null)
+            if(totalBytes <= _chunkSize)
             {
-                throw new OutOfMemoryException("No chunks available");
+                Chunk* block = _head;
+                _head = _head->next;
+                block->next = null;
+
+                if (initMemory)
+                {
+                    Unsafe.InitBlockUnaligned(block, 0, (uint)_chunkSize);
+                }
+
+                return block;
             }
 
-            if(totalBytes > _chunkSize)
-            {
-                throw new OutOfMemoryException($"Not enough memory for allocate {totalBytes} bytes.\nMax block size: {_chunkSize} bytes");
-            }
-
-            Chunk* block = _head;
-            _head = _head->next;
-            block->next = null;
-
-            if (initMemory)
-            {
-                Unsafe.InitBlockUnaligned(block, 0, (uint)_chunkSize);
-            }
-
-            return block;
+            return _defaultAllocator.Allocate(totalBytes, sizeof(byte), initMemory);
         }
 
         public override unsafe void* Reallocate(void* pointer, int elementCount, int elementSize = 1, bool initMemory = true)
@@ -136,24 +152,22 @@ namespace NativeCollections.Allocators
                 throw new ArgumentException(elementSize.ToString(), nameof(elementSize));
             }
 
-            if (!IsOwner(pointer))
-            {
-                throw new ArgumentException("Block not allocated in this MemoryPool");
-            }
-
             int totalBytes = elementCount * elementSize;
 
-            if (_head == null)
+            if (IsOwner(pointer))
             {
-                throw new OutOfMemoryException("No chunks available");
+                if(totalBytes > BytesThreshold)
+                {
+                    void* block = _defaultAllocator.Allocate(totalBytes, sizeof(byte), initMemory);
+                    Unsafe.CopyBlockUnaligned(block, pointer, (uint)BytesThreshold);
+                    Free(pointer);
+                    return block;
+                }
+
+                return pointer;
             }
 
-            if (totalBytes > _chunkSize)
-            {
-                throw new OutOfMemoryException($"Not enough memory for allocate {totalBytes} bytes.\nMax block size: {_chunkSize} bytes");
-            }
-
-            return pointer;
+            return _defaultAllocator.Reallocate(pointer, totalBytes, sizeof(byte), initMemory);
         }
 
         public override unsafe void Free(void* pointer)
@@ -163,29 +177,26 @@ namespace NativeCollections.Allocators
                 throw new InvalidOperationException("MemoryPool have been disposed");
             }
 
-            if (!IsOwner(pointer))
+            if (IsOwner(pointer))
             {
-                throw new ArgumentException("Block not allocated in this MemoryPool");
+                Chunk* chunk = (Chunk*)pointer;
+                chunk->next = _head;
+                _head = chunk;
             }
-
-            Chunk* chunk = (Chunk*)pointer;
-            chunk->next = _head;
-            _head = chunk;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsOwner(void* block)
-        {
-            return block != null && block >= _bufferStart && block < _bufferEnd;
+            else
+            {
+                _defaultAllocator.Free(pointer);
+            }
         }
 
         public void Dispose()
         {
-            // Not all chunks may be returned at this point, what can lead to pointers to invalid memory.
-            // That can be solved using a counter for each chunk and prevent the Dispose or throw an exception if any chunk
-            // still allocated.
+            if(_defaultAllocator is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
 
-            if(_bufferStart != null)
+            if (_bufferStart != null)
             {
                 Default.Free(_bufferStart);
                 _bufferStart = null;
@@ -195,6 +206,12 @@ namespace NativeCollections.Allocators
                 _chunkSize = 0;
                 Dispose(true);
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsOwner(void* block)
+        {
+            return block != null && block >= _bufferStart && block < _bufferEnd;
         }
     }
 }

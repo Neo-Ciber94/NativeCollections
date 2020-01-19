@@ -18,7 +18,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NativeCollectionsBenchmark", "NativeCollectionsBenchmark\NativeCollectionsBenchmark.csproj", "{BB1AE834-A19F-4F1F-AC92-CC3E3AE868EA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Samples", "Samples\Samples.csproj", "{AC22E43E-A24A-40D4-B41B-F6C8C696D5AC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Examples", "Samples\Examples.csproj", "{AC22E43E-A24A-40D4-B41B-F6C8C696D5AC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

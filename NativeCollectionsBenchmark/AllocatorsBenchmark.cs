@@ -16,15 +16,16 @@ namespace NativeCollectionsBenchmark
         private DefaultCppAllocator cAllocator;
         private ArenaAllocator arenaAllocator;
         private StackAllocator stackAllocator;
-        private FixedMemoryPoolAllocator poolAllocator;
+        private FixedMemoryPoolAllocator fixedPoolAllocator;
+        private MemoryPoolAllocator poolAllocator;
 
-        [Params(10, 100, 1000, 10000)]
+        [Params(10, 100, 1000, 10000, 100000)]
         public int Bytes;
 
         [IterationSetup]
         public void Setup()
         {
-            const int AllocatorSize = 1000_000;
+            int AllocatorSize = Bytes * 2;
             var defaultAlloc = Allocator.Default;
             if(defaultAlloc == null)
             {
@@ -36,7 +37,8 @@ namespace NativeCollectionsBenchmark
             cAllocator = DefaultCppAllocator.Instance;
             arenaAllocator = new ArenaAllocator(AllocatorSize);
             stackAllocator = new StackAllocator(AllocatorSize);
-            poolAllocator = new FixedMemoryPoolAllocator(10, AllocatorSize / 2);
+            fixedPoolAllocator = new FixedMemoryPoolAllocator(10, AllocatorSize);
+            poolAllocator = new MemoryPoolAllocator(AllocatorSize);
         }
 
         [IterationCleanup]
@@ -44,7 +46,7 @@ namespace NativeCollectionsBenchmark
         {
             arenaAllocator.Dispose();
             stackAllocator.Dispose();
-            poolAllocator.Dispose();
+            fixedPoolAllocator.Dispose();
         }
 
         [Benchmark(Baseline = true)]
@@ -198,6 +200,34 @@ namespace NativeCollectionsBenchmark
                 }
             }
             stackAllocator.Free(buffer);
+        }
+
+        [Benchmark]
+        unsafe public void FixedPoolAllocatorAlloc()
+        {
+            byte* buffer = fixedPoolAllocator.Allocate<byte>(Bytes);
+            for (int i = 0; i < Bytes; i++)
+            {
+                unchecked
+                {
+                    buffer[i] = (byte)i;
+                }
+            }
+            fixedPoolAllocator.Free(buffer);
+        }
+
+        [Benchmark]
+        unsafe public void FixedPoolAllocatorAllocUnitializated()
+        {
+            byte* buffer = (byte*)fixedPoolAllocator.Allocate(Bytes, sizeof(byte), initMemory: false);
+            for (int i = 0; i < Bytes; i++)
+            {
+                unchecked
+                {
+                    buffer[i] = (byte)i;
+                }
+            }
+            fixedPoolAllocator.Free(buffer);
         }
 
         [Benchmark]

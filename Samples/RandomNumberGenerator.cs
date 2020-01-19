@@ -3,14 +3,22 @@ using System.Diagnostics;
 
 namespace Samples
 {
+    [Flags]
+    public enum RandomCharKind
+    {
+        Upper = 1,
+        Lower = 2,
+        Digit = 4,
+        Symbol = 8
+    }
+
+
     /// <summary>
     /// Custom random number generator.
     /// </summary>
     public struct RandomNumberGenerator
     {
-        private readonly int _seed;
-        private int _state1;
-        private int _state2;
+        private int _state;
 
         /// <summary>
         /// Gets a default random number generator.
@@ -34,12 +42,10 @@ namespace Samples
         /// <param name="seed">The seed.</param>
         public RandomNumberGenerator(int seed)
         {
-            _seed = seed;
-
             unchecked
             {
-                _state1 = seed + int.MaxValue;
-                _state2 = seed * int.MaxValue;
+                _state = seed + int.MaxValue;
+                NextState();
             }
         }
 
@@ -49,7 +55,7 @@ namespace Samples
         /// <returns>A random int value.</returns>
         public int NextInt()
         {
-            return Sample();
+            return NextState();
         }
 
         /// <summary>
@@ -76,15 +82,12 @@ namespace Samples
                 throw new ArgumentOutOfRangeException($"min > max: {min} > {max}");
             }
 
-            int value = Sample();
-
-            if (value < 0)
+            if(min == max)
             {
-                value = -value;
+                return min;
             }
 
-            max = value % (max + 1);
-            return (max - min) + min;
+            return (int)(NextDouble() * ((max - min) + 1)) + min;
         }
 
         /// <summary>
@@ -102,7 +105,14 @@ namespace Samples
         /// <returns>A random double value.</returns>
         public double NextDouble()
         {
-            return Sample() * (1.0 / int.MaxValue);
+            int sample = NextState();
+
+            if(sample < 0)
+            {
+                sample = -sample;
+            }
+
+            return sample * (1.0 / int.MaxValue);
         }
 
         /// <summary>
@@ -111,7 +121,7 @@ namespace Samples
         /// <returns>A random float value.</returns>
         public float NextFloat()
         {
-            return Sample() * (1f / int.MaxValue);
+            return NextState() * (1f / int.MaxValue);
         }
 
         /// <summary>
@@ -123,31 +133,34 @@ namespace Samples
             return NextInt(0, 1) == 1;
         }
 
+        public char NextChar(RandomCharKind randomChar)
+        {
+
+            return default;
+        }
+
         /// <summary>
         /// Fills the <see cref="Span{T}"/> with random bytes.
         /// </summary>
         /// <param name="destination">The destination.</param>
         public void NextBytes(Span<byte> destination)
         {
-            for(int i = 0; i < destination.Length; i++)
+            for(int i = 0; i < destination.Length; ++i)
             {
                 destination[i] = (byte)(NextInt() & byte.MaxValue);
             }
         }
 
-        private int Sample()
+        private int NextState()
         {
-            int result = _seed;
             unchecked
             {
-                result += _state1;
-                result *= _state2;
-
-                _state1 += 1234;
-                _state2 += 5678;
+                _state += 23457013;
+                _state ^= _state << 13;
+                _state ^= _state >> 17;
+                _state ^= _state << 5;
+                return _state;
             }
-
-            return result;
         }
     }
 }
