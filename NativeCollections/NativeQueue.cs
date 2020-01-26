@@ -256,6 +256,47 @@ namespace NativeCollections
         }
 
         /// <summary>
+        /// Gets a reference to the first element in the queue.
+        /// </summary>
+        /// <returns>The a reference to the first element of the queue.</returns>
+        /// <exception cref="InvalidOperationException">If the Queue is empty</exception>
+        public ref T PeekReference()
+        {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeQueue is invalid");
+            }
+
+            if (_count == 0)
+            {
+                throw new InvalidOperationException("The queue is empty");
+            }
+
+            ref T startAddress = ref Unsafe.AsRef<T>(_buffer);
+            return ref Unsafe.Add(ref startAddress, _head);
+        }
+
+        /// <summary>
+        /// Attemps to get a reference to the the first element in the queue.
+        /// </summary>
+        /// <param name="value">The first value on the queue.</param>
+        /// <returns><c>true</c> If the first element exists.</returns>
+        public bool TryPeekReference(out ByReference<T> value)
+        {
+            if (_count == 0)
+            {
+                value = default;
+                return false;
+            }
+            else
+            {
+                ref T startAddress = ref Unsafe.AsRef<T>(_buffer);
+                value = new ByReference<T>(ref Unsafe.Add(ref startAddress, _head));
+                return true;
+            }
+        }
+
+        /// <summary>
         /// Clears the content of this queue.
         /// </summary>
         public void Clear()

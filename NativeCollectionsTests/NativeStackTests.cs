@@ -162,6 +162,49 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
+        public void PeekReferenceTest()
+        {
+            using NativeStack<int> stack = new NativeStack<int>(4);
+            stack.Push(1);
+            stack.Push(2);
+            stack.Push(3);
+
+            Assert.AreEqual(3, stack.PeekReference());
+            stack.Pop();
+
+            Assert.AreEqual(2, stack.PeekReference());
+            stack.Pop();
+
+            Assert.AreEqual(1, stack.PeekReference());
+            stack.Pop();
+
+            Assert.Throws<InvalidOperationException>(() => stack.PeekReference());
+        }
+
+        [Test()]
+        public void TryPeekReferenceTest()
+        {
+            using NativeStack<int> stack = new NativeStack<int>(4);
+            stack.Push(1);
+            stack.Push(2);
+            stack.Push(3);
+
+            Assert.IsTrue(stack.TryPeekReference(out var v1));
+            Assert.AreEqual(3, v1.Value);
+            stack.Pop();
+
+            Assert.IsTrue(stack.TryPeekReference(out var v2));
+            Assert.AreEqual(2, v2.Value);
+            stack.Pop();
+
+            Assert.IsTrue(stack.TryPeekReference(out var v3));
+            Assert.AreEqual(1, v3.Value);
+            stack.Pop();
+
+            Assert.IsFalse(stack.TryPeekReference(out var v4));
+        }
+
+        [Test()]
         public void ClearTest()
         {
             using NativeStack<int> stack = new NativeStack<int>(4);

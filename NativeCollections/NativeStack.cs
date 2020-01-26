@@ -157,7 +157,7 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Adds a value at the end of ths stack.
+        /// Adds a value at the end of the stack.
         /// </summary>
         /// <param name="value">The value.</param>
         public void Push(T value)
@@ -197,7 +197,7 @@ namespace NativeCollections
         }
 
         /// <summary>
-        /// Gets the value at th etop of the stack.
+        /// Gets the value at the top of the stack.
         /// </summary>
         /// <returns>The value at the top of the stack.</returns>
         /// <exception cref="InvalidOperationException">if the stack is empty</exception>
@@ -253,6 +253,47 @@ namespace NativeCollections
             {
                 ref T startAddress = ref Unsafe.AsRef<T>(_buffer);
                 value = Unsafe.Add(ref startAddress, _count - 1);
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Gets a reference to the value at the top of the stack.
+        /// </summary>
+        /// <returns>A reference to the value at the top of the stack.</returns>
+        /// <exception cref="InvalidOperationException">if the stack is empty</exception>
+        public ref T PeekReference()
+        {
+            if (_buffer == null)
+            {
+                throw new InvalidOperationException("NativeStack is invalid");
+            }
+
+            if (_count == 0)
+            {
+                throw new InvalidOperationException("Stack is empty");
+            }
+
+            ref T startAddress = ref Unsafe.AsRef<T>(_buffer);
+            return ref Unsafe.Add(ref startAddress, _count - 1);
+        }
+
+        /// <summary>
+        /// Attemps to get a reference to the value at the top of the stack.
+        /// </summary>
+        /// <param name="value">A reference to the value at the top of the stack.</param>
+        /// <returns><c>true</c> if the value exists, otherwise <c>false</c>.</returns
+        public bool TryPeekReference(out ByReference<T> value)
+        {
+            if (_count == 0)
+            {
+                value = default;
+                return false;
+            }
+            else
+            {
+                ref T startAddress = ref Unsafe.AsRef<T>(_buffer);
+                value = new ByReference<T>(ref Unsafe.Add(ref startAddress, _count - 1));
                 return true;
             }
         }

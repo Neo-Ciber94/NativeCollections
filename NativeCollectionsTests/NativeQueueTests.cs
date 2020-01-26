@@ -239,6 +239,47 @@ namespace NativeCollections.Tests
         }
 
         [Test()]
+        public void PeekReferenceTest()
+        {
+            using NativeQueue<int> queue = new NativeQueue<int>(4);
+            queue.Enqueue(1);
+            queue.Enqueue(2);
+            queue.Enqueue(3);
+
+            Assert.AreEqual(1, queue.PeekReference());
+            queue.Dequeue();
+
+            Assert.AreEqual(2, queue.PeekReference());
+            queue.Dequeue();
+
+            Assert.AreEqual(3, queue.PeekReference());
+            queue.Dequeue();
+        }
+
+        [Test()]
+        public void TryPeekReferenceTest()
+        {
+            using NativeQueue<int> queue = new NativeQueue<int>(4);
+            queue.Enqueue(1);
+            queue.Enqueue(2);
+            queue.Enqueue(3);
+
+            Assert.IsTrue(queue.TryPeekReference(out var v1));
+            Assert.AreEqual(1, v1.Value);
+            queue.Dequeue();
+
+            Assert.IsTrue(queue.TryPeekReference(out var v2));
+            Assert.AreEqual(2, v2.Value);
+            queue.Dequeue();
+
+            Assert.IsTrue(queue.TryPeekReference(out var v3));
+            Assert.AreEqual(3, v3.Value);
+            queue.Dequeue();
+
+            Assert.IsFalse(queue.TryPeekReference(out var _));
+        }
+
+        [Test()]
         public void ContainsTest()
         {
             using NativeQueue<int> queue = new NativeQueue<int>(4);
